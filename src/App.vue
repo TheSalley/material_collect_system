@@ -1,11 +1,5 @@
 <template>
-   <nav style="display: flex;">
-    <RouterLink to="/">客户</RouterLink>
-    <RouterLink to="/admin">管理</RouterLink>
-  </nav>
-  <main>
-    <RouterView />
-  </main>
+  <RouterView />
 </template>
 
 <script setup></script>
