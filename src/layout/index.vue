@@ -3,7 +3,7 @@
     <SideBar class="sidebar-container" />
     <div class="main-container">
       <div class="fixed-header layout-header">
-        <div style="min-height: 85px; background-color: aquamarine;">header</div>
+        <NavigationBar />
       </div>
       <AppMain class="app-main" />
     </div>
@@ -12,6 +12,7 @@
 <script setup>
 import SideBar from "./components/SideBar.vue";
 import AppMain from "./components/AppMain.vue";
+import NavigationBar from "./components/NavigationBar.vue";
 </script>
 <style>
 .app-wrapper {

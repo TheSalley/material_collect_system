@@ -9,6 +9,10 @@ const routes = [
         path: "",
         component: () => import("@/views/customer/index.vue"),
       },
+      {
+        path: "elementor",
+        component: () => import("@/views/elementor/index.vue"),
+      },
     ],
   },
   {
@@ -20,7 +24,7 @@ const routes = [
         component: () => import("@/views/admin/index.vue"),
       },
     ],
-  },
+  }
 ];
 
 const router = createRouter({

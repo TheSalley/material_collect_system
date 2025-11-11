@@ -2,7 +2,7 @@
   <div class="aside-container">
     <img class="logo" src="/logo.svg" />
     <el-menu router default-active="1" class="flex-1">
-      <el-menu-item index="1" route="/">运营</el-menu-item>
+      <el-menu-item index="1" route="/">管理</el-menu-item>
       <el-menu-item index="2" route="/admin">客户</el-menu-item>
     </el-menu>
   </div>
