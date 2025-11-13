@@ -1,6 +1,6 @@
 <template>
   <div class="aside-container">
-    <a href="/"><img class="logo" src="/logo.svg" /></a>
+    <a href='/'><img class="logo" src="/logo.svg" /></a>
     <el-menu router default-active="1" class="flex-1">
       <el-menu-item index="1" route="/list">管理</el-menu-item>
       <el-menu-item index="2" route="/customer">客户</el-menu-item>

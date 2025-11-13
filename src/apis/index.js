@@ -1,11 +1,16 @@
+const config = {
+    // baseUrl: 'http://localhost:8008',
+    baseUrl: 'http://192.168.110.27:8008',
+}
+
 export const getPages = async () => {
-    const res = await fetch('http://localhost:8008/pages');
+    const res = await fetch(config.baseUrl + '/pages');
     const data = await res.json();
     return data;
 };
 
 export const getPageById = async (id) => {
-    const res = await fetch(`http://localhost:8008/elementor/${id}`);
+    const res = await fetch(config.baseUrl + `/elementor/${id}`);
     const data = await res.json();
     return data;
 };
