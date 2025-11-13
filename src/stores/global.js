@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { ref } from "vue";
 
 export const useGlobalStore = defineStore(
   "global",
@@ -9,7 +10,18 @@ export const useGlobalStore = defineStore(
       count.value++;
     }
 
-    return { count, increment };
+    function increment() {
+      count.value++;
+    }
+
+    // 用户信息
+    const user = ref({
+      username: "",
+      token: "",
+      isLogin: false,
+    });
+
+    return { count, increment, user };
   },
   { persist: true }
 );
