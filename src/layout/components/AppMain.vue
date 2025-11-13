@@ -17,8 +17,6 @@
   overflow: auto;
   display: flex;
   flex-direction: column;
-  .app-container-grow {
-    flex-grow: 1;
-  }
+  padding: 20px;
 }
 </style>
