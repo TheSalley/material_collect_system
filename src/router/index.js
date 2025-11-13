@@ -6,8 +6,12 @@ const routes = [
     component: () => import("@/layout/index.vue"),
     children: [
       {
-        path: "",
-        component: () => import("@/views/customer/index.vue"),
+        path: "list",
+        component: () => import("@/views/admin/List.vue"),
+      },
+      {
+        path: "detail",
+        component: () => import("@/views/admin/Detail.vue"),
       },
       {
         path: "elementor",
@@ -16,12 +20,12 @@ const routes = [
     ],
   },
   {
-    path: "/admin",
+    path: "/customer",
     component: () => import("@/layout/index.vue"),
     children: [
       {
         path: "",
-        component: () => import("@/views/admin/index.vue"),
+        component: () => import("@/views/customer/index.vue"),
       },
     ],
   }

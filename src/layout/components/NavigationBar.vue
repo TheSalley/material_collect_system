@@ -1,15 +1,11 @@
 <template>
     <div class="navigation-bar">
-        <div @click="toggleClick">
-            <el-icon :size="20" class="icon">
-                <Fold v-if="isActive" />
-                <Expand v-else />
-            </el-icon>
+        <div>
         </div>
         <div class="right-menu">
             <el-dropdown>
                 <div class="right-menu-item user">
-                    <el-avatar :icon="UserFilled" :size="30" />
+                    <el-avatar icon="UserFilled" :size="30" />
                     <span>{{ username }}</span>
                 </div>
                 <template #dropdown>
