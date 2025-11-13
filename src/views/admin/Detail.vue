@@ -14,7 +14,7 @@ import { useRouter } from 'vue-router';
 import TW from '@/components/TW.vue';
 
 let pageList = reactive([]);
-const activePage = ref('home');
+const activePage = ref('THANKS');
 
 const router = useRouter();
 
