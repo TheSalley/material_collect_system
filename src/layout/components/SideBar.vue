@@ -8,7 +8,9 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+
+</script>
 <style scoped>
 .aside-container {
   display: flex;

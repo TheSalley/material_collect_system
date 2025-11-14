@@ -76,7 +76,7 @@ const handleLogin = () => {
             globalStore.user.isLogin = true;
 
             ElMessage.success("登录成功");
-            router.push("/admin");
+            router.push("/list");
         } else {
             // ElMessage.error("用户名或密码错误");
             ElMessageBox.alert('用户名或密码错误', '提示：', {
