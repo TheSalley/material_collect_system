@@ -37,16 +37,17 @@
   </div>
   <div style="display: flex; justify-content: center; margin-top: 30px">
     <el-button type="primary" @click="handleSave">保存</el-button>
+    <el-button type="primary" @click="handleReset">还原</el-button>
   </div>
 </template>
 <script setup>
 import { reactive, onMounted } from "vue";
-import { getPageById, updatePageById } from "@/apis/index.js";
+import { getPageById, updatePageById } from "@/apis/wp.js";
 import DataExtractor from "./DataExtractor.vue";
 
 const props = defineProps({
   pageId: {
-    type: Number,
+    type: [Number, String],
     required: true,
   },
 });
@@ -54,28 +55,51 @@ const props = defineProps({
 const state = reactive({
   pageData: null,
   pageId: null,
+  meta_id: null,
   ImageList: [],
+  originStr: "",
 });
 
 onMounted(async () => {
   const page = await getPageById(props.pageId);
-  if (page.post_id) {
-    state.pageId = page.post_id;
-    state.pageData = JSON.parse(page.meta_value);
+  if (page.code === 0 && page.data.post_id) {
+    state.pageId = page.data.post_id;
+    state.pageData = JSON.parse(page.data.meta_value);
+    state.originStr = page.data.meta_value;
+    state.meta_id = page.data.meta_id;
   }
 });
 
 async function handleSave() {
   console.log("@@@", state.pageData);
-  // let str = JSON.stringify(state.pageData);
-  let str = convertToElementorFormat(state.pageData);
+  let str = JSON.stringify(state.pageData);
+  // let str = convertToElementorFormat(state.pageData);
+  // let str = state.pageData;
   // str = str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   // console.log("strstr :", str);
   const res = await updatePageById({
-    data: str,
-    id: state.pageId,
+    meta_value: str,
+    post_id: Number(state.pageId),
   });
-  if (res.affectedRows && res.affectedRows !== 0) {
+  if (res.code === 0) {
+    ElMessage({
+      message: "保存成功",
+      type: "success",
+    });
+  } else {
+    ElMessage({
+      message: "保存失败",
+      type: "error",
+    });
+  }
+}
+
+async function handleReset() {
+ const res = await updatePageById({
+    meta_value: state.originStr,
+    post_id: state.Number(state.pageId),
+  });
+  if (res.code === 0) {
     ElMessage({
       message: "保存成功",
       type: "success",
@@ -117,7 +141,9 @@ function convertToElementorFormat(data) {
     const processNode = (node) => {
       // 3.1 校验核心字段（Elementor 必须字段）
       if (!node.id || !node.elType) {
-        throw new Error(`节点缺少必要字段（id 或 elType）：${JSON.stringify(node)}`);
+        throw new Error(
+          `节点缺少必要字段（id 或 elType）：${JSON.stringify(node)}`
+        );
       }
 
       // 3.2 处理 settings 字段（确保是对象，避免 null/undefined）
@@ -131,8 +157,8 @@ function convertToElementorFormat(data) {
       } else {
         // 递归处理子节点，同时去除数组末尾可能的空元素
         node.elements = node.elements
-          .filter(el => el !== null && typeof el === "object") // 过滤无效元素
-          .map(child => processNode(child)); // 递归处理每个子节点
+          .filter((el) => el !== null && typeof el === "object") // 过滤无效元素
+          .map((child) => processNode(child)); // 递归处理每个子节点
       }
 
       // 3.4 特殊字段处理（如 isInner 必须是布尔值）
@@ -144,7 +170,7 @@ function convertToElementorFormat(data) {
     };
 
     // 4. 处理顶层数组中的所有节点
-    const processedData = clonedData.map(node => processNode(node));
+    const processedData = clonedData.map((node) => processNode(node));
 
     // 5. 序列化为 JSON 字符串（确保无语法错误）
     const jsonStr = JSON.stringify(processedData);
