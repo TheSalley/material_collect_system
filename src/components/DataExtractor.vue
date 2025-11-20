@@ -18,7 +18,7 @@
   <template v-if="currentNode?.settings?.editor">
     <div class="field-item">
       <span class="field-label">文本：</span>
-      <div :id="'editor_' + currentNode.id"></div>
+      <div :id="'editor_' + currentNode.id" class="min-h-[300px]"></div>
     </div>
   </template>
   <template v-if="currentNode?.elements?.length">
@@ -49,6 +49,7 @@ const props = defineProps({
 onMounted(() => {
   if (props.currentNode?.settings?.editor) {
     const quill = new Quill(`#editor_${props.currentNode.id}`, {
+      theme: "snow",
       modules: {
         toolbar: [
           [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -58,7 +59,6 @@ onMounted(() => {
         ],
       },
       placeholder: "请输入文案",
-      theme: "snow", // or 'bubble'
     });
     quill.root.innerHTML = props.currentNode.settings.editor;
     quill.on("text-change", () => {
