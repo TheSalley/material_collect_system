@@ -1,6 +1,7 @@
 const config = {
-  baseUrl: 'http://localhost:8008',
+  // baseUrl: 'http://localhost:8008',
   // baseUrl: "http://192.168.110.27:8008",
+  baseUrl: "http://192.168.110.45:8008",
 };
 
 export const getPages = async () => {

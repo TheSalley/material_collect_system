@@ -4,21 +4,21 @@
       <span class="field-label">标题：</span>
       <el-input
         v-model="localSettings.title"
-        style="width: 240px"
+        minlength="1"
+        min="1"
+        maxlength="100"
+        placeholder="Please input"
+        show-word-limit
+        type="textarea"
         @input="handleFieldUpdate('title', localSettings.title)"
       />
     </div>
   </template>
-  
-<template v-if="currentNode?.settings?.editor">
+
+  <template v-if="currentNode?.settings?.editor">
     <div class="field-item">
       <span class="field-label">文本：</span>
       <div :id="'editor_' + currentNode.id"></div>
-      <!-- <el-input
-        v-model="localSettings.editor"
-        style="width: 240px"
-        @input="handleFieldUpdate('editor', localSettings.editor)"
-      /> -->
     </div>
   </template>
   <template v-if="currentNode?.elements?.length">
@@ -34,8 +34,8 @@
 </template>
 <script setup>
 import { ref, watch, onMounted } from "vue";
-import Quill from 'quill';
-import 'quill/dist/quill.snow.css';
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 import DataExtractor from "@/components/DataExtractor.vue";
 
 const props = defineProps({
@@ -49,24 +49,23 @@ const props = defineProps({
 onMounted(() => {
   if (props.currentNode?.settings?.editor) {
     const quill = new Quill(`#editor_${props.currentNode.id}`, {
-  modules: {
-    toolbar: [
-      [{ header: [1, 2, false] }],
-      ['bold', 'italic', 'underline'],
-      ['image', 'code-block']
-    ]
-  },
-  placeholder: 'Compose an epic...',
-  theme: 'snow'  // or 'bubble'
-});
+      modules: {
+        toolbar: [
+          [{ header: [1, 2, 3, 4, 5, 6, false] }],
+          ["bold", "italic", "underline", "link", "color"],
+          [{ indent: "-1" }, { indent: "+1" }],
+          [{ list: "ordered" }, { list: "bullet" }],
+        ],
+      },
+      placeholder: "请输入文案",
+      theme: "snow", // or 'bubble'
+    });
     quill.root.innerHTML = props.currentNode.settings.editor;
-    quill.on('text-change', () => {
-      handleFieldUpdate('editor', quill.root.innerHTML);
+    quill.on("text-change", () => {
+      handleFieldUpdate("editor", quill.root.innerHTML);
     });
   }
 });
-
-
 
 const emit = defineEmits(["update:node"]);
 

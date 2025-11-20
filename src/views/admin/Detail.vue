@@ -6,14 +6,12 @@
       v-for="page in pageList"
       :key="page.id"
     >
-      <!-- <keep-alive> -->
-        <TW :pageId="page.id" />
-      <!-- </keep-alive> -->
+      <TW :pageId="page.id" />
     </el-tab-pane>
   </el-tabs>
 </template>
 <script setup>
-import { ref, reactive, onMounted, watch } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { getPages } from "@/apis/wp.js";
 import TW from "@/components/TW.vue";
 

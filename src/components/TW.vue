@@ -1,18 +1,15 @@
 <template>
-  <div
-    style="
-      display: flex;
-      justify-content: space-between;
-      align-items: stretch;
-      height: 100%;
-    "
-  >
-    <div style="width: 50%; background-color: bisque; align-self: stretch">
-      图片
-    </div>
-    <div style="width: 50%; align-self: stretch">
+  <div class="flex justify-between gap-4 px-10 py-10">
+    <div class="w-1/2 __border-shadow">
       <div v-if="state?.pageId">
-        <div v-for="(part, index) in state.pageData" :key="index">
+        <div v-for="(part, index) in state.pageData" :key="index" class="mb-4">
+          <el-image src="/src/assets/place.webp" />
+        </div>
+      </div>
+    </div>
+    <div class="w-1/2 __border-shadow">
+      <div v-if="state?.pageId">
+        <div v-for="(part, index) in state.pageData" :key="index" class="mb-4">
           <el-card>
             <template #header>
               <div class="card-header">
@@ -32,7 +29,7 @@
           </el-card>
         </div>
       </div>
-      <div v-else>非Elementor</div>
+      <el-empty description="非Elementor" v-else />
     </div>
   </div>
   <div style="display: flex; justify-content: center; margin-top: 30px">
@@ -95,7 +92,7 @@ async function handleSave() {
 }
 
 async function handleReset() {
- const res = await updatePageById({
+  const res = await updatePageById({
     meta_value: state.originStr,
     post_id: state.Number(state.pageId),
   });
