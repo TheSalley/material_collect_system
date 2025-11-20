@@ -1,6 +1,6 @@
 const config = {
-  // baseUrl: 'http://localhost:8008',
-  baseUrl: "http://192.168.110.27:8008",
+  baseUrl: 'http://localhost:8008',
+  // baseUrl: "http://192.168.110.27:8008",
 };
 
 export const getPages = async () => {
@@ -25,6 +25,12 @@ export const updatePageById = async (payload) => {
       ...payload
     }),
   });
+  const data = await res.json();
+  return data;
+};
+
+export const getList = async () => {
+  const res = await fetch(config.baseUrl + "/list");
   const data = await res.json();
   return data;
 };

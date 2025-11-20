@@ -9,6 +9,18 @@
       />
     </div>
   </template>
+  
+<template v-if="currentNode?.settings?.editor">
+    <div class="field-item">
+      <span class="field-label">文本：</span>
+      <div :id="'editor_' + currentNode.id"></div>
+      <!-- <el-input
+        v-model="localSettings.editor"
+        style="width: 240px"
+        @input="handleFieldUpdate('editor', localSettings.editor)"
+      /> -->
+    </div>
+  </template>
   <template v-if="currentNode?.elements?.length">
     <div class="child-nodes">
       <DataExtractor
@@ -21,7 +33,10 @@
   </template>
 </template>
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
+import Quill from 'quill';
+import 'quill/dist/quill.snow.css';
+import DataExtractor from "@/components/DataExtractor.vue";
 
 const props = defineProps({
   currentNode: {
@@ -30,6 +45,28 @@ const props = defineProps({
     default: () => ({}),
   },
 });
+
+onMounted(() => {
+  if (props.currentNode?.settings?.editor) {
+    const quill = new Quill(`#editor_${props.currentNode.id}`, {
+  modules: {
+    toolbar: [
+      [{ header: [1, 2, false] }],
+      ['bold', 'italic', 'underline'],
+      ['image', 'code-block']
+    ]
+  },
+  placeholder: 'Compose an epic...',
+  theme: 'snow'  // or 'bubble'
+});
+    quill.root.innerHTML = props.currentNode.settings.editor;
+    quill.on('text-change', () => {
+      handleFieldUpdate('editor', quill.root.innerHTML);
+    });
+  }
+});
+
+
 
 const emit = defineEmits(["update:node"]);
 

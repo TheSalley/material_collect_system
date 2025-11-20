@@ -1,9 +1,9 @@
 <template>
     <el-table :data="tableData" border height="550" style="width: 100%">
         <el-table-column prop="id" label="ID" width="180" />
-        <el-table-column prop="name" label="客户名称" width="180" />
+        <el-table-column prop="username" label="客户名称" width="180" />
         <el-table-column prop="demo" label="demo 名称" width="180" />
-        <el-table-column prop="url" label="网址" />
+        <el-table-column prop="website" label="网址" />
         <el-table-column prop="status" label="状态" width="180" />
         <el-table-column fixed="right" label="操作" min-width="120">
             <template #default="scope">
@@ -14,28 +14,18 @@
 </template>
 <script setup>
 import { reactive, onMounted } from 'vue';
-import { getPages } from '@/apis/index.js';
+import { getList } from '@/apis/index.js';
 import { useRouter } from 'vue-router';
 
-const tableData = reactive([
-    {
-        id: '1',
-        name: 'Faiz',
-        demo: 'demo64',
-        status: 2,
-        url: 'http://localhost',
-    }
-]);
+const tableData = reactive([]);
 
 let pageList = reactive([]);
 
 const router = useRouter();
 
 onMounted(async () => {
-    const pages = await getPages();
-    console.log(pages);
-    pageList.push(...pages);
-
+   const list = await getList();
+   tableData.push(...list);
 });
 
 
