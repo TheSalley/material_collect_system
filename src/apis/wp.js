@@ -1,7 +1,7 @@
 const config = {
   // baseUrl: 'http://localhost:8008', // 本机node
-  baseUrl: "http://192.168.110.45/wp-json/custom-db-api/v1", // mac 公司
-  // baseUrl: "http://localhost/wp-json/custom-db-api/v1", // mac 本机
+  // baseUrl: "http://192.168.110.45/wp-json/custom-db-api/v1", // mac 公司
+  baseUrl: "http://192.168.110.27/wp-json/custom-db-api/v1", // 本机
 };
 
 /**

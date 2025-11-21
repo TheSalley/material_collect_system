@@ -53,7 +53,8 @@ onMounted(() => {
       modules: {
         toolbar: [
           [{ header: [1, 2, 3, 4, 5, 6, false] }],
-          ["bold", "italic", "underline", "link", "color"],
+          ["bold", "italic", "underline", "link"],
+          [{ color: []}],
           [{ indent: "-1" }, { indent: "+1" }],
           [{ list: "ordered" }, { list: "bullet" }],
         ],
