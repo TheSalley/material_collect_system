@@ -16,7 +16,7 @@ import { getPages } from "@/apis/wp.js";
 import TW from "@/components/TW.vue";
 
 let pageList = reactive([]);
-const activePage = ref("a-test");
+const activePage = ref("test");
 
 onMounted(async () => {
   const res = await getPages();

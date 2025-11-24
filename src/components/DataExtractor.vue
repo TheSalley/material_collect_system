@@ -15,12 +15,29 @@
     </div>
   </template>
 
-  <template v-if="currentNode?.settings?.editor">
+  <template v-if="currentNode?.widgetType === 'text-editor'">
     <div class="field-item">
       <span class="field-label">文本：</span>
       <div :id="'editor_' + currentNode.id" class="min-h-[300px]"></div>
     </div>
   </template>
+
+  <!-- 图片 -->
+  <template v-if="currentNode?.widgetType === 'image'">
+    <el-upload
+      v-model:file-list="fileList"
+      class="upload-demo"
+      action="http://192.168.110.27/wp-json/custom-db-api/v1/upload_files"
+    >
+      <el-button type="primary">Click to upload</el-button>
+      <template #tip>
+        <div class="el-upload__tip">
+          jpg/png files with a size less than 500KB.
+        </div>
+      </template>
+    </el-upload>
+  </template>
+
   <template v-if="currentNode?.elements?.length">
     <div class="child-nodes">
       <DataExtractor
@@ -46,6 +63,9 @@ const props = defineProps({
   },
 });
 
+
+const fileList = ref([]);
+
 onMounted(() => {
   if (props.currentNode?.settings?.editor) {
     const quill = new Quill(`#editor_${props.currentNode.id}`, {
@@ -54,7 +74,7 @@ onMounted(() => {
         toolbar: [
           [{ header: [1, 2, 3, 4, 5, 6, false] }],
           ["bold", "italic", "underline", "link"],
-          [{ color: []}],
+          [{ color: [] }],
           [{ indent: "-1" }, { indent: "+1" }],
           [{ list: "ordered" }, { list: "bullet" }],
         ],
