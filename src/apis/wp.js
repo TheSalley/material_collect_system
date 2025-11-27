@@ -8,7 +8,7 @@ const config = {
  *
  * 登录
  */
-export const wp_login = async (payload) => {
+export const wp_login = async (domain, payload) => {
   const res = await fetch(config.baseUrl + "/login", {
     method: "POST",
     headers: {

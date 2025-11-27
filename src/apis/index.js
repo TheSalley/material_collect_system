@@ -1,7 +1,5 @@
 const config = {
-  baseUrl: 'http://localhost:8008',
-  // baseUrl: "http://192.168.110.27:8008",
-  // baseUrl: "http://192.168.110.45:8008",
+  baseUrl: "http://120.55.2.201:8008",
 };
 
 export const getPages = async () => {
@@ -23,7 +21,7 @@ export const updatePageById = async (payload) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      ...payload
+      ...payload,
     }),
   });
   const data = await res.json();

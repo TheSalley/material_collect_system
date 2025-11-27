@@ -23,7 +23,6 @@ const routes = [
     ],
   },
   {
-    path: "/admin",
     meta: { requiresAuth: true }, 
     path: "/customer",
     component: () => import("@/layout/index.vue"),
