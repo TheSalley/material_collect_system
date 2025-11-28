@@ -12,6 +12,7 @@
         type="textarea"
         @input="handleFieldUpdate('title', localSettings.title)"
       />
+      <p>{{ localSettings.title }}</p>
     </div>
   </template>
 
@@ -27,7 +28,7 @@
     <el-upload
       v-model:file-list="fileList"
       class="upload-demo"
-      action="http://192.168.110.27/wp-json/custom-db-api/v1/upload_files"
+      action="http://localhost/wp-json/custom-db-api/v1/upload_files"
     >
       <el-button type="primary">Click to upload</el-button>
       <template #tip>
