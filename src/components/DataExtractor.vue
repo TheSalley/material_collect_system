@@ -28,6 +28,7 @@
       v-model:file-list="fileList"
       class="upload-demo"
       action="http://192.168.110.27/wp-json/custom-db-api/v1/upload_files"
+      :on-success="handleFileUpload"
     >
       <el-button type="primary">Click to upload</el-button>
       <template #tip>
@@ -62,7 +63,6 @@ const props = defineProps({
     default: () => ({}),
   },
 });
-
 
 const fileList = ref([]);
 
@@ -119,4 +119,19 @@ const handleChildUpdate = (childIndex, updatedChild) => {
   const updatedNode = { ...props.currentNode, elements: updatedElements };
   emit("update:node", updatedNode);
 };
+
+
+const handleFileUpload = (res, file, files) => {
+  // console.log('@@@123', res, file, files);
+  if(res.code === 0 && res.data[0].success) {
+    console.log(res.data[0].data.url);
+    let tempSetting = {
+      ...localSettings.value.image,
+      url: res.data[0].data.url
+    }
+    console.log('123456', localSettings.value)
+    console.log('123456', tempSetting)
+    handleFieldUpdate('image', tempSetting);
+  }
+}
 </script>
