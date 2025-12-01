@@ -28,7 +28,7 @@ import { useGlobalStore } from "@/stores/global";
 
 
 const router = useRouter();
-const globalStore = useGlobalStore();
+const { clearUser } = useGlobalStore();
 const username = ref("Admin")
 
 const { isActive = false } = defineProps({
@@ -50,7 +50,7 @@ function logout() {
     ElMessage.success("退出成功");
 
     //  1. 清空 Pinia 全局用户状态
-    globalStore.user = { username: "", token: "", isLogin: false };
+    clearUser();
 
     //  2. 清空localStorage
     sessionStorage.clear();      

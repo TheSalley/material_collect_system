@@ -3,7 +3,7 @@
         <el-table-column prop="id" label="ID" width="180" />
         <el-table-column prop="username" label="客户名称" width="180" />
         <el-table-column prop="demo" label="demo 名称" width="180" />
-        <el-table-column prop="website" label="网址" />
+        <el-table-column prop="url" label="网址" />
         <el-table-column prop="status" label="状态" width="180" />
         <el-table-column fixed="right" label="操作" min-width="120">
             <template #default="scope">
@@ -24,8 +24,10 @@ let pageList = reactive([]);
 const router = useRouter();
 
 onMounted(async () => {
-   const list = await getList();
-   tableData.push(...list);
+   const res = await getList();
+   if(res.code === 0) {
+    tableData.push(...res.data);
+   }
 });
 
 

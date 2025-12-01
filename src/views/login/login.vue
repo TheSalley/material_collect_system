@@ -4,28 +4,17 @@
       <div class="login-logo">
         <img src="/logo.svg" alt="" />
       </div>
-
       <div class="login-title">
         <h1>素材收集系统</h1>
       </div>
-
       <div class="login-form">
-        <el-form
-          :rules="rules"
-          ref="loginForm"
-          :model="form"
-          label-width="100px"
-        >
+        <el-form :rules="rules" ref="loginForm" :model="form" label-width="100px">
           <el-form-item label="用户名" prop="username">
             <el-input v-model="form.username" placeholder="请输入用户名" />
           </el-form-item>
 
           <el-form-item label="密码" prop="password">
-            <el-input
-              type="password"
-              v-model="form.password"
-              placeholder="请输入密码"
-            />
+            <el-input type="password" v-model="form.password" placeholder="请输入密码" />
           </el-form-item>
 
           <el-form-item>
@@ -40,7 +29,7 @@
 
 <script setup>
 import { ref } from "vue";
-import { wp_login } from "@/apis/wp.js";
+import { login } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
 import "element-plus/theme-chalk/el-message.css";
@@ -73,37 +62,23 @@ const handleLogin = async () => {
       ElMessage.error("请正确填写用户名和密码");
       return;
     }
-    const res = await wp_login({
+    const res = await login({
       username: form.value.username,
       password: form.value.password,
     });
-    console.log("login: ", res);
     if (res.code === 0) {
-      globalStore.user.username = form.value.username;
-      globalStore.user.token = "mock-token-" + Date.now();
-      globalStore.user.isLogin = true;
+      globalStore.user = res.data.user;
+      globalStore.token = res.data.token;
+      globalStore.isLogin = true;
       ElMessage.success("登录成功");
       router.push("/list");
     } else {
-      ElMessageBox.alert("用户名或密码错误", "提示：", {
+      ElMessageBox.alert(res.message, "提示：", {
         confirmButtonText: "OK",
         callback: () => {
           loginForm.value.resetFields();
         },
       });
-    }
-    return;
-
-    // 模拟登录成功逻辑,等有接口时调用接口，拿到返回参数再进行router跳转
-    if (form.value.username === "admin" && form.value.password === "123456") {
-      globalStore.user.username = form.value.username;
-      globalStore.user.token = "mock-token-" + Date.now();
-      globalStore.user.isLogin = true;
-
-      ElMessage.success("登录成功");
-      router.push("/list");
-    } else {
-      // ElMessage.error("用户名或密码错误");
     }
   });
 };
@@ -161,6 +136,7 @@ const resetForm = () => {
   width: 50%;
   margin: auto;
 }
+
 :deep(.el-form-item__label) {
   color: #ffffff;
 }
@@ -170,9 +146,11 @@ const resetForm = () => {
     width: 80vw;
     padding: 100px 20px;
   }
+
   .login-logo img {
     width: 100%;
   }
+
   .login-form {
     width: 100%;
     margin: auto;
