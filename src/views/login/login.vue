@@ -32,6 +32,7 @@ import { ref } from "vue";
 import { login } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
+import { addProtectedRoutes } from "@/utils"
 import "element-plus/theme-chalk/el-message.css";
 import "element-plus/theme-chalk/el-message-box.css";
 
@@ -71,6 +72,7 @@ const handleLogin = async () => {
       globalStore.token = res.data.token;
       globalStore.isLogin = true;
       ElMessage.success("登录成功");
+      addProtectedRoutes(res.data.user.role);
       router.push("/list");
     } else {
       ElMessageBox.alert(res.message, "提示：", {

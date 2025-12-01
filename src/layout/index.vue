@@ -1,10 +1,11 @@
 <template>
-  <div class="app-wrapper">
-    <SideBar class="sidebar-container" />
+  <div class="app-wrapper flex min-h-screen">
+    <!-- <SideBar class="sidebar-container" /> -->
+    <SideBar />
     <div class="main-container">
-      <div class="fixed-header layout-header">
+      <!-- <div class="fixed-header layout-header">
         <NavigationBar />
-      </div>
+      </div> -->
       <AppMain class="app-main" />
     </div>
   </div>

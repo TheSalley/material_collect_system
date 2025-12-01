@@ -15,7 +15,13 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    tailwindcss(),
+    tailwindcss({
+      colors: {
+        primary: "#2b7cee",
+        "background-light": "#f6f7f8",
+        "background-dark": "#101822",
+      },
+    }),
     AutoImport({
       resolvers: [ElementPlusResolver()],
     }),
