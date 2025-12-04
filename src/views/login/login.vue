@@ -73,7 +73,7 @@ const handleLogin = async () => {
       globalStore.isLogin = true;
       ElMessage.success("登录成功");
       addProtectedRoutes(res.data.user.role);
-      router.push("/list");
+      router.push("/");
     } else {
       ElMessageBox.alert(res.message, "提示：", {
         confirmButtonText: "OK",

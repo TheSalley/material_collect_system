@@ -8,16 +8,16 @@ const publicRoutes = [
     name: "Login",
     component: () => import("@/views/login/login.vue"),
     meta: {
-      hidden: true
-    }
+      hidden: true,
+    },
   },
   {
     path: "/:pathMatch(.*)*",
     name: "NotFound",
     component: () => import("@/views/404.vue"),
     meta: {
-      hidden: true
-    }
+      hidden: true,
+    },
   },
 ];
 
@@ -25,26 +25,20 @@ const publicRoutes = [
 const adminRoutes = [
   {
     path: "/",
-    meta: { requiresAuth: true, role: 'administrator' }, // 标记角色
+    meta: { requiresAuth: true, role: "administrator", hidden: true },
     component: () => import("@/layout/index.vue"),
     children: [
       {
-        path: "list",
-        name: "AdminList", // 唯一名称
+        path: "",
+        name: "AdminList",
         component: () => import("@/views/admin/List.vue"),
-        meta: { title: "列表页" }
+        meta: { title: "客户管理" },
       },
       {
         path: "detail",
         name: "AdminDetail",
         component: () => import("@/views/admin/Detail.vue"),
-        meta: { title: "详情页" }
-      },
-      {
-        path: "elementor",
-        name: "AdminElementor",
-        component: () => import("@/views/elementor/index.vue"),
-        meta: { title: "Elementor页" }
+        meta: { title: "详情页", hidden: true },
       },
     ],
   },
@@ -55,20 +49,20 @@ const userRoutes = [
   {
     path: "/",
     name: "Customer",
-    meta: { requiresAuth: true, role: 'customer' },
+    meta: { requiresAuth: true, role: "customer", hidden: true },
     component: () => import("@/layout/index.vue"),
     children: [
       {
-        path: "list",
+        path: "",
         name: "CustomerHome",
         component: () => import("@/views/customer/index.vue"),
-        meta: { title: "用户首页" }
+        meta: { title: "网站信息" },
       },
       {
         path: "pages",
         name: "CustomerPages",
         component: () => import("@/views/customer/index.vue"),
-        meta: { title: "用户页面" }
+        meta: { title: "页面列表" },
       },
     ],
   },
@@ -125,4 +119,4 @@ router.beforeEach(async (to, from, next) => {
 });
 
 export default router;
-export { adminRoutes, userRoutes };
+export { adminRoutes, userRoutes, publicRoutes };

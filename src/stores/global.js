@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { resetRoutes } from "@/utils/"
 
 export const useGlobalStore = defineStore(
   "global",
@@ -13,6 +14,7 @@ export const useGlobalStore = defineStore(
       user.value = null;
       token.value = "";
       isLogin.value = false;
+      resetRoutes();
     }
 
     const websiteInfo = ref(null);
