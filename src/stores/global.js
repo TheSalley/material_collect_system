@@ -15,7 +15,13 @@ export const useGlobalStore = defineStore(
       isLogin.value = false;
     }
 
-    return { user, token, isLogin, clearUser };
+    const websiteInfo = ref(null);
+    
+    function setWebsiteInfo(data) {
+      websiteInfo.value = data;
+    }
+
+    return { user, token, isLogin, clearUser, websiteInfo, setWebsiteInfo };
   },
   { persist: true }
 );

@@ -12,7 +12,7 @@
 </template>
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import { getPages } from "@/apis/wp.js";
+import { getPages } from "@/apis/index.js";
 import TW from "@/components/TW.vue";
 
 let pageList = reactive([]);

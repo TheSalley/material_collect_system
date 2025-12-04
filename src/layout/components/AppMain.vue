@@ -1,8 +1,6 @@
 <template>
   <section class="app-main">
-    <div class="app-scrollbar">
       <router-view></router-view>
-    </div>
     <el-backtop />
   </section>
 </template>
@@ -13,10 +11,10 @@
 }
 
 .app-scrollbar {
-  flex-grow: 1;
+  /* flex-grow: 1;
   overflow: auto;
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 20px; */
 }
 </style>

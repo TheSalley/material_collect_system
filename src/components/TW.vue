@@ -39,7 +39,7 @@
 </template>
 <script setup>
 import { reactive, onMounted } from "vue";
-import { getPageById, updatePageById } from "@/apis/wp.js";
+import { getPageById, updatePageById } from "@/apis/index.js";
 import DataExtractor from "./DataExtractor.vue";
 
 const props = defineProps({
