@@ -24,10 +24,13 @@
           </el-menu-item>
         </el-menu> -->
         <router-link
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#111418] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" v-for="route in accessibleRoutes"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#111418] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          v-for="route in accessibleRoutes"
           :to="route.path"
         >
-          <p class="text-sm font-medium leading-normal">{{ route.meta.title }}</p>
+          <p class="text-sm font-medium leading-normal">
+            {{ route.meta.title }}
+          </p>
         </router-link>
       </div>
       <!-- 底部 -->
@@ -58,7 +61,7 @@
         <a
           class="flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
           href="#"
-          @click="clearUser"
+          @click="logout"
         >
           <svg
             width="24"
@@ -104,26 +107,31 @@ import { useRouter } from "vue-router";
 const { user, clearUser } = useGlobalStore();
 const router = useRouter();
 
-
 // 递归过滤路由：只保留非 hidden 的路由，且处理嵌套层级
 function filterAccessibleRoutes(routes) {
-  return routes
-    .filter(route => {
-      // 过滤掉 hidden 为 true 的路由
-      if (route.meta?.hidden) return false;
-      // 若有子路由，递归过滤子路由
-      if (route.children && route.children.length) {
-        route.children = filterAccessibleRoutes(route.children);
-        // 若子路由过滤后为空，且当前路由是布局路由，也过滤掉
-        if (route.children.length === 0 && route.meta?.isLayout) return false;
-      }
-      return true;
-    });
+  return routes.filter((route) => {
+    // 过滤掉 hidden 为 true 的路由
+    if (route.meta?.hidden) return false;
+    // 若有子路由，递归过滤子路由
+    if (route.children && route.children.length) {
+      route.children = filterAccessibleRoutes(route.children);
+      // 若子路由过滤后为空，且当前路由是布局路由，也过滤掉
+      if (route.children.length === 0 && route.meta?.isLayout) return false;
+    }
+    return true;
+  });
 }
 
 const accessibleRoutes = computed(() => {
   return filterAccessibleRoutes(router.getRoutes());
 });
+
+function logout() {
+  clearUser();
+  router.push({
+    path: "/login",
+  });
+}
 </script>
 <style scoped>
 .aside-container {

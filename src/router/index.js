@@ -61,7 +61,7 @@ const userRoutes = [
       {
         path: "pages",
         name: "CustomerPages",
-        component: () => import("@/views/customer/index.vue"),
+        component: () => import("@/views/customer/Pages.vue"),
         meta: { title: "页面列表" },
       },
     ],
@@ -99,13 +99,13 @@ router.beforeEach(async (to, from, next) => {
       isDynamicRoutesAdded = true;
 
       // 关键：如果访问的是根路径（/），自动跳角色首页（避免404）
-      const targetPath =
-        to.path === "/"
-          ? user.role === "administrator"
-            ? "/list"
-            : "/customer"
-          : to.path;
-      next({ path: targetPath, replace: true });
+      // const targetPath =
+      //   to.path === "/"
+      //     ? user.role === "administrator"
+      //       ? "/list"
+      //       : "/customer"
+      //     : to.path;
+      next({ path: "/", replace: true });
       return;
     } catch (err) {
       console.error("添加路由失败：", err);
