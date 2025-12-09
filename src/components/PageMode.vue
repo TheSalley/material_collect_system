@@ -1,11 +1,22 @@
 <template>
   <div class="flex justify-between gap-4 px-10 py-10">
-    <div class="w-1/2 __border-shadow">
-      <el-empty description="未上传截图" />
+    <div class="w-1/2 __border-shadow sticky top-0 h-fit">
+      <el-button
+        class="absolute right-0 top-0"
+        type="primary"
+        @click="dialogVisible = true"
+        >上传截图</el-button
+      >
+      <img :src="pagePic.file_url" alt="page picture" v-if="pagePic" />
+      <el-empty v-else description="未上传截图" />
     </div>
     <div class="w-1/2 __border-shadow">
       <div v-if="state?.pageId">
-        <div v-for="(part, index) in state.pageData" :key="index" class="mb-4">
+        <div
+          v-for="(part, index) in state.originData"
+          :key="index"
+          class="mb-4"
+        >
           <el-card>
             <template #header>
               <div class="card-header">
@@ -13,7 +24,6 @@
               </div>
             </template>
             <div v-for="(topNode, index1) in part.elements" :key="topNode.id">
-              <div>顶层节点（{{ topNode.elType }} - {{ topNode.id }}）</div>
               <DataExtractor
                 :current-node="topNode"
                 @update:node="
@@ -31,11 +41,44 @@
   <div style="display: flex; justify-content: center; margin-top: 30px">
     <el-button type="primary" @click="handleSave">保存</el-button>
   </div>
+
+  <el-dialog v-model="dialogVisible" title="图片上传" width="800">
+    <el-upload
+      class="upload-demo"
+      drag
+      action="#"
+      :before-upload="handleBeforeUpload"
+    >
+      <el-icon class="el-icon--upload">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+          <path
+            fill="currentColor"
+            d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.87 239.87 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6z"
+          ></path>
+        </svg>
+      </el-icon>
+      <div class="el-upload__text">拖动文件或<em>点击上传</em></div>
+      <template #tip>
+        <div class="el-upload__tip">
+          jpg/png files with a size less than 10M
+        </div>
+      </template>
+    </el-upload>
+  </el-dialog>
 </template>
 <script setup>
-import { reactive, onMounted } from "vue";
-import { getPageById, updatePageById } from "@/apis/index.js";
+import { ref, reactive, onMounted, nextTick, watch } from "vue";
+import {
+  getPageById,
+  updatePageById,
+  upload_bind_img,
+  get_bind_img,
+} from "@/apis/index.js";
 import DataExtractor from "./DataExtractor.vue";
+import { useGlobalStore } from "@/stores/global";
+
+const dialogVisible = ref(false);
+const pagePic = ref(null);
 
 const props = defineProps({
   pageId: {
@@ -46,21 +89,13 @@ const props = defineProps({
 
 const state = reactive({
   pageData: null,
+  originData: null,
   pageId: null,
   meta_id: null,
   ImageList: [],
-  originStr: "",
 });
 
-onMounted(async () => {
-  const page = await getPageById(props.pageId);
-  if (page.code === 0 && page.data.post_id) {
-    state.pageId = page.data.post_id;
-    state.pageData = JSON.parse(page.data.meta_value);
-    state.originStr = page.data.meta_value;
-    state.meta_id = page.data.meta_id;
-  }
-});
+onMounted(async () => {});
 
 async function handleSave() {
   console.log("@@@", state.pageData);
@@ -70,26 +105,8 @@ async function handleSave() {
   // str = str.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   // console.log("strstr :", str);
   const res = await updatePageById({
-    meta_value: str,
-    post_id: Number(state.pageId),
-  });
-  if (res.code === 0) {
-    ElMessage({
-      message: "保存成功",
-      type: "success",
-    });
-  } else {
-    ElMessage({
-      message: "保存失败",
-      type: "error",
-    });
-  }
-}
-
-async function handleReset() {
-  const res = await updatePageById({
-    meta_value: state.originStr,
-    post_id: state.Number(state.pageId),
+    // meta_value: str,
+    // post_id: Number(state.pageId),
   });
   if (res.code === 0) {
     ElMessage({
@@ -114,66 +131,73 @@ function handleNodeUpdate(index, index1, updatedNode) {
   // () => (part.elements[index] = updatedNode)
 }
 
-/**
- * 将修改后的 Elementor 数据转换为其兼容的格式
- * @param {Array} data - 你的修改后数据（必须是数组，如 [{"id":"f489a6c",...}]）
- * @returns {string} 符合 Elementor 要求的 JSON 字符串（可直接存储到 _elementor_data）
- */
-function convertToElementorFormat(data) {
-  try {
-    // 1. 基础校验：确保是数组（Elementor 数据必须用数组包裹）
-    if (!Array.isArray(data)) {
-      throw new Error("数据必须是数组格式（Elementor 要求外层为数组）");
-    }
+const handleBeforeUpload = (file) => {
+  const isImage = file.type === "image/jpeg" || file.type === "image/png";
+  const isLt10M = file.size / 1024 / 1024 < 10;
 
-    // 2. 深拷贝数据，避免修改原对象
-    const clonedData = JSON.parse(JSON.stringify(data));
-
-    // 3. 递归处理所有节点，修复常见格式问题
-    const processNode = (node) => {
-      // 3.1 校验核心字段（Elementor 必须字段）
-      if (!node.id || !node.elType) {
-        throw new Error(
-          `节点缺少必要字段（id 或 elType）：${JSON.stringify(node)}`
-        );
-      }
-
-      // 3.2 处理 settings 字段（确保是对象，避免 null/undefined）
-      if (node.settings === null || typeof node.settings !== "object") {
-        node.settings = {};
-      }
-
-      // 3.3 处理 elements 数组（确保是数组，递归处理子节点）
-      if (!Array.isArray(node.elements)) {
-        node.elements = []; // 若不是数组，强制转为空数组
-      } else {
-        // 递归处理子节点，同时去除数组末尾可能的空元素
-        node.elements = node.elements
-          .filter((el) => el !== null && typeof el === "object") // 过滤无效元素
-          .map((child) => processNode(child)); // 递归处理每个子节点
-      }
-
-      // 3.4 特殊字段处理（如 isInner 必须是布尔值）
-      if (node.isInner !== undefined && typeof node.isInner !== "boolean") {
-        node.isInner = false; // 默认为 false
-      }
-
-      return node;
-    };
-
-    // 4. 处理顶层数组中的所有节点
-    const processedData = clonedData.map((node) => processNode(node));
-
-    // 5. 序列化为 JSON 字符串（确保无语法错误）
-    const jsonStr = JSON.stringify(processedData);
-
-    // 6. 最终校验：确保序列化后的字符串可被解析（避免隐形错误）
-    JSON.parse(jsonStr);
-
-    return jsonStr;
-  } catch (error) {
-    console.error("转换为 Elementor 格式失败：", error.message);
-    return null; // 转换失败返回 null
+  if (!isImage) {
+    ElMessage.error("仅支持上传 jpg/png 格式的图片！");
+    return false;
   }
-}
+  if (!isLt10M) {
+    ElMessage.error("图片大小不能超过 10MB!");
+    return false;
+  }
+  customUpload(file);
+  return false;
+};
+
+const customUpload = async (file) => {
+  try {
+    const { user } = useGlobalStore();
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("demo", user.demo);
+    formData.append("bind_mode", user.mode);
+    formData.append("bind_id", props.pageId);
+
+    const res = await upload_bind_img(formData);
+
+    if (res.code === 0) {
+      pagePic.value = res.data;
+      ElMessage.success("图片上传成功！");
+      dialogVisible.value = false;
+    } else {
+      ElMessage.error("上传失败：" + res.message);
+    }
+  } catch (err) {
+    ElMessage.error("上传失败：" + err.message);
+  }
+};
+
+watch(
+  () => props.pageId,
+  async (newId, oldId) => {
+    if (newId) {
+      const loadingInstance = ElLoading.service({ fullscreen: true });
+      const { user } = useGlobalStore();
+      const [res1, res2] = await Promise.all([
+        getPageById(props.pageId),
+        get_bind_img(user.demo, props.pageId, user.mode),
+      ]);
+      if (res1.code === 0 && res1.data.post_id) {
+        state.pageId = res1.data.post_id;
+        state.pageData = JSON.parse(res1.data.meta_value);
+        state.originData = JSON.parse(res1.data.meta_value);
+        state.meta_id = res1.data.meta_id;
+      }
+      if (res2.code === 0) {
+        pagePic.value = res2.data;
+      }
+      nextTick(() => {
+        loadingInstance.close();
+      });
+    }
+  },
+  { immediate: true }
+);
+
+defineExpose({
+  state,
+});
 </script>

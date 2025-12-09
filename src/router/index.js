@@ -59,7 +59,7 @@ const userRoutes = [
         meta: { title: "网站信息" },
       },
       {
-        path: "pages",
+        path: "pages/:id",
         name: "CustomerPages",
         component: () => import("@/views/customer/Pages.vue"),
         meta: { title: "页面列表" },

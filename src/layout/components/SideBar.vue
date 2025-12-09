@@ -1,11 +1,4 @@
 <template>
-  <!-- <div class="aside-container">
-    <a href='/'><img class="logo" src="/logo.svg" /></a>
-    <el-menu router default-active="1" class="flex-1">
-      <el-menu-item index="1" route="/list">管理</el-menu-item>
-      <el-menu-item index="2" route="/customer">客户</el-menu-item>
-    </el-menu>
-  </div> -->
   <div
     class="flex flex-col gap-4 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark p-4 w-64"
   >
@@ -14,24 +7,26 @@
     </div>
     <div class="flex flex-col justify-between flex-grow">
       <div class="flex flex-col gap-2">
-        <!-- <el-menu>
-          <el-menu-item
-            v-for="route in accessibleRoutes"
-            :key="route.name"
-            :index="route.path"
-          >
-            {{ route.meta.title }}
-          </el-menu-item>
-        </el-menu> -->
-        <router-link
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-[#111418] dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-          v-for="route in accessibleRoutes"
-          :to="route.path"
-        >
-          <p class="text-sm font-medium leading-normal">
-            {{ route.meta.title }}
-          </p>
-        </router-link>
+        <el-menu default-active="2" router>
+          <template v-for="route in accessibleRoutes" :key="route.path">
+            <el-sub-menu v-if="route.children.length" :index="route.path">
+              <template #title>
+                <el-icon><location /></el-icon>
+                <span>{{ route.meta.title }}</span>
+              </template>
+              <el-menu-item
+                v-for="sub_route in route.children"
+                :key="sub_route.id"
+                :index="route.path.split(':')[0] + sub_route.id"
+                >{{ sub_route.post_name }}</el-menu-item
+              >
+            </el-sub-menu>
+            <el-menu-item v-else :index="route.path">
+              <el-icon><icon-menu /></el-icon>
+              <span>{{ route.meta.title }}</span>
+            </el-menu-item>
+          </template>
+        </el-menu>
       </div>
       <!-- 底部 -->
       <div class="flex flex-col gap-1">
@@ -39,11 +34,7 @@
           class="flex gap-3 p-3 border-t border-gray-200 dark:border-gray-700 mt-4"
         >
           <div
-            class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
-            data-alt="Admin user avatar"
-            style="
-              background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuAPVU9SK3sLCsuplthRoWD5dusglvaFBWzz32Md0YHq8-7hh9vfF703BGRRAcapOr07yW229Ozt1WZSpKUlQYHa2FGDBS57t1nli_gOweXXza63gu4W7iocdyJB97rpDwanQ79_-FAGubt2GqqcfA9o9nEJyh9-NftxZEbiwx9sVAh5jZixIyONNuULQLC9pdH45WFuPVVxBC4aTg6oeg15eOZ3BRiK-37ChkCPCMt5D1qeDPjQCfGW34Z-U76ii1S_sGAuSVb1Bwwj&quot;);
-            "
+            class="__avator bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
           ></div>
           <div class="flex flex-col">
             <h1
@@ -103,6 +94,7 @@
 import { computed } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { useRouter } from "vue-router";
+import { resetRoutes } from "@/utils/index"
 
 const { user, clearUser } = useGlobalStore();
 const router = useRouter();
@@ -123,11 +115,26 @@ function filterAccessibleRoutes(routes) {
 }
 
 const accessibleRoutes = computed(() => {
-  return filterAccessibleRoutes(router.getRoutes());
+  console.log("@@@@ arr: ", router.getRoutes());
+  let arr = router.getRoutes().reverse().filter((item) => {
+    if (item.meta?.hidden) return false;
+    return true;
+  });
+  console.log("@@@@ arr: ", arr);
+  if (user.page_list) {
+    arr.forEach((item) => {
+      if (item.path === "/pages/:id") {
+        item.children = JSON.parse(user.page_list);
+      }
+    });
+    return arr;
+  }
+  return arr;
 });
 
-function logout() {
-  clearUser();
+async function logout() {
+  await clearUser();
+  await resetRoutes();
   router.push({
     path: "/login",
   });
@@ -154,5 +161,9 @@ function logout() {
 
 .el-menu-item:hover {
   color: #409eff;
+}
+
+.__avator {
+  background-image: url("@/assets/images/avator.png");
 }
 </style>

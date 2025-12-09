@@ -1,8 +1,8 @@
 <template>
-  <div class="app-wrapper flex min-h-screen">
+  <div class="app-wrapper flex h-screen">
     <!-- <SideBar class="sidebar-container" /> -->
     <SideBar />
-    <div class="flex-1 p-6 sm:p-8 md:p-10">
+    <div class="flex-1 p-6 sm:p-8 md:p-10 h-full">
       <!-- <div class="fixed-header layout-header">
         <NavigationBar />
       </div> -->

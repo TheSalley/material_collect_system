@@ -14,7 +14,6 @@ export const useGlobalStore = defineStore(
       user.value = null;
       token.value = "";
       isLogin.value = false;
-      resetRoutes();
     }
 
     const websiteInfo = ref(null);

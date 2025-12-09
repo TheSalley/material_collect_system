@@ -21,10 +21,13 @@ export function addProtectedRoutes(role) {
 
 // 重置路由
 export function resetRoutes() {
-  router.getRoutes().forEach((route) => {
-    if (route.name) router.removeRoute(route.name);
-  });
-  publicRoutes.forEach((route) => {
-    router.addRoute(route);
+  return new Promise((resolve) => {
+    router.getRoutes().forEach((route) => {
+      if (route.name) router.removeRoute(route.name);
+    });
+    publicRoutes.forEach((route) => {
+      router.addRoute(route);
+    });
+    resolve();
   });
 }

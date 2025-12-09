@@ -4,9 +4,8 @@ const config = {
   baseUrl: "http://120.55.2.201:8008",
 };
 
-
 /** *
- * 
+ *
  * 用户登录
  */
 export const login = async (payload) => {
@@ -19,15 +18,15 @@ export const login = async (payload) => {
   });
   const data = await res.json();
   return data;
-}
+};
 
-/** *
- * 
+/**
+ *
  * 获取Elementor 所有页面
  */
 export const getPages = async () => {
-  const { websiteInfo } = useGlobalStore();
-  const website = websiteInfo.url;
+  const { user } = useGlobalStore();
+  const website = user.url;
 
   const baseUrl = config.baseUrl + "/api/proxy";
   const parmas = {
@@ -39,42 +38,47 @@ export const getPages = async () => {
 
   const res = await fetch(urlObj.toString(), {
     headers: {
-      "website": website,
+      website: website,
     },
   });
   const data = await res.json();
   return data;
 };
 
+/**
+ *
+ * 获取Elementor 单页面数据
+ */
 export const getPageById = async (id) => {
-  const { websiteInfo } = useGlobalStore();
-  const website = websiteInfo.url;
+  const { user } = useGlobalStore();
+  const website = user.url;
 
-  const baseUrl = config.baseUrl + "/api/proxy";
-  const parmas = {
-    path: "elementor_data",
-    params: JSON.stringify({
-      id,
-    }),
-  };
-
-  const urlObj = new URL(baseUrl);
-  urlObj.search = new URLSearchParams(parmas).toString();
-
-  const res = await fetch(urlObj.toString(), {
-    headers: {
-      "website": website,
-    },
-  });
+  const res = await fetch(
+    config.baseUrl + `/api/proxy/elementor_data?id=${id}`,
+    {
+      headers: {
+        website: website,
+      },
+    }
+  );
   const data = await res.json();
   return data;
 };
 
+/**
+ *
+ * 更新Elementor 单页面数据
+ */
 export const updatePageById = async (payload) => {
-  const res = await fetch(config.baseUrl + `/update_elementor`, {
+  const { user } = useGlobalStore();
+  const website = user.url;
+
+  const res = await fetch(config.baseUrl + "/api/proxy/update_elementor_data", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${user.token}`,
+      website,
     },
     body: JSON.stringify({
       ...payload,
@@ -91,6 +95,43 @@ export const getList = async () => {
       Authorization: `Bearer ${globalStore.token}`,
     },
   });
+  const data = await res.json();
+  return data;
+};
+
+/**
+ *
+ * 上传并绑定图片
+ */
+export const upload_bind_img = async (formdata) => {
+  const globalStore = useGlobalStore();
+  const res = await fetch(config.baseUrl + "/api/file/upload", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${globalStore.token}`,
+    },
+    body: formdata,
+  });
+  const data = await res.json();
+  return data;
+};
+
+/**
+ *
+ * 获取绑定的图片
+ */
+export const get_bind_img = async (demo, bind_id, bind_mode) => {
+  const globalStore = useGlobalStore();
+  const res = await fetch(
+    config.baseUrl +
+      "/api/file/get" +
+      `?demo=${demo}&bind_id=${bind_id}&bind_mode=${bind_mode}`,
+    {
+      headers: {
+        Authorization: `Bearer ${globalStore.token}`,
+      },
+    }
+  );
   const data = await res.json();
   return data;
 };
