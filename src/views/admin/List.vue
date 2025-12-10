@@ -23,13 +23,13 @@
           </div>
         </div>
       </div>
-      <div class="overflow-x-auto">
-        <el-table :data="tableData" border height="350" style="width: 100%">
-          <el-table-column prop="id" label="ID" width="180" />
-          <el-table-column prop="username" label="客户名称" width="180" />
-          <el-table-column prop="demo" label="demo 名称" width="180" />
+      <div class="overflow-x-auto w-full">
+        <el-table :data="tableData" border height="350">
+          <el-table-column prop="id" label="ID" />
+          <el-table-column prop="username" label="客户名称"/>
+          <el-table-column prop="demo" label="demo 名称"/>
           <el-table-column prop="url" label="网址" width="180" />
-          <el-table-column prop="mode" label="模式" width="180">
+          <el-table-column prop="mode" label="模式">
             <template #default="scope">
               <el-tag>{{ scope.row.mode === 1 ? "组件" : "页面" }}</el-tag>
             </template>
@@ -132,6 +132,9 @@ const form = reactive({
 });
 
 async function onSubmit() {
+  if(form.url.endsWith('/')) {
+    return ElMessage.error("网址不能以斜杠结尾");
+  }
   const res = await updateUser({
     id: form.id,
     username: form.username,

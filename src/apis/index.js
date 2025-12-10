@@ -39,6 +39,27 @@ export const updateUser = async (payload) => {
   return data;
 };
 
+
+/**
+ *
+ * 用户编辑page_list
+ */
+export const updateUserPageList = async (payload) => {
+  const { token } = useGlobalStore();
+
+  const res = await fetch(config.baseUrl + "/api/user/update_page_list", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  return data;
+};
+
+
 /**
  *
  * 获取Elementor 所有页面
