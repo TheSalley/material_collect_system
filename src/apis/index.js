@@ -22,21 +22,32 @@ export const login = async (payload) => {
 
 /**
  *
+ * 用户编辑
+ */
+export const updateUser = async (payload) => {
+  const { token } = useGlobalStore();
+
+  const res = await fetch(config.baseUrl + "/api/user/update", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  return data;
+};
+
+/**
+ *
  * 获取Elementor 所有页面
  */
 export const getPages = async () => {
   const { user } = useGlobalStore();
   const website = user.url;
 
-  const baseUrl = config.baseUrl + "/api/proxy";
-  const parmas = {
-    path: "publish_pages",
-  };
-
-  const urlObj = new URL(baseUrl);
-  urlObj.search = new URLSearchParams(parmas).toString();
-
-  const res = await fetch(urlObj.toString(), {
+  const res = await fetch(config.baseUrl + "/api/proxy/get_pages", {
     headers: {
       website: website,
     },

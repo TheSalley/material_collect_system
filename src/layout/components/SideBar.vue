@@ -11,7 +11,7 @@
           <template v-for="route in accessibleRoutes" :key="route.path">
             <el-sub-menu v-if="route.children.length" :index="route.path">
               <template #title>
-                <el-icon><location /></el-icon>
+                <!-- <el-icon><location /></el-icon> -->
                 <span>{{ route.meta.title }}</span>
               </template>
               <el-menu-item
@@ -22,7 +22,7 @@
               >
             </el-sub-menu>
             <el-menu-item v-else :index="route.path">
-              <el-icon><icon-menu /></el-icon>
+              <!-- <el-icon><icon-menu /></el-icon> -->
               <span>{{ route.meta.title }}</span>
             </el-menu-item>
           </template>
@@ -156,7 +156,7 @@ async function logout() {
 }
 
 .el-menu {
-  width: 220px;
+  border-right: unset;
 }
 
 .el-menu-item:hover {

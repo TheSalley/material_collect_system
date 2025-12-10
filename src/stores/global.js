@@ -22,7 +22,11 @@ export const useGlobalStore = defineStore(
       websiteInfo.value = data;
     }
 
-    return { user, token, isLogin, clearUser, websiteInfo, setWebsiteInfo };
+    function setUser(data) {
+      user.value = data;
+    }
+
+    return { user, token, isLogin, clearUser, websiteInfo, setWebsiteInfo, setUser };
   },
   { persist: true }
 );

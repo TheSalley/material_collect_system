@@ -20,7 +20,7 @@
           <el-card>
             <template #header>
               <div class="card-header">
-                <span>板块-{{ index + 1 }}</span>
+                <span>板块-{{ index + 1 }}-{{ part.id }}</span>
               </div>
             </template>
             <div v-for="(topNode, index1) in part.elements" :key="topNode.id">

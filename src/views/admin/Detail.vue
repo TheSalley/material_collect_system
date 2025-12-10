@@ -21,7 +21,7 @@
             >
             <span
               class="text-gray-800 dark:text-gray-200 text-sm font-medium leading-normal"
-              >蓝海科技</span
+              >{{ user.username }}</span
             >
           </div>
         </div>
@@ -34,9 +34,6 @@
           <button
             class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#2b7cee] text-white text-sm font-medium leading-normal tracking-wide hover:bg-primary/90 transition-colors gap-2"
           >
-            <span class="material-symbols-outlined" style="font-size: 20px"
-              >save</span
-            >
             <span class="truncate">保存更改</span>
           </button>
         </div>
@@ -58,7 +55,7 @@
             <p
               class="text-gray-800 dark:text-gray-200 text-base font-medium leading-normal"
             >
-              蓝海科技
+              {{ user.username }}
             </p>
           </div>
           <div class="flex flex-col gap-1.5">
@@ -70,7 +67,7 @@
             <p
               class="text-gray-800 dark:text-gray-200 text-base font-medium leading-normal"
             >
-              CUST-00854
+              {{ user.id }}
             </p>
           </div>
           <div class="flex flex-col gap-1.5">
@@ -84,7 +81,7 @@
               <p
                 class="text-green-600 dark:text-green-400 text-base font-medium leading-normal"
               >
-                启用
+                {{ user.status === 1 ? '正常' : '禁用' }}
               </p>
             </div>
           </div>
@@ -109,12 +106,7 @@
               aria-current="page"
               class="shrink-0 border-b-2 border-primary px-1 pb-4 text-base font-semibold text-primary"
               href="#"
-              >页面与参考图设置</a
-            >
-            <a
-              class="shrink-0 border-b-2 border-transparent px-1 pb-4 text-base font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-300"
-              href="#"
-              >规则设置</a
+              >页面设置</a
             >
           </nav>
         </div>
@@ -149,7 +141,11 @@
             <div class="overflow-x-auto">
               <el-table :data="pageList" style="width: 100%">
                 <el-table-column prop="id" label="ID" width="180" />
-                <el-table-column prop="post_name" label="Post Name" width="180" />
+                <el-table-column
+                  prop="post_name"
+                  label="Post Name"
+                  width="180"
+                />
                 <el-table-column prop="address" label="Address" />
               </el-table>
             </div>
@@ -163,6 +159,8 @@
 import { ref, reactive, onMounted } from "vue";
 import { getPages } from "@/apis/index.js";
 import TW from "@/components/TW.vue";
+import { useGlobalStore } from "@/stores/global.js";
+const { user } = useGlobalStore();
 
 let pageList = reactive([]);
 const activePage = ref("test");

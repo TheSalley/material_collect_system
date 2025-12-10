@@ -1,43 +1,18 @@
 <template>
-  <template v-if="currentNode?.settings?.title">
-    <div class="field-item">
-      <span class="field-label">标题：</span>
-      <el-input
-        v-model="localSettings.title"
-        minlength="1"
-        min="1"
-        maxlength="100"
-        placeholder="Please input"
-        show-word-limit
-        type="textarea"
-        @input="handleFieldUpdate('title', localSettings.title)"
+  <el-collapse accordion>
+    <el-collapse-item title="Consistency" name="1">
+      <component
+        :is="getFieldComponent(currentNode?.widgetType)"
+        v-if="currentNode && getFieldComponent(currentNode?.widgetType)"
+        :current-node="currentNode"
+        :local-settings="localSettings"
+        :node-id="currentNode.id"
+        :content="localSettings.editor || ''"
+        :value="localSettings.image || {}"
+        :on-update="handleFieldUpdate"
       />
-    </div>
-  </template>
-
-  <template v-if="currentNode?.widgetType === 'text-editor'">
-    <div class="field-item">
-      <span class="field-label">文本：</span>
-      <div :id="'editor_' + currentNode.id" class="min-h-[300px]"></div>
-    </div>
-  </template>
-
-  <!-- 图片 -->
-  <template v-if="currentNode?.widgetType === 'image'">
-    <el-upload
-      v-model:file-list="fileList"
-      class="upload-demo"
-      action="http://192.168.110.27/wp-json/custom-db-api/v1/upload_files"
-      :on-success="handleFileUpload"
-    >
-      <el-button type="primary">Click to upload</el-button>
-      <template #tip>
-        <div class="el-upload__tip">
-          jpg/png files with a size less than 500KB.
-        </div>
-      </template>
-    </el-upload>
-  </template>
+    </el-collapse-item>
+  </el-collapse>
 
   <template v-if="currentNode?.elements?.length">
     <div class="child-nodes">
@@ -51,10 +26,21 @@
   </template>
 </template>
 <script setup>
-import { ref, watch, onMounted } from "vue";
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
+import { ref, watch } from "vue";
 import DataExtractor from "@/components/DataExtractor.vue";
+
+// 自动导入Field目录下的所有组件
+const modules = import.meta.glob("@/components/Field/*.vue", { eager: true });
+
+const getFieldComponent = (widgetType) => {
+  if (!widgetType) return null;
+
+  // 构造组件路径
+  const componentPath = `/src/components/Field/${widgetType}.vue`;
+
+  // 返回对应的组件
+  return modules[`/src/components/Field/${widgetType}.vue`]?.default || null;
+};
 
 const props = defineProps({
   currentNode: {
@@ -62,30 +48,6 @@ const props = defineProps({
     required: true,
     default: () => ({}),
   },
-});
-
-const fileList = ref([]);
-
-onMounted(() => {
-  if (props.currentNode?.settings?.editor) {
-    const quill = new Quill(`#editor_${props.currentNode.id}`, {
-      theme: "snow",
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, 3, 4, 5, 6, false] }],
-          ["bold", "italic", "underline", "link"],
-          [{ color: [] }],
-          [{ indent: "-1" }, { indent: "+1" }],
-          [{ list: "ordered" }, { list: "bullet" }],
-        ],
-      },
-      placeholder: "请输入文案",
-    });
-    quill.root.innerHTML = props.currentNode.settings.editor;
-    quill.on("text-change", () => {
-      handleFieldUpdate("editor", quill.root.innerHTML);
-    });
-  }
 });
 
 const emit = defineEmits(["update:node"]);
@@ -119,19 +81,4 @@ const handleChildUpdate = (childIndex, updatedChild) => {
   const updatedNode = { ...props.currentNode, elements: updatedElements };
   emit("update:node", updatedNode);
 };
-
-
-const handleFileUpload = (res, file, files) => {
-  // console.log('@@@123', res, file, files);
-  if(res.code === 0 && res.data[0].success) {
-    console.log(res.data[0].data.url);
-    let tempSetting = {
-      ...localSettings.value.image,
-      url: res.data[0].data.url
-    }
-    console.log('123456', localSettings.value)
-    console.log('123456', tempSetting)
-    handleFieldUpdate('image', tempSetting);
-  }
-}
 </script>
