@@ -1,8 +1,8 @@
 <template>
     <div class="field-item">
-        <span class="field-label">标题：</span>
-        <el-input v-model="localSettingsRef.title" minlength="1" min="1" maxlength="100"
-            show-word-limit type="textarea" @input="onUpdate('title', localSettingsRef.title)" />
+        <span class="field-label">视频链接：</span>
+        <el-input v-model="localSettingsRef.youtube_url"
+            show-word-limit type="textarea" @input="onUpdate('youtube_url', localSettingsRef.youtube_url)" />
     </div>
 </template>
 <script setup>

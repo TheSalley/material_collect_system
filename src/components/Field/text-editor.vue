@@ -6,7 +6,7 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, computed } from "vue";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -15,15 +15,18 @@ const props = defineProps({
     type: String,
     required: true
   },
-  content: {
-    type: String,
-    default: ""
+  localSettings: {
+    type: Object,
+    default: () => ({})
   },
   onUpdate: {
     type: Function,
     required: true
   }
 });
+
+// 从localSettings中获取编辑器内容
+const content = computed(() => props.localSettings.editor || "");
 
 let quill = null;
 
@@ -42,7 +45,7 @@ onMounted(() => {
     placeholder: "请输入文案",
   });
   
-  quill.root.innerHTML = props.content;
+  quill.root.innerHTML = content.value;
   quill.on("text-change", () => {
     props.onUpdate("editor", quill.root.innerHTML);
   });

@@ -98,14 +98,7 @@ router.beforeEach(async (to, from, next) => {
       await addProtectedRoutes(user.role);
       isDynamicRoutesAdded = true;
 
-      // 关键：如果访问的是根路径（/），自动跳角色首页（避免404）
-      // const targetPath =
-      //   to.path === "/"
-      //     ? user.role === "administrator"
-      //       ? "/list"
-      //       : "/customer"
-      //     : to.path;
-      next({ path: "/", replace: true });
+      next({ path: to.path, replace: true });
       return;
     } catch (err) {
       console.error("添加路由失败：", err);

@@ -21,7 +21,7 @@
             >
             <span
               class="text-gray-800 dark:text-gray-200 text-sm font-medium leading-normal"
-              >蓝海科技</span
+              >{{ user.nickname }}</span
             >
           </div>
         </div>
@@ -63,6 +63,7 @@ async function handleSave() {
       meta_value: JSON.stringify(PageModeNode.value.state.pageData),
       post_id: Number(PageModeNode.value.state.pageId),
     });
+    console.log(PageModeNode.value.state.pageData)
     nextTick(() => {
       loadingInstance.close();
     });

@@ -26,7 +26,8 @@
       <div class="overflow-x-auto w-full">
         <el-table :data="tableData" border height="350">
           <el-table-column prop="id" label="ID" />
-          <el-table-column prop="username" label="客户名称"/>
+          <el-table-column prop="username" label="客户账号"/>
+          <el-table-column prop="nickname" label="客户名称"/>
           <el-table-column prop="demo" label="demo 名称"/>
           <el-table-column prop="url" label="网址" width="180" />
           <el-table-column prop="mode" label="模式">
@@ -34,7 +35,7 @@
               <el-tag>{{ scope.row.mode === 1 ? "组件" : "页面" }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="180">
+          <el-table-column prop="status" label="状态">
             <template #default="scope">
               <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">{{
                 scope.row.status === 1 ? "启用" : "禁用"

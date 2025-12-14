@@ -12,7 +12,7 @@
               href="#">客户管理</a>
             <span class="material-symbols-outlined text-gray-400 dark:text-gray-500 text-base"
               style="font-size: 16px">></span>
-            <span class="text-gray-800 dark:text-gray-200 text-sm font-medium leading-normal">{{ user.username }}</span>
+            <span class="text-gray-800 dark:text-gray-200 text-sm font-medium leading-normal">{{ websiteInfo.nickname }}</span>
           </div>
         </div>
         <div class="flex gap-4">
@@ -36,7 +36,7 @@
               客户名称
             </p>
             <p class="text-gray-800 dark:text-gray-200 text-base font-medium leading-normal">
-              {{ user.username }}
+              {{ websiteInfo.nickname }}
             </p>
           </div>
           <div class="flex flex-col gap-1.5">
@@ -44,7 +44,7 @@
               客户ID
             </p>
             <p class="text-gray-800 dark:text-gray-200 text-base font-medium leading-normal">
-              {{ user.id }}
+              {{ websiteInfo.id }}
             </p>
           </div>
           <div class="flex flex-col gap-1.5">
@@ -54,7 +54,7 @@
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
               <p class="text-green-600 dark:text-green-400 text-base font-medium leading-normal">
-                {{ user.status === 1 ? '正常' : '禁用' }}
+                {{ websiteInfo.status === 1 ? '正常' : '禁用' }}
               </p>
             </div>
           </div>
@@ -114,6 +114,8 @@ const { user, setUser } = useGlobalStore();
 let pageList = reactive([]);
 const activePage = ref("test");
 
+const { websiteInfo, setWebsiteInfo } = useGlobalStore();
+
 onMounted(async () => {
   const res = await getPages();
   if (res.code === 0) {
@@ -123,7 +125,7 @@ onMounted(async () => {
 
 const transform_page_list = computed(() => {
   let arr = [];
-  let user_page_list = JSON.parse(user.page_list);
+  let user_page_list = JSON.parse(websiteInfo.page_list);
   pageList.forEach((item) => {
     if (user_page_list.find(i => i.id === item.id)) {
       arr.unshift({
@@ -144,12 +146,12 @@ const transform_page_list = computed(() => {
 
 async function handleSave() {
   const res = await updateUserPageList({
-    id: user.id,
+    id: websiteInfo.id,
     page_list: JSON.stringify(transform_page_list.value.filter(item => item.status).map(item => { return { id: item.id, post_name: item.post_name } })),
   });
   if (res.code === 0) {
-    setUser({
-      ...user,
+    setWebsiteInfo({
+      ...websiteInfo,
       page_list: res.data.page_list,
     })
     ElMessage.success("更新成功");

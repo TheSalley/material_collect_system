@@ -40,7 +40,7 @@
             <h1
               class="text-[#111418] dark:text-white text-sm font-medium leading-tight"
             >
-              {{ user.role === "administrator" ? "管理员" : "用户" }}
+              {{ user.nickname }}
             </h1>
             <p
               class="text-gray-500 dark:text-gray-400 text-xs font-normal leading-tight"

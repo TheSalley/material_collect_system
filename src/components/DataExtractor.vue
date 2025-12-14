@@ -1,27 +1,15 @@
 <template>
-  <el-collapse accordion>
-    <el-collapse-item title="Consistency" name="1">
-      <component
-        :is="getFieldComponent(currentNode?.widgetType)"
-        v-if="currentNode && getFieldComponent(currentNode?.widgetType)"
-        :current-node="currentNode"
-        :local-settings="localSettings"
-        :node-id="currentNode.id"
-        :content="localSettings.editor || ''"
-        :value="localSettings.image || {}"
-        :on-update="handleFieldUpdate"
-      />
-    </el-collapse-item>
-  </el-collapse>
+  <component :is="getFieldComponent(currentNode?.widgetType)"
+    v-if="currentNode && getFieldComponent(currentNode?.widgetType)" 
+    :current-node="currentNode" 
+    :node-id="currentNode.id" 
+    :local-settings="localSettings"
+    :on-update="handleFieldUpdate" />
 
   <template v-if="currentNode?.elements?.length">
     <div class="child-nodes">
-      <DataExtractor
-        v-for="(childNode, index) in currentNode.elements"
-        :key="childNode.id || Math.random()"
-        :current-node="childNode"
-        @update:node="(updatedChild) => handleChildUpdate(index, updatedChild)"
-      />
+      <DataExtractor v-for="(childNode, index) in currentNode.elements" :key="childNode.id || Math.random()"
+        :current-node="childNode" @update:node="(updatedChild) => handleChildUpdate(index, updatedChild)" />
     </div>
   </template>
 </template>

@@ -97,6 +97,26 @@ export const getPageById = async (id) => {
   return data;
 };
 
+
+/**
+ *
+ * 上传Elementor 图片到媒体库
+ */
+export const uploadImage = async (formdata) => {
+  const { user } = useGlobalStore();
+  const website = user.url;
+  const res = await fetch(config.baseUrl + "/api/proxy/upload_image", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${user.token}`,
+      website,
+    },
+    body: formdata,
+  });
+  const data = await res.json();
+  return data;
+};
+
 /**
  *
  * 更新Elementor 单页面数据
