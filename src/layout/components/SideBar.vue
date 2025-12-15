@@ -91,7 +91,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, nextTick } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { useRouter } from "vue-router";
 import { resetRoutes } from "@/utils/index"
@@ -99,28 +99,12 @@ import { resetRoutes } from "@/utils/index"
 const { user, clearUser } = useGlobalStore();
 const router = useRouter();
 
-// 递归过滤路由：只保留非 hidden 的路由，且处理嵌套层级
-function filterAccessibleRoutes(routes) {
-  return routes.filter((route) => {
-    // 过滤掉 hidden 为 true 的路由
-    if (route.meta?.hidden) return false;
-    // 若有子路由，递归过滤子路由
-    if (route.children && route.children.length) {
-      route.children = filterAccessibleRoutes(route.children);
-      // 若子路由过滤后为空，且当前路由是布局路由，也过滤掉
-      if (route.children.length === 0 && route.meta?.isLayout) return false;
-    }
-    return true;
-  });
-}
-
 const accessibleRoutes = computed(() => {
-  console.log("@@@@ arr: ", router.getRoutes());
   let arr = router.getRoutes().reverse().filter((item) => {
     if (item.meta?.hidden) return false;
+    if (user.role === 'administrator' && item.path === '/pages/:id') return false;
     return true;
   });
-  console.log("@@@@ arr: ", arr);
   if (user.page_list) {
     arr.forEach((item) => {
       if (item.path === "/pages/:id") {
@@ -135,8 +119,11 @@ const accessibleRoutes = computed(() => {
 async function logout() {
   await clearUser();
   await resetRoutes();
-  router.push({
-    path: "/login",
+  
+  await nextTick();
+  router.replace("/login").catch(err => {
+    // 如果路由跳转失败，使用传统方式
+    window.location.hash = "#/login";
   });
 }
 </script>

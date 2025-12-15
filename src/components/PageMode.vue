@@ -75,13 +75,7 @@ const state = reactive({
 onMounted(async () => { });
 
 function handleNodeUpdate(index, index1, updatedNode) {
-  console.log("这是收到的数据: ", index, index1, updatedNode);
   state.pageData[index].elements[index1] = updatedNode;
-
-  // console.log(typeof state.pageData)
-  // let obj = JSON.parse(state.pageData.meta_value);
-  // obj.find
-  // () => (part.elements[index] = updatedNode)
 }
 
 const handleBeforeUpload = (file) => {

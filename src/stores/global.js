@@ -28,5 +28,7 @@ export const useGlobalStore = defineStore(
 
     return { user, token, isLogin, clearUser, websiteInfo, setWebsiteInfo, setUser };
   },
-  { persist: true }
+  { 
+    persist: true
+  }
 );

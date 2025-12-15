@@ -59,7 +59,6 @@ const handleFieldUpdate = (fieldName, value) => {
     ...props.currentNode,
     settings: { ...localSettings.value, [fieldName]: value },
   };
-  console.log("@@@ upodateNode: ", updatedNode);
   emit("update:node", updatedNode);
 };
 

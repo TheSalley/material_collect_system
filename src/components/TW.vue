@@ -69,6 +69,7 @@ onMounted(async () => {
 
 async function handleSave() {
   console.log("@@@", state.pageData);
+  return;
   let str = JSON.stringify(state.pageData);
   // let str = convertToElementorFormat(state.pageData);
   // let str = state.pageData;
@@ -110,7 +111,6 @@ async function handleReset() {
 }
 
 function handleNodeUpdate(index, index1, updatedNode) {
-  console.log("这是收到的数据: ", index, index1, updatedNode);
   state.pageData[index].elements[index1] = updatedNode;
 
   // console.log(typeof state.pageData)

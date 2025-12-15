@@ -56,14 +56,15 @@ const { user } = useGlobalStore();
 const route = useRoute();
 
 async function handleSave() {
-  // console.log("@@@@@ value:", PageModeNode.value.state)
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
+    console.log(PageModeNode.value.state.pageData);
+    return;
     const res = await updatePageById({
       meta_value: JSON.stringify(PageModeNode.value.state.pageData),
       post_id: Number(PageModeNode.value.state.pageId),
     });
-    console.log(PageModeNode.value.state.pageData)
+    
     nextTick(() => {
       loadingInstance.close();
     });
@@ -83,7 +84,6 @@ async function handleSave() {
       message: "保存失败",
       type: "error",
     });
-    console.error(error);
     nextTick(() => {
       loadingInstance.close();
     });

@@ -8,9 +8,9 @@ export function addProtectedRoutes(role) {
 
     // 1. 根据角色选择要添加的路由
     if (role === "administrator") {
-      routesToAdd = adminRoutes; // 管理员添加 adminRoutes
+      routesToAdd = adminRoutes;
     } else if (role === "customer") {
-      routesToAdd = userRoutes; // 普通用户添加 userRoutes
+      routesToAdd = userRoutes;
     }
     routesToAdd.forEach((route) => {
       router.addRoute(route);
@@ -22,11 +22,16 @@ export function addProtectedRoutes(role) {
 // 重置路由
 export function resetRoutes() {
   return new Promise((resolve) => {
-    router.getRoutes().forEach((route) => {
-      if (route.name) router.removeRoute(route.name);
-    });
-    publicRoutes.forEach((route) => {
-      router.addRoute(route);
+    
+    // 获取当前所有路由
+    const allRoutes = router.getRoutes();
+    
+    // 移除所有动态添加的路由（除了公共路由）
+    allRoutes.forEach((route) => {
+      // 只移除非公共路由
+      if (route.name && !['Login', 'NotFound'].includes(route.name)) {
+        router.removeRoute(route.name);
+      }
     });
     resolve();
   });

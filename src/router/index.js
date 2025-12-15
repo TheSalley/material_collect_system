@@ -40,6 +40,12 @@ const adminRoutes = [
         component: () => import("@/views/admin/Detail.vue"),
         meta: { title: "详情页", hidden: true },
       },
+      {
+        path: "pages/:id",
+        name: "CustomerPages",
+        component: () => import("@/views/customer/Pages.vue"),
+        meta: { title: "页面列表" },
+      },
     ],
   },
 ];
@@ -48,7 +54,6 @@ const adminRoutes = [
 const userRoutes = [
   {
     path: "/",
-    name: "Customer",
     meta: { requiresAuth: true, role: "customer", hidden: true },
     component: () => import("@/layout/index.vue"),
     children: [
@@ -70,23 +75,22 @@ const userRoutes = [
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes: publicRoutes,
+  routes: [...publicRoutes],
 });
 
 let isDynamicRoutesAdded = false;
 
 // 路由守卫：检测登录状态
 router.beforeEach(async (to, from, next) => {
-  const { user, token } = useGlobalStore();
+  const globalStore = useGlobalStore();
+  const { user, token } = globalStore;
+  
+  // 重置动态路由添加状态，确保登出后重新登录可以正确添加路由
+  if (!token) {
+    isDynamicRoutesAdded = false;
+  }
 
-  // 1. 已登录且访问登录页 → 跳对应角色的首页（管理员跳 /list，用户跳 /customer）
-  // if (to.path === "/login" && token) {
-  //   const homePath = user.role === "administrator" ? "/list" : "/customer";
-  //   next(homePath);
-  //   return;
-  // }
-
-  // 2. 未登录访问受保护路由 → 跳登录页
+  // 检查当前访问的路由是否需要认证
   if (to.meta.requiresAuth && !token) {
     next("/login");
     return;
@@ -101,13 +105,16 @@ router.beforeEach(async (to, from, next) => {
       next({ path: to.path, replace: true });
       return;
     } catch (err) {
-      console.error("添加路由失败：", err);
       next("/login");
       return;
     }
   }
 
-  // 4. 所有其他情况 → 正常放行
+  // 特殊处理：如果访问根路径且未登录，重定向到登录页
+  if (to.path === "/" && !token) {
+    next("/login");
+    return;
+  }
   next();
 });
 

@@ -174,7 +174,6 @@ onMounted(async () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       router.push("/login");
     } else {
-      console.error("获取列表失败:", res.message);
     }
   }
 });
@@ -193,7 +192,5 @@ function config(data) {
   const { setWebsiteInfo } = useGlobalStore();
   setWebsiteInfo(data);
   router.push({ path: "/detail", query: { id: data.id } });
-  // router.push({ path: '/elementor', query: { id } });
-  // console.log('编辑页面', id);
 }
 </script>

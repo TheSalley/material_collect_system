@@ -94,6 +94,7 @@
                   <template #default="scope">
                     <el-switch v-model="scope.row.status"
                       style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949" />
+                    <el-button type="primary" size="small" @click="edit(scope.row)">编辑</el-button>
                   </template>
                 </el-table-column>
               </el-table>
@@ -107,12 +108,14 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from "vue";
 import { getPages, updateUserPageList } from "@/apis/index.js";
+import { useRouter } from "vue-router";
 import TW from "@/components/TW.vue";
 import { useGlobalStore } from "@/stores/global.js";
 const { user, setUser } = useGlobalStore();
 
 let pageList = reactive([]);
 const activePage = ref("test");
+const router = useRouter();
 
 const { websiteInfo, setWebsiteInfo } = useGlobalStore();
 
@@ -143,6 +146,11 @@ const transform_page_list = computed(() => {
   });
   return arr;
 });
+
+
+function edit(row) {
+  router.push({ path: `/pages/${row.id}` });
+}
 
 async function handleSave() {
   const res = await updateUserPageList({
