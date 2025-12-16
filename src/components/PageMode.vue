@@ -9,10 +9,10 @@
       <div v-if="state?.pageId">
         <div v-for="(part, index) in state.originData" :key="index" class="mb-4">
           <el-collapse accordion class="px-4">
-            <el-collapse-item :title="`板块-${index + 1}-${part.id}`" :name="`part-${index}`">
+            <el-collapse-item v-if="!part.settings?.hide_desktop" :title="`板块-${index + 1}-${part.id}`" :name="`part-${index}`">
               <span></span>
               <div v-for="(topNode, index1) in part.elements" :key="topNode.id">
-                <DataExtractor :current-node="topNode" @update:node="
+                <DataExtractor v-if="!topNode.settings?.hide_desktop" :current-node="topNode" @update:node="
                   (updatedNode) => handleNodeUpdate(index, index1, updatedNode)
                 " />
               </div>
