@@ -1,8 +1,6 @@
 <template>
-  <section class="app-main">
-    <div class="app-scrollbar">
+  <section class="app-main overflow-y-auto h-full">
       <router-view></router-view>
-    </div>
     <el-backtop />
   </section>
 </template>
@@ -10,13 +8,5 @@
 .app-main {
   width: 100%;
   display: flex;
-}
-
-.app-scrollbar {
-  flex-grow: 1;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
 }
 </style>

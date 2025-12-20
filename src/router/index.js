@@ -1,71 +1,122 @@
 import { createWebHashHistory, createRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
-import { ref } from "vue";
+import { addProtectedRoutes } from "@/utils";
 
-const routes = [
+const publicRoutes = [
+  {
+    path: "/login",
+    name: "Login",
+    component: () => import("@/views/login/login.vue"),
+    meta: {
+      hidden: true,
+    },
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "NotFound",
+    component: () => import("@/views/404.vue"),
+    meta: {
+      hidden: true,
+    },
+  },
+];
+
+// adminRoutes 优化
+const adminRoutes = [
   {
     path: "/",
-    meta: { requiresAuth: true }, 
+    meta: { requiresAuth: true, role: "administrator", hidden: true },
     component: () => import("@/layout/index.vue"),
     children: [
       {
-        path: "list",
+        path: "",
+        name: "AdminList",
         component: () => import("@/views/admin/List.vue"),
+        meta: { title: "客户管理" },
       },
       {
         path: "detail",
+        name: "AdminDetail",
         component: () => import("@/views/admin/Detail.vue"),
+        meta: { title: "详情页", hidden: true },
       },
       {
-        path: "elementor",
-        component: () => import("@/views/elementor/index.vue"),
+        path: "pages/:id",
+        name: "CustomerPages",
+        component: () => import("@/views/customer/Pages.vue"),
+        meta: { title: "页面列表" },
       },
     ],
   },
+];
+
+// userRoutes 优化
+const userRoutes = [
   {
-    path: "/admin",
-    meta: { requiresAuth: true }, 
-    path: "/customer",
+    path: "/",
+    meta: { requiresAuth: true, role: "customer", hidden: true },
     component: () => import("@/layout/index.vue"),
     children: [
       {
         path: "",
+        name: "CustomerHome",
         component: () => import("@/views/customer/index.vue"),
+        meta: { title: "网站信息" },
+      },
+      {
+        path: "pages/:id",
+        name: "CustomerPages",
+        component: () => import("@/views/customer/Pages.vue"),
+        meta: { title: "页面列表" },
       },
     ],
   },
-    {
-    path: "/login",
-    children: [
-      {
-        path: "",
-        component: () => import("@/views/login/login.vue"),
-      },
-    ],
-  }
 ];
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes,
+  routes: [...publicRoutes],
 });
 
-// 路由守卫：检测登录状态
-router.beforeEach((to, from, next) => {
-  const globalStore = useGlobalStore();
+let isDynamicRoutesAdded = false;
 
-  // 如果已登录且访问登录页 → 自动跳转到首页
-  if (to.path === "/login" && globalStore.user.isLogin) {
-    next("/");
+// 路由守卫：检测登录状态
+router.beforeEach(async (to, from, next) => {
+  const globalStore = useGlobalStore();
+  const { user, token } = globalStore;
+  
+  // 重置动态路由添加状态，确保登出后重新登录可以正确添加路由
+  if (!token) {
+    isDynamicRoutesAdded = false;
+  }
+
+  // 检查当前访问的路由是否需要认证
+  if (to.meta.requiresAuth && !token) {
+    next("/login");
     return;
   }
 
-  // 如果目标路由需要登录且当前未登录 → 跳转登录页
-  if (to.meta.requiresAuth && !globalStore.user.isLogin) {
-    next("/login");
-  } else {
-    next();
+  // 3. 已登录但动态路由未添加 → 先添加再重定向
+  if (token && !isDynamicRoutesAdded) {
+    try {
+      await addProtectedRoutes(user.role);
+      isDynamicRoutesAdded = true;
+
+      next({ path: to.path, replace: true });
+      return;
+    } catch (err) {
+      next("/login");
+      return;
+    }
   }
+
+  // 特殊处理：如果访问根路径且未登录，重定向到登录页
+  if (to.path === "/" && !token) {
+    next("/login");
+    return;
+  }
+  next();
 });
 
 export default router;
+export { adminRoutes, userRoutes, publicRoutes };

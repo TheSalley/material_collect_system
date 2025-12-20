@@ -1,11 +1,12 @@
 <template>
-  <div class="app-wrapper">
-    <SideBar class="sidebar-container" />
-    <div class="main-container">
-      <div class="fixed-header layout-header">
+  <div class="app-wrapper flex h-screen">
+    <!-- <SideBar class="sidebar-container" /> -->
+    <SideBar class="flex-shrink-0" />
+    <div class="flex-1 p-6 sm:p-8 md:p-10 h-full">
+      <!-- <div class="fixed-header layout-header">
         <NavigationBar />
-      </div>
-      <AppMain class="app-main" />
+      </div> -->
+      <AppMain />
     </div>
   </div>
 </template>
@@ -36,7 +37,6 @@ import NavigationBar from "./components/NavigationBar.vue";
 
 .main-container {
   min-height: 100%;
-  margin-left: 220px;
   position: relative;
 }
 
@@ -59,11 +59,5 @@ import NavigationBar from "./components/NavigationBar.vue";
 
 .fixed-header + .app-main {
   margin-top: 85px;
-}
-
-.app-main {
-  min-height: calc(100vh - 85px);
-  position: relative;
-  overflow: hidden;
 }
 </style>
