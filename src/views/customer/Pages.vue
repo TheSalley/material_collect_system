@@ -25,8 +25,26 @@
             >
           </div>
         </div>
-        <div class="flex gap-4">
-          <el-button type="success" disabled>一键翻译</el-button>
+        <div class="flex gap-4 items-center">
+          <div class="flex items-center gap-2">
+            <span>从:</span>
+            <el-select v-model="translateConfig.sourceLanguage" placeholder="请选择源语言" style="width: 120px">
+              <el-option label="中文" value="zh" />
+              <el-option label="英语" value="en" />
+              <el-option label="日语" value="ja" />
+              <el-option label="韩语" value="ko" />
+            </el-select>
+          </div>
+          <div class="flex items-center gap-2">
+            <span>到:</span>
+            <el-select v-model="translateConfig.targetLanguage" placeholder="请选择目标语言" style="width: 120px">
+              <el-option label="中文" value="zh" />
+              <el-option label="英语" value="en" />
+              <el-option label="日语" value="ja" />
+              <el-option label="韩语" value="ko" />
+            </el-select>
+          </div>
+          <el-button type="success" @click="toggleTranslate">{{ isTranslating ? '取消翻译' : '一键翻译' }}</el-button>
           <el-button type="primary" @click="handleSave">保存</el-button>
         </div>
       </div>
@@ -34,10 +52,10 @@
     <!-- 页面数据 -->
     <div v-if="pageData?.id">
       <template v-if="user.mode === 1">
-        <TW :pageId="pageData.id" />
+        <TW :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
       </template>
       <template v-else>
-        <PageMode ref="PageModeNode" :pageId="pageData.id" />
+        <PageMode ref="PageModeNode" :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
       </template>
     </div>
   </main>
@@ -45,7 +63,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch, nextTick } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
-import { updatePageById } from "@/apis/index";
+import { updatePageById, translate } from "@/apis/index";
 import TW from "@/components/TW.vue";
 import PageMode from "@/components/PageMode.vue";
 import { useRoute } from "vue-router";
@@ -54,6 +72,33 @@ let pageData = ref(null);
 const PageModeNode = ref(null);
 const { user } = useGlobalStore();
 const route = useRoute();
+
+// 翻译配置
+const translateConfig = reactive({
+  sourceLanguage: 'zh',
+  targetLanguage: 'en'
+});
+
+// 是否正在翻译状态
+const isTranslating = ref(false);
+
+// 切换翻译状态
+function toggleTranslate() {
+  if (isTranslating.value) {
+    // 取消翻译
+    isTranslating.value = false;
+  } else {
+    // 开始翻译
+    if (translateConfig.sourceLanguage === translateConfig.targetLanguage) {
+      ElMessage({
+        message: "源语言和目标语言不能相同",
+        type: "warning",
+      });
+      return;
+    }
+    isTranslating.value = true;
+  }
+}
 
 async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });

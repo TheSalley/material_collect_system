@@ -187,3 +187,22 @@ export const get_bind_img = async (demo, bind_id, bind_mode) => {
   const data = await res.json();
   return data;
 };
+
+
+/**
+ *
+ * 翻译API
+ */
+export const translate = async (payload) => {
+  const globalStore = useGlobalStore();
+  const res = await fetch(config.baseUrl + "/api/translate", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${globalStore.token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  return data;
+};

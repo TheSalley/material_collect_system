@@ -20,6 +20,9 @@
               <div>顶层节点（{{ topNode.elType }} - {{ topNode.id }}）</div>
               <DataExtractor
                 :current-node="topNode"
+                :is-translate="isTranslate"
+                :source-language="sourceLanguage"
+                :target-language="targetLanguage"
                 @update:node="
                   (updatedNode) => handleNodeUpdate(index, index1, updatedNode)
                 "
@@ -38,8 +41,8 @@
   </div>
 </template>
 <script setup>
-import { reactive, onMounted } from "vue";
-import { getPageById, updatePageById } from "@/apis/index.js";
+import { reactive, onMounted, watch } from "vue";
+import { getPageById, updatePageById, translate } from "@/apis/index.js";
 import DataExtractor from "./DataExtractor.vue";
 
 const props = defineProps({
@@ -47,6 +50,18 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
+  isTranslate: {
+    type: Boolean,
+    default: false
+  },
+  sourceLanguage: {
+    type: String,
+    default: 'zh'
+  },
+  targetLanguage: {
+    type: String,
+    default: 'en'
+  }
 });
 
 const state = reactive({
@@ -66,6 +81,49 @@ onMounted(async () => {
     state.meta_id = page.data.meta_id;
   }
 });
+
+// 监听isTranslate属性变化
+watch(() => props.isTranslate, async (newVal) => {
+  if (newVal) {
+    // 触发翻译逻辑
+    await handleTranslate();
+  }
+});
+
+// 处理翻译逻辑
+async function handleTranslate() {
+  if (!state.pageData) return;
+  
+  ElMessage({
+    message: "开始翻译...",
+    type: "info"
+  });
+  
+  try {
+    // 这里应该是实际的翻译逻辑
+    // 遍历所有部分进行翻译处理
+    for (let i = 0; i < state.pageData.length; i++) {
+      await translatePart(i);
+    }
+    
+    ElMessage({
+      message: "翻译完成",
+      type: "success"
+    });
+  } catch (error) {
+    ElMessage({
+      message: "翻译失败: " + error.message,
+      type: "error"
+    });
+  }
+}
+
+// 翻译单个部分
+async function translatePart(partIndex) {
+  // 这里应该是实际的翻译逻辑
+  // 提取文本 -> 调用翻译API -> 应用翻译结果
+  console.log(`翻译第${partIndex + 1}部分`);
+}
 
 async function handleSave() {
   console.log("@@@", state.pageData);
