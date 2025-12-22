@@ -12,7 +12,12 @@
             <el-collapse-item v-if="!part.settings?.hide_desktop" :title="`板块-${index + 1}-${part.id}`" :name="`part-${index}`">
               <span></span>
               <div v-for="(topNode, index1) in part.elements" :key="topNode.id">
-                <DataExtractor v-if="!topNode.settings?.hide_desktop" :current-node="topNode" @update:node="
+                <DataExtractor v-if="!topNode.settings?.hide_desktop" 
+                  :current-node="topNode" 
+                  :is-translate="isTranslate"
+                  :source-language="sourceLanguage"
+                  :target-language="targetLanguage"
+                  @update:node="
                   (updatedNode) => handleNodeUpdate(index, index1, updatedNode)
                 " />
               </div>
@@ -62,6 +67,18 @@ const props = defineProps({
     type: [Number, String],
     required: true,
   },
+  isTranslate: {
+    type: Boolean,
+    default: false
+  },
+  sourceLanguage: {
+    type: String,
+    default: 'zh'
+  },
+  targetLanguage: {
+    type: String,
+    default: 'en'
+  }
 });
 
 const state = reactive({
