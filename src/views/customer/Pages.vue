@@ -44,7 +44,7 @@
               <el-option label="韩语" value="ko" />
             </el-select>
           </div>
-          <el-button type="success" @click="toggleTranslate">{{ isTranslating ? '取消翻译' : '一键翻译' }}</el-button>
+          <el-button type="success" @click="toggleTranslate">一键翻译</el-button>
           <el-button type="primary" @click="handleSave">保存</el-button>
         </div>
       </div>
@@ -84,27 +84,21 @@ const isTranslating = ref(false);
 
 // 切换翻译状态
 function toggleTranslate() {
-  if (isTranslating.value) {
-    // 取消翻译
-    isTranslating.value = false;
-  } else {
-    // 开始翻译
-    if (translateConfig.sourceLanguage === translateConfig.targetLanguage) {
-      ElMessage({
-        message: "源语言和目标语言不能相同",
-        type: "warning",
-      });
-      return;
-    }
-    isTranslating.value = true;
+  if (translateConfig.sourceLanguage === translateConfig.targetLanguage) {
+    ElMessage({
+      message: "源语言和目标语言不能相同",
+      type: "warning",
+    });
+    return;
   }
+  isTranslating.value = true;
 }
 
 async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
     console.log(PageModeNode.value.state.pageData);
-    // return;
+    return;
     const res = await updatePageById({
       meta_value: JSON.stringify(PageModeNode.value.state.pageData),
       post_id: Number(PageModeNode.value.state.pageId),
