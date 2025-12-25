@@ -1,13 +1,13 @@
 <template>
-  <div class="flex justify-between gap-4 px-10 py-10">
+  <div v-for="(module, moduleIndex) in state.originData" :key="module.id" class="flex justify-between gap-4 px-10 py-10 border-b border-gray-200">
     <div class="w-1/2 __border-shadow sticky top-0 h-fit">
-      <el-button class="absolute right-0 top-0" type="primary" @click="dialogVisible = true">上传截图</el-button>
-      <img :src="modulePic.file_url" alt="module picture" v-if="modulePic" />
+      <el-button class="absolute right-0 top-0" type="primary" @click="() => openUploadDialog(moduleIndex)">上传截图</el-button>
+      <img :src="moduleImages[moduleIndex]?.file_url" alt="module picture" v-if="moduleImages[moduleIndex]" />
       <el-empty v-else description="未上传截图" />
     </div>
     <div class="w-1/2 __border-shadow">
       <div v-if="state?.moduleId">
-        <div v-for="(part, index) in state.originData" :key="index" class="mb-4">
+        <div v-for="(part, index) in [module]" :key="index" class="mb-4">
           <el-collapse accordion class="px-4">
             <el-collapse-item v-if="!part.settings?.hide_desktop" :title="`模块-${index + 1}-${part.id}`" :name="`part-${index}`">
               <span></span>
@@ -18,7 +18,7 @@
                   :source-language="sourceLanguage"
                   :target-language="targetLanguage"
                   @update:node="
-                  (updatedNode) => handleNodeUpdate(index, index1, updatedNode)
+                  (updatedNode) => handleNodeUpdate(moduleIndex, index1, updatedNode)
                 " />
               </div>
             </el-collapse-item>
@@ -60,10 +60,11 @@ import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
 
 const dialogVisible = ref(false);
-const modulePic = ref(null);
+const moduleImages = ref({}); // 存储每个模块的图片
+let currentModuleIndex = null; // 当前上传图片的模块索引
 
 const props = defineProps({
-  moduleId: {
+  pageId: {
     type: [Number, String],
     required: true,
   },
@@ -91,9 +92,14 @@ const state = reactive({
 
 onMounted(async () => { });
 
-function handleNodeUpdate(index, index1, updatedNode) {
-  state.moduleData[index].elements[index1] = updatedNode;
+function handleNodeUpdate(moduleIndex, index1, updatedNode) {
+  state.moduleData[moduleIndex].elements[index1] = updatedNode;
 }
+
+const openUploadDialog = (moduleIndex) => {
+  currentModuleIndex = moduleIndex;
+  dialogVisible.value = true;
+};
 
 const handleBeforeUpload = (file) => {
   const isImage = file.type === "image/jpeg" || file.type === "image/png";
@@ -112,18 +118,26 @@ const handleBeforeUpload = (file) => {
 };
 
 const customUpload = async (file) => {
+  if (currentModuleIndex === null) {
+    ElMessage.error("未选择模块");
+    return;
+  }
+  
   try {
     const { user } = useGlobalStore();
     const formData = new FormData();
     formData.append("file", file);
     formData.append("demo", user.demo);
     formData.append("bind_mode", user.mode); // 模块模式
-    formData.append("bind_id", props.moduleId);
+    // 使用当前模块的ID
+    const currentModule = state.originData[currentModuleIndex];
+    formData.append("bind_id", currentModule.id);
 
     const res = await upload_bind_img(formData);
 
     if (res.code === 0) {
-      modulePic.value = res.data;
+      // 保存当前模块的图片
+      moduleImages.value[currentModuleIndex] = res.data;
       ElMessage.success("图片上传成功！");
       dialogVisible.value = false;
     } else {
@@ -135,23 +149,26 @@ const customUpload = async (file) => {
 };
 
 watch(
-  () => props.moduleId,
+  () => props.pageId,
   async (newId, oldId) => {
     if (newId) {
       const loadingInstance = ElLoading.service({ fullscreen: true });
       const { user } = useGlobalStore();
-      const [res1, res2] = await Promise.all([
-        getPageById(props.moduleId),
-        get_bind_img(user.demo, props.moduleId, user.mode),
-      ]);
+      const res1 = await getPageById(newId);
       if (res1.code === 0 && res1.data.post_id) {
         state.moduleId = res1.data.post_id;
         state.moduleData = JSON.parse(res1.data.meta_value);
         state.originData = JSON.parse(res1.data.meta_value);
         state.meta_id = res1.data.meta_id;
-      }
-      if (res2.code === 0) {
-        modulePic.value = res2.data;
+        
+        // 获取每个模块的图片
+        for (let i = 0; i < state.originData.length; i++) {
+          const module = state.originData[i];
+          const res2 = await get_bind_img(user.demo, module.id, user.mode);
+          if (res2.code === 0) {
+            moduleImages.value[i] = res2.data;
+          }
+        }
       }
       nextTick(() => {
         loadingInstance.close();
