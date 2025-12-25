@@ -109,7 +109,7 @@
 import { ref, reactive, onMounted, computed } from "vue";
 import { getPages, updateUserPageList } from "@/apis/index.js";
 import { useRouter } from "vue-router";
-import TW from "@/components/TW.vue";
+import ModuleMode from "@/components/ModuleMode.vue";
 import { useGlobalStore } from "@/stores/global.js";
 const { user, setUser } = useGlobalStore();
 

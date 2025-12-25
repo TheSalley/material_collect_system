@@ -21,7 +21,7 @@
             >
             <span
               class="text-gray-800 dark:text-gray-200 text-sm font-medium leading-normal"
-              >{{ user.nickname }}</span
+              >{{ websiteInfo.nickname }}</span
             >
           </div>
         </div>
@@ -44,15 +44,15 @@
               <el-option label="韩语" value="ko" />
             </el-select>
           </div>
-          <el-button type="success" @click="toggleTranslate">{{ isTranslating ? '取消翻译' : '一键翻译' }}</el-button>
+          <el-button type="success" @click="toggleTranslate">一键翻译</el-button>
           <el-button type="primary" @click="handleSave">保存</el-button>
         </div>
       </div>
     </header>
     <!-- 页面数据 -->
     <div v-if="pageData?.id">
-      <template v-if="user.mode === 1">
-        <TW :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
+      <template v-if="websiteInfo.mode === 1">
+        <ModuleMode :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
       </template>
       <template v-else>
         <PageMode ref="PageModeNode" :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
@@ -64,13 +64,13 @@
 import { ref, reactive, onMounted, watch, nextTick } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { updatePageById, translate } from "@/apis/index";
-import TW from "@/components/TW.vue";
+import ModuleMode from "@/components/ModuleMode.vue";
 import PageMode from "@/components/PageMode.vue";
 import { useRoute } from "vue-router";
 
 let pageData = ref(null);
 const PageModeNode = ref(null);
-const { user } = useGlobalStore();
+const { user, websiteInfo } = useGlobalStore();
 const route = useRoute();
 
 // 翻译配置
@@ -84,20 +84,14 @@ const isTranslating = ref(false);
 
 // 切换翻译状态
 function toggleTranslate() {
-  if (isTranslating.value) {
-    // 取消翻译
-    isTranslating.value = false;
-  } else {
-    // 开始翻译
-    if (translateConfig.sourceLanguage === translateConfig.targetLanguage) {
-      ElMessage({
-        message: "源语言和目标语言不能相同",
-        type: "warning",
-      });
-      return;
-    }
-    isTranslating.value = true;
+  if (translateConfig.sourceLanguage === translateConfig.targetLanguage) {
+    ElMessage({
+      message: "源语言和目标语言不能相同",
+      type: "warning",
+    });
+    return;
   }
+  isTranslating.value = true;
 }
 
 async function handleSave() {

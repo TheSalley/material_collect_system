@@ -65,12 +65,11 @@ export const updateUserPageList = async (payload) => {
  * 获取Elementor 所有页面
  */
 export const getPages = async () => {
-  const { user } = useGlobalStore();
-  const website = user.url;
+  const { websiteInfo } = useGlobalStore();
 
   const res = await fetch(config.baseUrl + "/api/proxy/get_pages", {
     headers: {
-      website: website,
+      website: websiteInfo.url,
     },
   });
   const data = await res.json();
@@ -176,8 +175,8 @@ export const get_bind_img = async (demo, bind_id, bind_mode) => {
   const globalStore = useGlobalStore();
   const res = await fetch(
     config.baseUrl +
-      "/api/file/get" +
-      `?demo=${demo}&bind_id=${bind_id}&bind_mode=${bind_mode}`,
+    "/api/file/get" +
+    `?demo=${demo}&bind_id=${bind_id}&bind_mode=${bind_mode}`,
     {
       headers: {
         Authorization: `Bearer ${globalStore.token}`,
