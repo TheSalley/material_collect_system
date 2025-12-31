@@ -6,7 +6,7 @@
     </div>
 </template>
 <script setup>
-import { ref, watch, watchEffect } from "vue";
+import { ref, watch, watchEffect, inject } from "vue";
 import { translate } from "@/apis/index.js";
 
 const props = defineProps({
@@ -21,20 +21,11 @@ const props = defineProps({
     onUpdate: {
         type: Function,
         required: true
-    },
-    isTranslate: {
-        type: Boolean,
-        default: false
-    },
-    sourceLanguage: {
-        type: String,
-        default: 'zh'
-    },
-    targetLanguage: {
-        type: String,
-        default: 'en'
     }
 });
+
+const isTranslate = inject('isTranslate', ref(false));
+const translateConfig = inject('translateConfig', { sourceLanguage: 'zh', targetLanguage: 'en' });
 
 const localSettingsRef = ref({ ...props.localSettings });
 
@@ -44,15 +35,15 @@ watch(() => props.localSettings, (newVal) => {
 
 // 监听翻译状态变化
 watchEffect(async () => {
-  if (props.isTranslate && localSettingsRef.value.title) {
+  if (isTranslate.value && localSettingsRef.value.title) {
     try {
       // 调用翻译API
       // 注意：这里需要指定源语言和目标语言
       // 示例调用，实际应根据用户选择的语言进行翻译
       const res = await translate({
         sourceText: localSettingsRef.value.title,
-        sourceLanguage: props.sourceLanguage,
-        targetLanguage: props.targetLanguage
+        sourceLanguage: translateConfig.sourceLanguage,
+        targetLanguage: translateConfig.targetLanguage
       });
       
       if (res.code === 0) {

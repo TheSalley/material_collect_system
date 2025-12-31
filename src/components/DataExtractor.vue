@@ -4,24 +4,18 @@
     :current-node="currentNode" 
     :node-id="currentNode.id" 
     :local-settings="localSettings"
-    :is-translate="isTranslate"
-    :source-language="sourceLanguage"
-    :target-language="targetLanguage"
     :on-update="handleFieldUpdate" />
 
   <template v-if="currentNode?.elements?.length">
     <div class="child-nodes">
       <DataExtractor v-for="(childNode, index) in currentNode.elements" :key="childNode.id || Math.random()"
         :current-node="childNode" 
-        :is-translate="isTranslate"
-        :source-language="sourceLanguage"
-        :target-language="targetLanguage"
         @update:node="(updatedChild) => handleChildUpdate(index, updatedChild)" />
     </div>
   </template>
 </template>
 <script setup>
-import { ref, watch, watchEffect } from "vue";
+import { ref, watch, watchEffect, inject, computed } from "vue";
 import DataExtractor from "@/components/DataExtractor.vue";
 import { translate } from "@/apis/index.js";
 
@@ -54,19 +48,12 @@ const props = defineProps({
     required: true,
     default: () => ({}),
   },
-  isTranslate: {
-    type: Boolean,
-    default: false
-  },
-  sourceLanguage: {
-    type: String,
-    default: 'zh'
-  },
-  targetLanguage: {
-    type: String,
-    default: 'en'
-  }
 });
+
+const isTranslate = inject('isTranslate', ref(false));
+const translateConfig = inject('translateConfig', { sourceLanguage: 'zh', targetLanguage: 'en' });
+const sourceLanguage = computed(() => translateConfig.sourceLanguage);
+const targetLanguage = computed(() => translateConfig.targetLanguage);
 
 const emit = defineEmits(["update:node"]);
 
@@ -86,7 +73,7 @@ watch(
 
 // 监听翻译状态变化
 watchEffect(async () => {
-  if (props.isTranslate) {
+  if (isTranslate.value) {
     // 执行翻译逻辑
     await handleTranslation();
   }

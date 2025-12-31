@@ -14,7 +14,7 @@
     </div>
 </template>
 <script setup>
-import { ref, watch, watchEffect } from "vue";
+import { ref, watch, watchEffect, inject } from "vue";
 import { translate } from "@/apis/index.js";
 import QuillEditor from "../../QuillEditor.vue";
 
@@ -31,23 +31,14 @@ const props = defineProps({
         type: Function,
         required: true
     },
-    isTranslate: {
-        type: Boolean,
-        default: false
-    },
-    sourceLanguage: {
-        type: String,
-        default: 'zh'
-    },
-    targetLanguage: {
-        type: String,
-        default: 'en'
-    },
     nodeId: {
         type: String,
         required: true
     }
 });
+
+const isTranslate = inject('isTranslate', ref(false));
+const translateConfig = inject('translateConfig', { sourceLanguage: 'zh', targetLanguage: 'en' });
 
 const localSettingsRef = ref({ ...props.localSettings });
 
@@ -57,7 +48,7 @@ watch(() => props.localSettings, (newVal) => {
 
 // 监听翻译状态变化
 watchEffect(async () => {
-  if (props.isTranslate) {
+  if (isTranslate.value) {
     try {
       // 遍历所有标签页进行翻译
       for (let i = 0; i < localSettingsRef.value.tabs?.length; i++) {
@@ -67,8 +58,8 @@ watchEffect(async () => {
         if (tab.tab_title) {
           const titleRes = await translate({
             sourceText: tab.tab_title,
-            sourceLanguage: props.sourceLanguage,
-            targetLanguage: props.targetLanguage
+            sourceLanguage: translateConfig.sourceLanguage,
+            targetLanguage: translateConfig.targetLanguage
           });
           
           if (titleRes.code === 0) {
@@ -80,8 +71,8 @@ watchEffect(async () => {
         if (tab.content) {
           const contentRes = await translate({
             sourceText: tab.content,
-            sourceLanguage: props.sourceLanguage,
-            targetLanguage: props.targetLanguage
+            sourceLanguage: translateConfig.sourceLanguage,
+            targetLanguage: translateConfig.targetLanguage
           });
           
           if (contentRes.code === 0) {

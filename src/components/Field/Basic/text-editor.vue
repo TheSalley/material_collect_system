@@ -6,7 +6,7 @@
 </template>
 
 <script setup>
-import { onMounted, computed, watch } from "vue";
+import { onMounted, computed, watch, inject, ref } from "vue";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 import { translate } from "@/apis/index.js";
@@ -23,20 +23,11 @@ const props = defineProps({
   onUpdate: {
     type: Function,
     required: true
-  },
-  isTranslate: {
-    type: Boolean,
-    default: false
-  },
-  sourceLanguage: {
-    type: String,
-    default: 'zh'
-  },
-  targetLanguage: {
-    type: String,
-    default: 'en'
   }
 });
+
+const isTranslate = inject('isTranslate', ref(false));
+const translateConfig = inject('translateConfig', { sourceLanguage: 'zh', targetLanguage: 'en' });
 
 // 从localSettings中获取编辑器内容
 const content = computed(() => props.localSettings.editor || "");
@@ -65,7 +56,7 @@ onMounted(() => {
 });
 
 // 监听翻译状态变化
-watch(() => props.isTranslate, async (newVal) => {
+watch(isTranslate, async (newVal) => {
   if (newVal && quill) {
     // 获取编辑器中的文本内容
     const editorContent = quill.root.innerHTML;
@@ -76,8 +67,8 @@ watch(() => props.isTranslate, async (newVal) => {
         // 示例调用，实际应根据用户选择的语言进行翻译
         const res = await translate({
           sourceText: editorContent,
-          sourceLanguage: props.sourceLanguage,
-          targetLanguage: props.targetLanguage
+          sourceLanguage: translateConfig.sourceLanguage,
+          targetLanguage: translateConfig.targetLanguage
         });
         
         if (res.code === 0) {

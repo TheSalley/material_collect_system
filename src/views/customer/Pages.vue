@@ -52,16 +52,16 @@
     <!-- 页面数据 -->
     <div v-if="pageData?.id">
       <template v-if="websiteInfo.mode === 1">
-        <ModuleMode :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
+        <ModuleMode :pageId="pageData.id" />
       </template>
       <template v-else>
-        <PageMode ref="PageModeNode" :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
+        <PageMode ref="PageModeNode" :pageId="pageData.id" />
       </template>
     </div>
   </main>
 </template>
 <script setup>
-import { ref, reactive, onMounted, watch, nextTick } from "vue";
+import { ref, reactive, onMounted, watch, nextTick, provide } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { updatePageById, translate } from "@/apis/index";
 import ModuleMode from "@/components/ModuleMode.vue";
@@ -82,6 +82,9 @@ const translateConfig = reactive({
 // 是否正在翻译状态
 const isTranslating = ref(false);
 
+provide('translateConfig', translateConfig);
+provide('isTranslate', isTranslating);
+
 // 切换翻译状态
 function toggleTranslate() {
   if (translateConfig.sourceLanguage === translateConfig.targetLanguage) {
@@ -98,7 +101,7 @@ async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
     console.log(PageModeNode.value.state.pageData);
-    return;
+    // return;
     const res = await updatePageById({
       meta_value: JSON.stringify(PageModeNode.value.state.pageData),
       post_id: Number(PageModeNode.value.state.pageId),
@@ -132,6 +135,7 @@ async function handleSave() {
 watch(
   () => route.params.id,
   (newId, oldId) => {
+    console.log('id: ', newId, oldId);
     if (newId) {
       pageData.value = JSON.parse(user.page_list).find(
         (item) => item.id === route.params.id
