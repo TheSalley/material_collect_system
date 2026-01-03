@@ -29,7 +29,8 @@ const getFieldComponent = (widgetType) => {
   const possiblePaths = [
     `/src/components/Field/${widgetType}.vue`,
     `/src/components/Field/Basic/${widgetType}.vue`,
-    `/src/components/Field/General/${widgetType}.vue`
+    `/src/components/Field/General/${widgetType}.vue`,
+    `/src/components/Field/Jkit/${widgetType}.vue`,
   ];
 
   // 返回第一个找到的组件
