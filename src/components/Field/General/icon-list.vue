@@ -37,9 +37,10 @@ watch(() => props.localSettings, (newVal) => {
     localSettingsRef.value = { ...newVal };
 }, { deep: true });
 
-// 监听翻译状态变化
-watchEffect(async () => {
-  if (isTranslate.value && localSettingsRef.value.title) {
+// 监听翻译状态变化，但只在状态变为true时触发一次
+watch(isTranslate, async (newVal, oldVal) => {
+  // 只有当状态从false变为true时才触发翻译
+  if (newVal === true && oldVal === false && localSettingsRef.value.title) {
     try {
       // 调用翻译API
       // 注意：这里需要指定源语言和目标语言

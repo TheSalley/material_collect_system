@@ -14,7 +14,7 @@
     </div>
 </template>
 <script setup>
-import { ref, watch, watchEffect, inject } from "vue";
+import { ref, watch, inject } from "vue";
 import { translate } from "@/apis/index.js";
 import QuillEditor from "../../QuillEditor.vue";
 
@@ -41,14 +41,17 @@ const isTranslate = inject('isTranslate', ref(false));
 const translateConfig = inject('translateConfig', { sourceLanguage: 'zh', targetLanguage: 'en' });
 
 const localSettingsRef = ref({ ...props.localSettings });
+const isTranslating = ref(false);
 
 watch(() => props.localSettings, (newVal) => {
     localSettingsRef.value = { ...newVal };
 }, { deep: true });
 
-// 监听翻译状态变化
-watchEffect(async () => {
-  if (isTranslate.value) {
+// 监听翻译状态变化，但只在状态变为true时触发一次
+watch(isTranslate, async (newVal, oldVal) => {
+  // 只有当状态从false变为true时才触发翻译，并且当前没有正在进行的翻译
+  if (newVal === true && oldVal === false && !isTranslating.value) {
+    isTranslating.value = true;
     try {
       // 遍历所有标签页进行翻译
       for (let i = 0; i < localSettingsRef.value.tabs?.length; i++) {
@@ -67,16 +70,16 @@ watchEffect(async () => {
           }
         }
         
-        // 如果有内容需要翻译，也进行翻译
-        if (tab.content) {
+        // 翻译内容
+        if (tab.tab_content) {
           const contentRes = await translate({
-            sourceText: tab.content,
+            sourceText: tab.tab_content,
             sourceLanguage: translateConfig.sourceLanguage,
             targetLanguage: translateConfig.targetLanguage
           });
           
           if (contentRes.code === 0) {
-            localSettingsRef.value.tabs[i].content = contentRes.data.translatedText;
+            localSettingsRef.value.tabs[i].tab_content = contentRes.data.translatedText;
           }
         }
       }
@@ -85,6 +88,8 @@ watchEffect(async () => {
       props.onUpdate('tabs', localSettingsRef.value.tabs);
     } catch (error) {
       console.error("翻译标签页出错:", error);
+    } finally {
+      isTranslating.value = false;
     }
   }
 });

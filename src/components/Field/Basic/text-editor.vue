@@ -33,6 +33,7 @@ const translateConfig = inject('translateConfig', { sourceLanguage: 'zh', target
 const content = computed(() => props.localSettings.editor || "");
 
 let quill = null;
+let isTranslating = false;
 
 onMounted(() => {
   quill = new Quill(`#editor_${props.nodeId}`, {
@@ -55,16 +56,16 @@ onMounted(() => {
   });
 });
 
-// 监听翻译状态变化
-watch(isTranslate, async (newVal) => {
-  if (newVal && quill) {
+// 监听翻译状态变化，但只在状态变为true时触发一次
+watch(isTranslate, async (newVal, oldVal) => {
+  // 只有当状态从false变为true时才触发翻译，并且当前没有正在翻译
+  if (newVal === true && oldVal === false && quill && !isTranslating) {
+    isTranslating = true;
     // 获取编辑器中的文本内容
     const editorContent = quill.root.innerHTML;
     if (editorContent && editorContent.trim()) {
       try {
         // 调用翻译API
-        // 注意：这里需要指定源语言和目标语言
-        // 示例调用，实际应根据用户选择的语言进行翻译
         const res = await translate({
           sourceText: editorContent,
           sourceLanguage: translateConfig.sourceLanguage,
@@ -78,7 +79,11 @@ watch(isTranslate, async (newVal) => {
         }
       } catch (error) {
         console.error("翻译出错:", error);
+      } finally {
+        isTranslating = false;
       }
+    } else {
+      isTranslating = false;
     }
   }
 });

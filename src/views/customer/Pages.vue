@@ -94,7 +94,16 @@ function toggleTranslate() {
     });
     return;
   }
+  
+  // 设置翻译状态为true
   isTranslating.value = true;
+  
+  // 在下一个tick后自动重置翻译状态，确保所有组件都能收到状态变化
+  nextTick(() => {
+    setTimeout(() => {
+      isTranslating.value = false;
+    }, 100);
+  });
 }
 
 async function handleSave() {

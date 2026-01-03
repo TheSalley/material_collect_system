@@ -71,9 +71,10 @@ watch(
   { immediate: true, deep: true }
 );
 
-// 监听翻译状态变化
-watchEffect(async () => {
-  if (isTranslate.value) {
+// 监听翻译状态变化，但只在状态变为true时触发一次
+watch(isTranslate, async (newVal, oldVal) => {
+  // 只有当状态从false变为true时才触发翻译
+  if (newVal === true && oldVal === false) {
     // 执行翻译逻辑
     await handleTranslation();
   }
