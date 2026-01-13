@@ -30,6 +30,7 @@
             <span>从:</span>
             <el-select v-model="translateConfig.sourceLanguage" placeholder="请选择源语言" style="width: 120px">
               <el-option label="中文" value="zh" />
+              <el-option label="法语" value="fr" />
               <el-option label="英语" value="en" />
               <el-option label="日语" value="ja" />
               <el-option label="韩语" value="ko" />
@@ -39,6 +40,7 @@
             <span>到:</span>
             <el-select v-model="translateConfig.targetLanguage" placeholder="请选择目标语言" style="width: 120px">
               <el-option label="中文" value="zh" />
+              <el-option label="法语" value="fr" />
               <el-option label="英语" value="en" />
               <el-option label="日语" value="ja" />
               <el-option label="韩语" value="ko" />
@@ -75,8 +77,8 @@ const route = useRoute();
 
 // 翻译配置
 const translateConfig = reactive({
-  sourceLanguage: 'zh',
-  targetLanguage: 'en'
+  sourceLanguage: 'en',
+  targetLanguage: 'fr'
 });
 
 // 是否正在翻译状态
@@ -146,7 +148,7 @@ watch(
   (newId, oldId) => {
     console.log('id: ', newId, oldId);
     if (newId) {
-      pageData.value = JSON.parse(user.page_list).find(
+      pageData.value = JSON.parse(websiteInfo.page_list).find(
         (item) => item.id === route.params.id
       );
     }

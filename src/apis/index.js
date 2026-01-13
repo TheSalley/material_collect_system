@@ -81,14 +81,13 @@ export const getPages = async () => {
  * 获取Elementor 单页面数据
  */
 export const getPageById = async (id) => {
-  const { user } = useGlobalStore();
-  const website = user.url;
+  const { user, websiteInfo } = useGlobalStore();
 
   const res = await fetch(
     config.baseUrl + `/api/proxy/elementor_data?id=${id}`,
     {
       headers: {
-        website: website,
+        website: websiteInfo.url,
       },
     }
   );
@@ -102,13 +101,12 @@ export const getPageById = async (id) => {
  * 上传Elementor 图片到媒体库
  */
 export const uploadImage = async (formdata) => {
-  const { user } = useGlobalStore();
-  const website = user.url;
+  const { websiteInfo } = useGlobalStore();
   const res = await fetch(config.baseUrl + "/api/proxy/upload_image", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${user.token}`,
-      website,
+      website: websiteInfo.url,
     },
     body: formdata,
   });
@@ -121,15 +119,14 @@ export const uploadImage = async (formdata) => {
  * 更新Elementor 单页面数据
  */
 export const updatePageById = async (payload) => {
-  const { user } = useGlobalStore();
-  const website = user.url;
+  const { user, websiteInfo } = useGlobalStore();
 
   const res = await fetch(config.baseUrl + "/api/proxy/update_elementor_data", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${user.token}`,
-      website,
+      website: websiteInfo.url,
     },
     body: JSON.stringify({
       ...payload,

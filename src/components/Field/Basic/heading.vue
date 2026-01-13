@@ -61,7 +61,6 @@ watch(isTranslate, async (newVal, oldVal) => {
             });
             
             if (res.code === 0) {
-                localSettingsRef.value.title = res.data.translatedText;
                 props.onUpdate('title', res.data.translatedText);
             }
         } catch (error) {

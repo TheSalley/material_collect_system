@@ -72,9 +72,10 @@ const state = reactive({
   pageId: null,
   meta_id: null,
   ImageList: [],
+  simpleData: null,
 });
 
-onMounted(async () => { });
+onMounted(async () => {});
 
 function handleNodeUpdate(index, index1, updatedNode) {
   state.pageData[index].elements[index1] = updatedNode;
@@ -119,6 +120,12 @@ const customUpload = async (file) => {
   }
 };
 
+function getSimpleData(data) {
+ data.forEach(item => {
+  
+ })
+}
+
 watch(
   () => props.pageId,
   async (newId, oldId) => {
@@ -134,6 +141,7 @@ watch(
         state.pageData = JSON.parse(res1.data.meta_value);
         state.originData = JSON.parse(res1.data.meta_value);
         state.meta_id = res1.data.meta_id;
+        getSimpleData(state.pageData);
       }
       if (res2.code === 0) {
         pagePic.value = res2.data;
