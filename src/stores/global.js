@@ -7,12 +7,12 @@ export const useGlobalStore = defineStore(
   () => {
     // 用户信息
     const user = ref(null);
-    const token = ref("");
+    const access_token = ref("");
     const isLogin = ref(false);
 
     function clearUser() {
       user.value = null;
-      token.value = "";
+      access_token.value = "";
       isLogin.value = false;
     }
 
@@ -26,7 +26,7 @@ export const useGlobalStore = defineStore(
       user.value = data;
     }
 
-    return { user, token, isLogin, clearUser, websiteInfo, setWebsiteInfo, setUser };
+    return { user, access_token, isLogin, clearUser, websiteInfo, setWebsiteInfo, setUser };
   },
   { 
     persist: true

@@ -83,21 +83,21 @@ let isDynamicRoutesAdded = false;
 // 路由守卫：检测登录状态
 router.beforeEach(async (to, from, next) => {
   const globalStore = useGlobalStore();
-  const { user, token } = globalStore;
+  const { user, access_token } = globalStore;
   
   // 重置动态路由添加状态，确保登出后重新登录可以正确添加路由
-  if (!token) {
+  if (!access_token) {
     isDynamicRoutesAdded = false;
   }
 
   // 检查当前访问的路由是否需要认证
-  if (to.meta.requiresAuth && !token) {
+  if (to.meta.requiresAuth && !access_token) {
     next("/login");
     return;
   }
 
   // 3. 已登录但动态路由未添加 → 先添加再重定向
-  if (token && !isDynamicRoutesAdded) {
+  if (access_token && !isDynamicRoutesAdded) {
     try {
       await addProtectedRoutes(user.role);
       isDynamicRoutesAdded = true;
@@ -111,7 +111,7 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // 特殊处理：如果访问根路径且未登录，重定向到登录页
-  if (to.path === "/" && !token) {
+  if (to.path === "/" && !access_token) {
     next("/login");
     return;
   }

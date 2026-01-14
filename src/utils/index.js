@@ -7,7 +7,7 @@ export function addProtectedRoutes(role) {
     let routesToAdd = [];
 
     // 1. 根据角色选择要添加的路由
-    if (role === "administrator") {
+    if (role === "admin") {
       routesToAdd = adminRoutes;
     } else if (role === "customer") {
       routesToAdd = userRoutes;

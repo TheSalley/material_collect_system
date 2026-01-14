@@ -1,15 +1,15 @@
 import { useGlobalStore } from "@/stores/global";
 
 const config = {
-  baseUrl: "http://120.55.2.201:8008",
+  baseUrl: "https://apitest.yhct.site",
 };
 
-/** *
+/**
  *
  * 用户登录
  */
 export const login = async (payload) => {
-  const res = await fetch(config.baseUrl + "/api/login/", {
+  const res = await fetch(config.baseUrl + "/api/auth/login/", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -25,13 +25,13 @@ export const login = async (payload) => {
  * 用户编辑
  */
 export const updateUser = async (payload) => {
-  const { token } = useGlobalStore();
+  const { access_token } = useGlobalStore();
 
   const res = await fetch(config.baseUrl + "/api/user/update", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${access_token}`,
     },
     body: JSON.stringify(payload),
   });
@@ -42,16 +42,16 @@ export const updateUser = async (payload) => {
 
 /**
  *
- * 用户编辑page_list
+ * 用户编辑 page_list
  */
 export const updateUserPageList = async (payload) => {
-  const { token } = useGlobalStore();
+  const { access_token } = useGlobalStore();
 
   const res = await fetch(config.baseUrl + "/api/user/update_page_list", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${access_token}`,
     },
     body: JSON.stringify(payload),
   });
@@ -64,12 +64,12 @@ export const updateUserPageList = async (payload) => {
  *
  * 获取Elementor 所有页面
  */
-export const getPages = async () => {
-  const { websiteInfo } = useGlobalStore();
+export const getPages = async (site_id) => {
+  const { access_token } = useGlobalStore();
 
-  const res = await fetch(config.baseUrl + "/api/proxy/get_pages", {
+  const res = await fetch(config.baseUrl + `/api/proxy/get_pages?site_id=${site_id}`, {
     headers: {
-      website: websiteInfo.url,
+      Authorization: `Bearer ${access_token}`,
     },
   });
   const data = await res.json();
@@ -105,7 +105,7 @@ export const uploadImage = async (formdata) => {
   const res = await fetch(config.baseUrl + "/api/proxy/upload_image", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${user.token}`,
+      Authorization: `Bearer ${user.access_token}`,
       website: websiteInfo.url,
     },
     body: formdata,
@@ -125,7 +125,7 @@ export const updatePageById = async (payload) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${user.token}`,
+      Authorization: `Bearer ${user.access_token}`,
       website: websiteInfo.url,
     },
     body: JSON.stringify({
@@ -136,11 +136,16 @@ export const updatePageById = async (payload) => {
   return data;
 };
 
+
+/**
+ *
+ * 获取站点列表
+ */
 export const getList = async () => {
-  const globalStore = useGlobalStore();
-  const res = await fetch(config.baseUrl + "/api/user/list", {
+  const { access_token } = useGlobalStore();
+  const res = await fetch(config.baseUrl + "/api/site/list", {
     headers: {
-      Authorization: `Bearer ${globalStore.token}`,
+      Authorization: `Bearer ${access_token}`,
     },
   });
   const data = await res.json();
@@ -156,7 +161,7 @@ export const upload_bind_img = async (formdata) => {
   const res = await fetch(config.baseUrl + "/api/file/upload", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${globalStore.token}`,
+      Authorization: `Bearer ${globalStore.access_token}`,
     },
     body: formdata,
   });
@@ -176,7 +181,7 @@ export const get_bind_img = async (demo, bind_id, bind_mode) => {
     `?demo=${demo}&bind_id=${bind_id}&bind_mode=${bind_mode}`,
     {
       headers: {
-        Authorization: `Bearer ${globalStore.token}`,
+        Authorization: `Bearer ${globalStore.access_token}`,
       },
     }
   );
@@ -195,7 +200,7 @@ export const translate = async (payload) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${globalStore.token}`,
+      Authorization: `Bearer ${globalStore.access_token}`,
     },
     body: JSON.stringify(payload),
   });

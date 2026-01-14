@@ -39,8 +39,8 @@ const router = useRouter();
 const globalStore = useGlobalStore();
 
 const form = ref({
-  username: "",
-  password: "",
+  username: "yeehai",
+  password: "yeehai2026",
 });
 
 const rules = {
@@ -68,7 +68,7 @@ const handleLogin = async () => {
     });
     if (res.code === 0) {
       globalStore.user = res.data.user;
-      globalStore.token = res.data.token;
+      globalStore.access_token = res.data.access_token;
       globalStore.isLogin = true;
       ElMessage.success("登录成功");
       router.push("/");

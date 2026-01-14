@@ -25,11 +25,11 @@
       </div>
       <div class="overflow-x-auto w-full">
         <el-table :data="tableData" border height="350">
-          <el-table-column prop="id" label="ID" />
-          <el-table-column prop="username" label="客户账号"/>
-          <el-table-column prop="nickname" label="客户名称"/>
-          <el-table-column prop="demo" label="demo 名称"/>
-          <el-table-column prop="url" label="网址" width="180" />
+          <el-table-column prop="site_id" label="ID" />
+          <!-- <el-table-column prop="username" label="客户账号"/> -->
+          <el-table-column prop="site_name" label="站点名称"/>
+          <el-table-column prop="demo_site" label="demo 名称"/>
+          <el-table-column prop="wp_base_url" label="网址" width="180" />
           <el-table-column prop="mode" label="模式">
             <template #default="scope">
               <el-tag>{{ scope.row.mode === 1 ? "组件" : "页面" }}</el-tag>
@@ -42,7 +42,7 @@
               }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="create_time" label="创建时间" width="180" />
+          <el-table-column prop="updated_at" label="创建时间" width="180" />
           <el-table-column fixed="right" label="操作" min-width="120">
             <template #default="scope">
               <el-button
@@ -167,6 +167,7 @@ async function onSubmit() {
 onMounted(async () => {
   const res = await getList();
   if (res.code === 0) {
+    res.data.forEach(i => i.mode = 2); // 临时修改
     tableData.push(...res.data);
   } else {
     if (res.code === 403) {

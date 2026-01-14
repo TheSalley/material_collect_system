@@ -80,7 +80,7 @@
           <div
             class="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
             <div class="overflow-x-auto">
-              <el-table :data="transform_page_list" style="width: 100%">
+              <el-table :data="pageList" style="width: 100%">
                 <el-table-column prop="id" label="ID" width="180" />
                 <el-table-column prop="post_name" label="Post Name" width="180" />
                 <el-table-column fixed="right" label="状态" min-width="120">
@@ -120,7 +120,8 @@ const router = useRouter();
 const { websiteInfo, setWebsiteInfo } = useGlobalStore();
 
 onMounted(async () => {
-  const res = await getPages();
+  console.log(123);
+  const res = await getPages(websiteInfo.site_id);
   if (res.code === 0) {
     pageList.push(...res.data);
   }
@@ -128,22 +129,22 @@ onMounted(async () => {
 
 const transform_page_list = computed(() => {
   let arr = [];
-  let user_page_list = JSON.parse(websiteInfo.page_list);
-  pageList.forEach((item) => {
-    if (user_page_list.find(i => i.id === item.id)) {
-      arr.unshift({
-        id: item.id,
-        post_name: item.post_name,
-        status: true,
-      });
-    } else {
-      arr.push({
-        id: item.id,
-        post_name: item.post_name,
-        status: false,
-      });
-    }
-  });
+  // let user_page_list = JSON.parse(websiteInfo.page_list);
+  // pageList.forEach((item) => {
+  //   if (user_page_list.find(i => i.id === item.id)) {
+  //     arr.unshift({
+  //       id: item.id,
+  //       post_name: item.post_name,
+  //       status: true,
+  //     });
+  //   } else {
+  //     arr.push({
+  //       id: item.id,
+  //       post_name: item.post_name,
+  //       status: false,
+  //     });
+  //   }
+  // });
   return arr;
 });
 

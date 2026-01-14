@@ -23,4 +23,14 @@ export default defineConfig({
       resolvers: [ElementPlusResolver()],
     }),
   ],
+  server: {
+    // proxy: {
+    //   "/local": {
+    //     target: "https://apitest.yhct.site",
+    //     changeOrigin: true,
+    //     secure: true,
+    //     rewrite: (path) => path.replace(/^\/local/, ""), // 如果需要重写路径，取消注释
+    //   },
+    // },
+  },
 });

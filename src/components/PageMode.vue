@@ -45,7 +45,7 @@
   </el-dialog>
 </template>
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch } from "vue";
+import { ref, reactive, onMounted, nextTick, watch, toRaw } from "vue";
 import {
   getPageById,
   updatePageById,
@@ -77,7 +77,16 @@ const state = reactive({
 onMounted(async () => {});
 
 function handleNodeUpdate(index, index1, updatedNode) {
-  state.pageData[index].elements[index1] = updatedNode;
+  // 使用 JSON 序列化/反序列化来去除所有 Vue 响应式包装
+  // 这样可以确保保存的是纯 JavaScript 对象，不会包含 _custom 等 Vue 内部标记
+  try {
+    const cleanNode = JSON.parse(JSON.stringify(toRaw(updatedNode)));
+    state.pageData[index].elements[index1] = cleanNode;
+  } catch (error) {
+    console.error('更新节点时出错:', error);
+    // 如果序列化失败，直接使用 toRaw
+    state.pageData[index].elements[index1] = toRaw(updatedNode);
+  }
 }
 
 const handleBeforeUpload = (file) => {
