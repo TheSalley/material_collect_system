@@ -1,7 +1,7 @@
 <template>
   <div class="field-item">
     <span class="field-label">文本：</span>
-    <div :id="'editor_' + nodeId" class="min-h-[300px]"></div>
+    <div :id="'editor_' + nodeId" class="min-h-[200px]"></div>
   </div>
 </template>
 
