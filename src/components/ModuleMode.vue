@@ -49,7 +49,6 @@
 import { ref, reactive, onMounted, nextTick, watch } from "vue";
 import {
   getPageById,
-  updatePageById,
   upload_bind_img,
   get_bind_img,
 } from "@/apis/index.js";

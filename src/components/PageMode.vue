@@ -48,7 +48,6 @@
 import { ref, reactive, onMounted, nextTick, watch, toRaw } from "vue";
 import {
   getPageById,
-  updatePageById,
   upload_bind_img,
   get_bind_img,
 } from "@/apis/index.js";
@@ -73,6 +72,8 @@ const state = reactive({
   ImageList: [],
   simpleData: null,
 });
+
+const { websiteInfo } = useGlobalStore();
 
 onMounted(async () => {});
 
@@ -141,7 +142,7 @@ watch(
       const loadingInstance = ElLoading.service({ fullscreen: true });
       const { user } = useGlobalStore();
       const [res1, res2] = await Promise.all([
-        getPageById(props.pageId),
+        getPageById(props.pageId, websiteInfo.site_id),
         get_bind_img(user.demo, props.pageId, user.mode),
       ]);
       if (res1.code === 0 && res1.data.post_id) {

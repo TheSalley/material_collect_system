@@ -80,22 +80,19 @@ export const getPages = async (site_id) => {
  *
  * 获取Elementor 单页面数据
  */
-export const getPageById = async (id) => {
-  const { user, websiteInfo } = useGlobalStore();
+export const getPageById = async (post_id, site_id) => {
+  const { access_token} = useGlobalStore();
 
   const res = await fetch(
-    config.baseUrl + `/api/proxy/elementor_data?id=${id}`,
-    {
-      headers: {
-        website: websiteInfo.url,
-      },
-    }
-  );
+    config.baseUrl + `/api/proxy/elementor_data/${post_id}?site_id=${site_id}`,
+  {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  });
   const data = await res.json();
   return data;
 };
-
-
 /**
  *
  * 上传Elementor 图片到媒体库
@@ -119,18 +116,15 @@ export const uploadImage = async (formdata) => {
  * 更新Elementor 单页面数据
  */
 export const updatePageById = async (payload) => {
-  const { user, websiteInfo } = useGlobalStore();
+  const { access_token } = useGlobalStore();
 
   const res = await fetch(config.baseUrl + "/api/proxy/update_elementor_data", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${user.access_token}`,
-      website: websiteInfo.url,
+      Authorization: `Bearer ${access_token}`,
     },
-    body: JSON.stringify({
-      ...payload,
-    }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json();
   return data;
@@ -196,7 +190,7 @@ export const get_bind_img = async (demo, bind_id, bind_mode) => {
  */
 export const translate = async (payload) => {
   const globalStore = useGlobalStore();
-  const res = await fetch(config.baseUrl + "/api/translate", {
+  const res = await fetch("http://120.55.2.201:8008/api/translate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

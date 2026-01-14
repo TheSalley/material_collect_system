@@ -81,7 +81,7 @@
             class="bg-card-light dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
             <div class="overflow-x-auto">
               <el-table :data="pageList" style="width: 100%">
-                <el-table-column prop="id" label="ID" width="180" />
+                <el-table-column prop="ID" label="ID" width="180" />
                 <el-table-column prop="post_name" label="Post Name" width="180" />
                 <el-table-column fixed="right" label="状态" min-width="120">
                   <template #default="scope">
@@ -120,7 +120,6 @@ const router = useRouter();
 const { websiteInfo, setWebsiteInfo } = useGlobalStore();
 
 onMounted(async () => {
-  console.log(123);
   const res = await getPages(websiteInfo.site_id);
   if (res.code === 0) {
     pageList.push(...res.data);
@@ -150,7 +149,7 @@ const transform_page_list = computed(() => {
 
 
 function edit(row) {
-  router.push({ path: `/pages/${row.id}` });
+  router.push({ path: `/pages/${row.ID}` });
 }
 
 async function handleSave() {

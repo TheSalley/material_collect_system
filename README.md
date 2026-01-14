@@ -1,5 +1,24 @@
-# Vue 3 + Vite
+# 素材同步系统
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## 已适配组件
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+1. Basic
+
+    1. heading
+    2. text-editor
+    3. button
+    4. image
+    5. video
+2. General
+
+    1. counter
+    2. icon-list
+    3. accordion
+    4. toggle
+
+## 接口
+
+1. /api/auth/login/
+2. /api/proxy/get_pages?site_id=${site_id}
+3. /api/proxy/elementor_data?id=${id}
+4. /api/proxy/update_elementor_data

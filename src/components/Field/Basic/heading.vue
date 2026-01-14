@@ -1,5 +1,5 @@
 <template>
-    <div class="field-item">
+    <div class="field-item" v-if="!(localSettingsRef.__dynamic__ && localSettingsRef.__dynamic__.title)">
         <span class="field-label">标题：</span>
         <el-input v-model="localSettingsRef.title"
             show-word-limit type="textarea" @input="handleInput" />
