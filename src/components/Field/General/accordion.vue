@@ -2,7 +2,7 @@
     <div class="field-item">
         <div v-for="(item, index) in localSettingsRef.tabs" :key="index">
             <span class="field-label">标题：</span>
-            <el-input v-model="item.tab_title" minlength="1" min="1" maxlength="100"
+            <el-input v-model="item.tab_title"
             show-word-limit type="textarea" @input="onUpdate('tabs', localSettingsRef.tabs)" />
             <div class="field-label">内容</div>
             <QuillEditor 

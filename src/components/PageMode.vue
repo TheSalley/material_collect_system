@@ -9,8 +9,7 @@
       <div v-if="state?.pageId">
         <div v-for="(part, index) in state.originData" :key="index" class="mb-4">
           <el-collapse accordion class="px-4">
-            <el-collapse-item v-if="!part.settings?.hide_desktop" :title="`板块-${index + 1}-${part.id}`" :name="`part-${index}`">
-              <span></span>
+            <el-collapse-item v-if="!part.settings?.hide_desktop" :title="`板块-${index + 1}-${part.id}-${part.elType}`" :name="`part-${index}`">
               <div v-for="(topNode, index1) in part.elements" :key="topNode.id">
                 <DataExtractor v-if="!topNode.settings?.hide_desktop" 
                   :current-node="topNode" 
@@ -138,10 +137,19 @@ watch(
       ]);
       if (res1.code === 0 && res1.data.post_id) {
         state.pageId = res1.data.post_id;
-        state.pageData = JSON.parse(res1.data.meta_value);
-        state.originData = JSON.parse(res1.data.meta_value);
-        state.meta_id = res1.data.meta_id;
-        getSimpleData(state.pageData);
+        try {
+          state.pageData = JSON.parse(res1.data.meta_value);
+          state.originData = JSON.parse(res1.data.meta_value);
+          state.meta_id = res1.data.meta_id;
+          getSimpleData(state.pageData);
+        } catch (error) {
+          console.error('JSON 解析错误:', error);
+          console.error('原始数据:', res1.data.meta_value);
+          ElMessage.error('数据格式错误，无法解析 JSON。请检查服务器返回的数据。');
+          // 设置空数据，避免页面崩溃
+          state.pageData = null;
+          state.originData = null;
+        }
       }
       if (res2.code === 0) {
         pagePic.value = res2.data;

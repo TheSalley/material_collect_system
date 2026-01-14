@@ -1,7 +1,7 @@
 <template>
     <div class="field-item">
         <span class="field-label">标题：</span>
-        <el-input v-model="localSettingsRef.title" minlength="1" min="1" maxlength="100"
+        <el-input v-model="localSettingsRef.title"
             show-word-limit type="textarea" @input="handleInput" />
     </div>
 </template>
@@ -27,6 +27,7 @@ const props = defineProps({
 const isTranslate = inject('isTranslate', ref(false));
 const translateConfig = inject('translateConfig', { sourceLanguage: 'zh', targetLanguage: 'en' });
 
+// 初始化本地状态，只在组件挂载时同步一次
 const localSettingsRef = ref({ ...props.localSettings });
 let inputTimeout = null;
 let isTranslating = false;
@@ -40,13 +41,9 @@ const handleInput = () => {
     
     // 设置新的定时器，延迟300ms后更新
     inputTimeout = setTimeout(() => {
-        props.onUpdate('title', localSettingsRef.title);
+        props.onUpdate('title', localSettingsRef.value.title);
     }, 300);
 };
-
-watch(() => props.localSettings, (newVal) => {
-    localSettingsRef.value = { ...newVal };
-}, { deep: true });
 
 // 监听翻译状态变化，但只在状态变为true时触发一次
 watch(isTranslate, async (newVal, oldVal) => {
