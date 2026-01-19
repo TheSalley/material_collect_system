@@ -170,7 +170,7 @@ onMounted(async () => {
     res.data.forEach(i => i.mode = 2); // 临时修改
     tableData.push(...res.data);
   } else {
-    if (res.code === 403) {
+    if (res.code === 401) {
       ElMessage.error("账号已过期，请重新登录");
       await new Promise((resolve) => setTimeout(resolve, 1500));
       router.push("/login");

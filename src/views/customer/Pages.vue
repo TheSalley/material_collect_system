@@ -34,6 +34,7 @@
               <el-option label="英语" value="en" />
               <el-option label="日语" value="ja" />
               <el-option label="韩语" value="ko" />
+              <el-option label="阿拉伯语" value="ar" />
             </el-select>
           </div>
           <div class="flex items-center gap-2">
@@ -44,6 +45,7 @@
               <el-option label="英语" value="en" />
               <el-option label="日语" value="ja" />
               <el-option label="韩语" value="ko" />
+              <el-option label="阿拉伯语" value="ar" />
             </el-select>
           </div>
           <el-button type="success" @click="toggleTranslate">一键翻译</el-button>
@@ -78,7 +80,7 @@ const route = useRoute();
 // 翻译配置
 const translateConfig = reactive({
   sourceLanguage: 'en',
-  targetLanguage: 'fr'
+  targetLanguage: 'ar'
 });
 
 // 是否正在翻译状态
@@ -100,8 +102,9 @@ async function toggleTranslate() {
   // 等待 DOM 更新完成
   await nextTick();
   
-  // 收集需要翻译的元素
+  // 收集需要翻译的元素，并记录原始文本用于后续匹配
   const elementsToTranslate = [];
+  const translationMap = new Map(); // 原始文本 -> 翻译文本的映射
   
   // 获取所有 input 元素
   const inputs = document.querySelectorAll('.field-item input[type="text"]');
@@ -110,6 +113,7 @@ async function toggleTranslate() {
       elementsToTranslate.push({
         element: input,
         text: input.value.trim(),
+        originalText: input.value.trim(),
         type: 'input',
         index: index
       });
@@ -123,6 +127,7 @@ async function toggleTranslate() {
       elementsToTranslate.push({
         element: textarea,
         text: textarea.value.trim(),
+        originalText: textarea.value.trim(),
         type: 'textarea',
         index: index
       });
@@ -132,11 +137,14 @@ async function toggleTranslate() {
   // 获取所有 class 为 ql-editor 的元素
   const qlEditors = document.querySelectorAll('.field-item .ql-editor');
   qlEditors.forEach((editor, index) => {
-    const text = editor.innerText || editor.textContent || '';
-    if (text.trim()) {
+    // 对于富文本编辑器，获取HTML内容
+    const htmlContent = editor.innerHTML || '';
+    const textContent = editor.innerText || editor.textContent || '';
+    if (textContent.trim()) {
       elementsToTranslate.push({
         element: editor,
-        text: text.trim(),
+        text: textContent.trim(),
+        originalText: htmlContent, // 保存原始HTML
         type: 'ql-editor',
         index: index
       });
@@ -179,25 +187,43 @@ async function toggleTranslate() {
         if (translateRes.code === 0 && translateRes.data && translateRes.data.translatedText) {
           const translatedText = translateRes.data.translatedText;
           
+          // 记录翻译映射
+          translationMap.set(item.originalText, translatedText);
+          
           // 将翻译结果同步回页面
-          if (item.type === 'input') {
+          if (item.type === 'input' || item.type === 'textarea') {
             item.element.value = translatedText;
-            // 触发 input 事件，确保 Vue 响应式更新
-            item.element.dispatchEvent(new Event('input', { bubbles: true }));
-          } else if (item.type === 'textarea') {
-            item.element.value = translatedText;
-            // 触发 input 事件，确保 Vue 响应式更新
-            item.element.dispatchEvent(new Event('input', { bubbles: true }));
+            // 使用更强的方式触发 Vue 更新
+            const inputEvent = new InputEvent('input', { 
+              bubbles: true, 
+              cancelable: true,
+              composed: true
+            });
+            item.element.dispatchEvent(inputEvent);
+            
+            // 也触发 change 事件
+            const changeEvent = new Event('change', { bubbles: true });
+            item.element.dispatchEvent(changeEvent);
+            
           } else if (item.type === 'ql-editor') {
-            // 对于 Quill 编辑器，设置 innerHTML 并触发相应事件
-            // 将纯文本转换为 HTML（保留换行）
-            const htmlText = translatedText.replace(/\n/g, '<br>');
-            item.element.innerHTML = htmlText;
-            // 触发 Quill 的 text-change 事件
-            const textChangeEvent = new Event('text-change', { bubbles: true });
-            item.element.dispatchEvent(textChangeEvent);
-            // 也触发 input 事件以确保 Vue 响应式更新
-            item.element.dispatchEvent(new Event('input', { bubbles: true }));
+            // 对于 Quill 编辑器，需要通过 Quill 实例来更新
+            const quillContainer = item.element.parentElement;
+            if (quillContainer && quillContainer.__quill) {
+              // 如果能访问到 Quill 实例
+              const quill = quillContainer.__quill;
+              quill.root.innerHTML = translatedText;
+              // 手动触发 text-change 事件
+              quill.emitter.emit('text-change');
+            } else {
+              // 否则直接更新 innerHTML
+              const htmlText = translatedText.replace(/\n/g, '<br>');
+              item.element.innerHTML = htmlText;
+              
+              // 触发多个事件以确保更新
+              item.element.dispatchEvent(new Event('text-change', { bubbles: true }));
+              item.element.dispatchEvent(new Event('input', { bubbles: true }));
+              item.element.dispatchEvent(new Event('blur', { bubbles: true }));
+            }
           }
           
           successCount++;
@@ -215,6 +241,9 @@ async function toggleTranslate() {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
+    
+    // 翻译完成后，强制同步DOM值到Vue数据
+    await syncDomToVueData(translationMap);
     
     // 显示翻译结果
     if (successCount > 0) {
@@ -236,6 +265,50 @@ async function toggleTranslate() {
     });
   } finally {
     loadingInstance.close();
+  }
+}
+
+// 同步DOM值到Vue数据
+async function syncDomToVueData(translationMap) {
+  if (!PageModeNode.value || !PageModeNode.value.state.pageData) {
+    return;
+  }
+  
+  await nextTick();
+  
+  // 递归更新 pageData，使用翻译映射来精确匹配
+  updateDataWithTranslation(PageModeNode.value.state.pageData, translationMap);
+}
+
+// 递归更新嵌套数据，使用翻译映射进行精确匹配
+function updateDataWithTranslation(data, translationMap) {
+  if (!Array.isArray(data)) return;
+  
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    
+    // 更新当前节点的 settings
+    if (item.settings) {
+      // 检查 title 字段
+      if (item.settings.title && translationMap.has(item.settings.title)) {
+        item.settings.title = translationMap.get(item.settings.title);
+      }
+      
+      // 检查 editor 字段
+      if (item.settings.editor && translationMap.has(item.settings.editor)) {
+        item.settings.editor = translationMap.get(item.settings.editor);
+      }
+      
+      // 可以添加更多字段的检查
+      if (item.settings.content && translationMap.has(item.settings.content)) {
+        item.settings.content = translationMap.get(item.settings.content);
+      }
+    }
+    
+    // 递归处理子元素
+    if (item.elements && item.elements.length > 0) {
+      updateDataWithTranslation(item.elements, translationMap);
+    }
   }
 }
 

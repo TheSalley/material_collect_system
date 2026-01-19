@@ -16,6 +16,16 @@
     3. accordion
     4. toggle
 
+待适配：
+
+1. icon-box
+2. timeline-widget-addon
+3. call-to-action
+4. elementskit-team
+5. flip-box
+
+有的counter 是cool number 没有数据，默认填充
+
 ## 接口
 
 1. /api/auth/login/
