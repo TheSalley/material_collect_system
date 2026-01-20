@@ -16,9 +16,13 @@ import { ref, computed } from "vue";
 import { uploadImage } from "@/apis";
 
 const props = defineProps({
-  localSettings: {
+  nodeId: {
+    type: String,
+    required: true
+  },
+  fields: {
     type: Object,
-    default: () => ({})
+    required: true
   },
   onUpdate: {
     type: Function,
@@ -26,8 +30,8 @@ const props = defineProps({
   }
 });
 
-// 从localSettings中获取图像值
-const value = computed(() => props.localSettings.image || {});
+// 从fields中获取图像值
+const value = computed(() => props.fields.image || {});
 
 const handleBeforeUpload = (file) => {
   const isImage = file.type === "image/jpeg" || file.type === "image/png";

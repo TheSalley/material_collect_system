@@ -1,7 +1,39 @@
 import { useGlobalStore } from "@/stores/global";
+import router from "@/router";
 
 const config = {
   baseUrl: "https://apitest.yhct.site",
+};
+
+/**
+ * 统一的fetch请求包装函数，处理401等错误
+ */
+const fetchWithAuth = async (url, options = {}) => {
+  try {
+    const res = await fetch(url, options);
+    const data = await res.json();
+    
+    // 检查是否是401未授权错误
+    if (res.status === 401 || data.code === 401) {
+      const globalStore = useGlobalStore();
+      
+      // 清除用户信息
+      globalStore.clearUser();
+      
+      // 跳转到登录页
+      router.push('/login');
+      
+      // 提示用户
+      ElMessage.error('登录已过期，请重新登录');
+      
+      return data;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('请求错误:', error);
+    throw error;
+  }
 };
 
 /**
@@ -27,7 +59,7 @@ export const login = async (payload) => {
 export const updateUser = async (payload) => {
   const { access_token } = useGlobalStore();
 
-  const res = await fetch(config.baseUrl + "/api/user/update", {
+  return await fetchWithAuth(config.baseUrl + "/api/user/update", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -35,8 +67,6 @@ export const updateUser = async (payload) => {
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  return data;
 };
 
 
@@ -47,7 +77,7 @@ export const updateUser = async (payload) => {
 export const updateUserPageList = async (payload) => {
   const { access_token } = useGlobalStore();
 
-  const res = await fetch(config.baseUrl + "/api/user/update_page_list", {
+  return await fetchWithAuth(config.baseUrl + "/api/user/update_page_list", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -55,8 +85,6 @@ export const updateUserPageList = async (payload) => {
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  return data;
 };
 
 
@@ -67,13 +95,11 @@ export const updateUserPageList = async (payload) => {
 export const getPages = async (site_id) => {
   const { access_token } = useGlobalStore();
 
-  const res = await fetch(config.baseUrl + `/api/proxy/get_pages?site_id=${site_id}`, {
+  return await fetchWithAuth(config.baseUrl + `/api/proxy/get_pages?site_id=${site_id}`, {
     headers: {
       Authorization: `Bearer ${access_token}`,
     },
   });
-  const data = await res.json();
-  return data;
 };
 
 /**
@@ -83,32 +109,28 @@ export const getPages = async (site_id) => {
 export const getPageById = async (post_id, site_id) => {
   const { access_token} = useGlobalStore();
 
-  const res = await fetch(
+  return await fetchWithAuth(
     config.baseUrl + `/api/proxy/elementor_data/${post_id}?site_id=${site_id}`,
   {
     headers: {
       Authorization: `Bearer ${access_token}`,
     },
   });
-  const data = await res.json();
-  return data;
 };
 /**
  *
  * 上传Elementor 图片到媒体库
  */
 export const uploadImage = async (formdata) => {
-  const { websiteInfo } = useGlobalStore();
-  const res = await fetch(config.baseUrl + "/api/proxy/upload_image", {
+  const { websiteInfo, access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/upload_image", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${user.access_token}`,
+      Authorization: `Bearer ${access_token}`,
       website: websiteInfo.url,
     },
     body: formdata,
   });
-  const data = await res.json();
-  return data;
 };
 
 /**
@@ -118,7 +140,7 @@ export const uploadImage = async (formdata) => {
 export const updatePageById = async (payload) => {
   const { access_token } = useGlobalStore();
 
-  const res = await fetch(config.baseUrl + "/api/proxy/update_elementor_data", {
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/update_elementor_data", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -126,8 +148,6 @@ export const updatePageById = async (payload) => {
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  return data;
 };
 
 
@@ -137,13 +157,11 @@ export const updatePageById = async (payload) => {
  */
 export const getList = async () => {
   const { access_token } = useGlobalStore();
-  const res = await fetch(config.baseUrl + "/api/site/list", {
+  return await fetchWithAuth(config.baseUrl + "/api/site/list", {
     headers: {
       Authorization: `Bearer ${access_token}`,
     },
   });
-  const data = await res.json();
-  return data;
 };
 
 /**
@@ -152,15 +170,13 @@ export const getList = async () => {
  */
 export const upload_bind_img = async (formdata) => {
   const globalStore = useGlobalStore();
-  const res = await fetch(config.baseUrl + "/api/file/upload", {
+  return await fetchWithAuth(config.baseUrl + "/api/file/upload", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${globalStore.access_token}`,
     },
     body: formdata,
   });
-  const data = await res.json();
-  return data;
 };
 
 /**
@@ -169,7 +185,7 @@ export const upload_bind_img = async (formdata) => {
  */
 export const get_bind_img = async (demo, bind_id, bind_mode) => {
   const globalStore = useGlobalStore();
-  const res = await fetch(
+  return await fetchWithAuth(
     config.baseUrl +
     "/api/file/get" +
     `?demo=${demo}&bind_id=${bind_id}&bind_mode=${bind_mode}`,
@@ -179,8 +195,6 @@ export const get_bind_img = async (demo, bind_id, bind_mode) => {
       },
     }
   );
-  const data = await res.json();
-  return data;
 };
 
 
@@ -190,7 +204,7 @@ export const get_bind_img = async (demo, bind_id, bind_mode) => {
  */
 export const translate = async (payload) => {
   const globalStore = useGlobalStore();
-  const res = await fetch("http://120.55.2.201:8008/api/translate", {
+  return await fetchWithAuth("http://120.55.2.201:8008/api/translate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -198,6 +212,4 @@ export const translate = async (payload) => {
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  return data;
 };

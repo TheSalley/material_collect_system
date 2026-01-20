@@ -6,16 +6,19 @@
       <el-empty v-else description="未上传截图" />
     </div>
     <div class="w-1/2 __border-shadow">
-      <div v-if="state?.pageId">
+      <div v-if="state?.pageId && state?.editableMap">
         <div v-for="(part, index) in state.originData" :key="index" class="mb-4">
           <el-collapse accordion class="px-4">
-            <el-collapse-item v-if="!part.settings?.hide_desktop" :title="`板块-${index + 1}-${part.id}-${part.elType}`" :name="`part-${index}`">
-              <div v-for="(topNode, index1) in part.elements" :key="topNode.id">
-                <DataExtractor v-if="!topNode.settings?.hide_desktop" 
-                  :current-node="topNode" 
-                  @update:node="
-                  (updatedNode) => handleNodeUpdate(index, index1, updatedNode)
-                " />
+            <el-collapse-item 
+              v-if="!part.settings?.hide_desktop" 
+              :title="`板块-${index + 1}-${part.id}-${part.elType}`" 
+              :name="`part-${index}`">
+              <div v-for="topNode in part.elements" :key="topNode.id">
+                <DataExtractor 
+                  v-if="!topNode.settings?.hide_desktop" 
+                  :original-node="topNode"
+                  :editable-map="state.editableMap"
+                  @update:field="handleFieldUpdate" />
               </div>
             </el-collapse-item>
           </el-collapse>
@@ -53,6 +56,7 @@ import {
 } from "@/apis/index.js";
 import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
+import { extractEditableData, syncDataToOriginal, updateField, mapToObject } from "@/utils/dataExtractor.js";
 
 const dialogVisible = ref(false);
 const pagePic = ref(null);
@@ -65,29 +69,77 @@ const props = defineProps({
 });
 
 const state = reactive({
-  pageData: null,
-  originData: null,
+  pageData: null,           // 原始 Elementor 完整数据（用于保存）
+  originData: null,         // 用于展示的数据（不会被修改）
+  editableMap: null,        // 提取的可编辑数据 Map（轻量级）
   pageId: null,
   meta_id: null,
   ImageList: [],
-  simpleData: null,
 });
 
 const { websiteInfo } = useGlobalStore();
 
 onMounted(async () => {});
 
-function handleNodeUpdate(index, index1, updatedNode) {
-  // 使用 JSON 序列化/反序列化来去除所有 Vue 响应式包装
-  // 这样可以确保保存的是纯 JavaScript 对象，不会包含 _custom 等 Vue 内部标记
-  try {
-    const cleanNode = JSON.parse(JSON.stringify(toRaw(updatedNode)));
-    state.pageData[index].elements[index1] = cleanNode;
-  } catch (error) {
-    console.error('更新节点时出错:', error);
-    // 如果序列化失败，直接使用 toRaw
-    state.pageData[index].elements[index1] = toRaw(updatedNode);
+/**
+ * 递归查找并更新原始数据中的节点
+ */
+function updateNodeInOriginalData(data, nodeId, fieldName, value) {
+  if (!data || !Array.isArray(data)) return false;
+  
+  for (let i = 0; i < data.length; i++) {
+    const node = data[i];
+    
+    // 找到目标节点
+    if (node.id === nodeId) {
+      if (!node.settings) {
+        node.settings = {};
+      }
+      node.settings[fieldName] = value;
+      return true;
+    }
+    
+    // 递归查找子元素
+    if (node.elements && Array.isArray(node.elements)) {
+      if (updateNodeInOriginalData(node.elements, nodeId, fieldName, value)) {
+        return true;
+      }
+    }
   }
+  
+  return false;
+}
+
+/**
+ * 处理字段更新（新架构）
+ * @param {Object} payload - { nodeId, fieldName, value }
+ */
+function handleFieldUpdate(payload) {
+  const { nodeId, fieldName, value } = payload;
+  
+  if (!nodeId || !fieldName) return;
+  
+  try {
+    // editableMap 已在 DataExtractor 中更新，这里只需同步到原始数据
+    updateNodeInOriginalData(state.pageData, nodeId, fieldName, value);
+    
+    console.log('实时字段更新:', { nodeId, fieldName, value });
+  } catch (error) {
+    console.error('更新字段时出错:', error);
+  }
+}
+
+/**
+ * 获取最终要保存的数据（已经实时同步，直接返回）
+ * @returns {Array} 完整的 Elementor 数据
+ */
+function getFinalData() {
+  if (!state.pageData) {
+    return null;
+  }
+  
+  // 数据已经实时同步，直接返回
+  return state.pageData;
 }
 
 const handleBeforeUpload = (file) => {
@@ -129,10 +181,15 @@ const customUpload = async (file) => {
   }
 };
 
-function getSimpleData(data) {
- data.forEach(item => {
-  
- })
+/**
+ * 提取可编辑数据
+ */
+function extractData(data) {
+  console.log('开始提取可编辑数据...');
+  const editableMap = extractEditableData(data);
+  console.log('提取完成，可编辑节点数量:', editableMap.size);
+  console.log('可编辑数据:', mapToObject(editableMap));
+  return editableMap;
 }
 
 watch(
@@ -148,10 +205,13 @@ watch(
       if (res1.code === 0 && res1.data.post_id) {
         state.pageId = res1.data.post_id;
         try {
-          state.pageData = JSON.parse(res1.data.meta_value);
-          state.originData = JSON.parse(res1.data.meta_value);
+          const parsedData = JSON.parse(res1.data.meta_value);
+          state.pageData = parsedData;                    // 保存原始完整数据
+          state.originData = parsedData;                  // 用于展示的数据
           state.meta_id = res1.data.meta_id;
-          getSimpleData(state.pageData);
+          
+          // 提取可编辑数据
+          state.editableMap = extractData(parsedData);
         } catch (error) {
           console.error('JSON 解析错误:', error);
           console.error('原始数据:', res1.data.meta_value);
@@ -159,6 +219,7 @@ watch(
           // 设置空数据，避免页面崩溃
           state.pageData = null;
           state.originData = null;
+          state.editableMap = null;
         }
       }
       if (res2.code === 0) {
@@ -174,5 +235,6 @@ watch(
 
 defineExpose({
   state,
+  getFinalData,  // 导出获取最终数据的方法
 });
 </script>

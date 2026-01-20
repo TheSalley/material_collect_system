@@ -315,10 +315,22 @@ function updateDataWithTranslation(data, translationMap) {
 async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
-    console.log(PageModeNode.value.state.pageData);
-    // return;
+    // 数据已实时同步，直接获取即可
+    const finalData = PageModeNode.value.state.pageData;
+    
+    if (!finalData) {
+      ElMessage({
+        message: "没有数据可保存",
+        type: "warning",
+      });
+      loadingInstance.close();
+      return;
+    }
+    
+    console.log('保存数据（已实时同步）:', finalData);
+    
     const res = await updatePageById({
-      data: JSON.stringify(PageModeNode.value.state.pageData),
+      data: JSON.stringify(finalData),
       id: Number(PageModeNode.value.state.pageId),
       site_id: websiteInfo.site_id,
     });
@@ -338,6 +350,7 @@ async function handleSave() {
       });
     }
   } catch (error) {
+    console.error('保存错误:', error);
     ElMessage({
       message: "保存失败",
       type: "error",

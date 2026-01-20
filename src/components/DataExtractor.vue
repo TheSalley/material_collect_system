@@ -1,23 +1,27 @@
 <template>
-  <component :is="getFieldComponent(currentNode?.widgetType)"
-    v-if="currentNode && getFieldComponent(currentNode?.widgetType)" 
-    :current-node="currentNode" 
-    :node-id="currentNode.id" 
-    :local-settings="localSettings"
+  <!-- 渲染可编辑组件 -->
+  <component 
+    :is="getFieldComponent(editableNode?.widgetType)"
+    v-if="editableNode && getFieldComponent(editableNode?.widgetType)" 
+    :node-id="editableNode.id" 
+    :fields="editableNode.fields"
     :on-update="handleFieldUpdate" />
 
-  <template v-if="currentNode?.elements?.length">
+  <!-- 递归渲染子节点 -->
+  <template v-if="originalNode?.elements?.length">
     <div class="child-nodes">
-      <DataExtractor v-for="(childNode, index) in currentNode.elements" :key="childNode.id || Math.random()"
-        :current-node="childNode" 
-        @update:node="(updatedChild) => handleChildUpdate(index, updatedChild)" />
+      <DataExtractor 
+        v-for="childNode in originalNode.elements" 
+        :key="childNode.id"
+        :original-node="childNode"
+        :editable-map="editableMap" />
     </div>
   </template>
 </template>
+
 <script setup>
-import { ref, watch, watchEffect, inject, computed } from "vue";
+import { computed } from "vue";
 import DataExtractor from "@/components/DataExtractor.vue";
-import { translate } from "@/apis/index.js";
 
 // 自动导入Field目录下的所有组件（包括子目录）
 const modules = import.meta.glob("/src/components/Field/**/*.vue", { eager: true });
@@ -44,90 +48,46 @@ const getFieldComponent = (widgetType) => {
 };
 
 const props = defineProps({
-  currentNode: {
+  // 原始节点数据（用于遍历结构）
+  originalNode: {
     type: Object,
     required: true,
-    default: () => ({}),
+  },
+  // 可编辑数据 Map
+  editableMap: {
+    type: Map,
+    required: true,
   },
 });
 
-const isTranslate = inject('isTranslate', ref(false));
-const translateConfig = inject('translateConfig', { sourceLanguage: 'zh', targetLanguage: 'en' });
-const sourceLanguage = computed(() => translateConfig.sourceLanguage);
-const targetLanguage = computed(() => translateConfig.targetLanguage);
+const emit = defineEmits(["update:field"]);
 
-const emit = defineEmits(["update:node"]);
-
-const localSettings = ref({
-  ...props.currentNode.settings,
+// 从 editableMap 中获取当前节点的可编辑数据
+const editableNode = computed(() => {
+  if (!props.originalNode?.id) return null;
+  return props.editableMap.get(props.originalNode.id) || null;
 });
 
-watch(
-  () => props.currentNode.settings,
-  (newSettings) => {
-    localSettings.value = {
-      ...newSettings,
-    };
-  },
-  { immediate: true, deep: true }
-);
-
-// 监听翻译状态变化，但只在状态变为true时触发一次
-watch(isTranslate, async (newVal, oldVal) => {
-  // 只有当状态从false变为true时才触发翻译
-  if (newVal === true && oldVal === false) {
-    // 执行翻译逻辑
-    await handleTranslation();
-  }
-});
-
-// 处理翻译逻辑
-async function handleTranslation() {
-  // 这里应该实现具体的翻译逻辑
-  // 例如提取文本内容并调用翻译API
-  console.log("正在翻译节点:", props.currentNode.id);
-  
-  // 示例：如果节点包含文本内容，则进行翻译
-  const textFields = ['title', 'editor', 'content', 'text', 'description', 'caption'];
-  let hasTextToTranslate = false;
-  
-  for (const field of textFields) {
-    if (localSettings.value[field] && typeof localSettings.value[field] === 'string') {
-      hasTextToTranslate = true;
-      // 调用翻译API
-      try {
-        // 示例调用，实际应该传入正确的参数
-        // const res = await translate({
-        //   sourceText: localSettings.value[field],
-        //   sourceLanguage: props.sourceLanguage,
-        //   targetLanguage: props.targetLanguage
-        // });
-        // if (res.code === 0) {
-        //   handleFieldUpdate(field, res.data.translatedText);
-        // }
-      } catch (error) {
-        console.error("翻译出错:", error);
-      }
-    }
-  }
-  
-  if (hasTextToTranslate) {
-    console.log(`节点 ${props.currentNode.id} 的文本内容已尝试翻译`);
-  }
-}
-
+/**
+ * 处理字段更新
+ */
 const handleFieldUpdate = (fieldName, value) => {
-  const updatedNode = {
-    ...props.currentNode,
-    settings: { ...localSettings.value, [fieldName]: value },
-  };
-  emit("update:node", updatedNode);
-};
-
-const handleChildUpdate = (childIndex, updatedChild) => {
-  const updatedElements = [...props.currentNode.elements];
-  updatedElements[childIndex] = updatedChild;
-  const updatedNode = { ...props.currentNode, elements: updatedElements };
-  emit("update:node", updatedNode);
+  if (!editableNode.value) return;
+  
+  // 更新 editableMap 中的字段
+  editableNode.value.fields[fieldName] = value;
+  
+  // 向上传递更新事件
+  emit("update:field", {
+    nodeId: editableNode.value.id,
+    fieldName,
+    value,
+  });
 };
 </script>
+
+<style scoped>
+.child-nodes {
+  padding-left: 0;
+}
+</style>

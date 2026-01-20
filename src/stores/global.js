@@ -14,6 +14,10 @@ export const useGlobalStore = defineStore(
       user.value = null;
       access_token.value = "";
       isLogin.value = false;
+      websiteInfo.value = null;
+      
+      // 重置路由
+      resetRoutes();
     }
 
     const websiteInfo = ref(null);
