@@ -14,7 +14,8 @@
         v-for="childNode in originalNode.elements" 
         :key="childNode.id"
         :original-node="childNode"
-        :editable-map="editableMap" />
+        :editable-map="editableMap"
+        @update:field="emit('update:field', $event)" />
     </div>
   </template>
 </template>

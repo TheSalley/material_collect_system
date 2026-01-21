@@ -1,29 +1,38 @@
 <template>
     <div class="field-item">
         <div class="mb-4">
-            <span class="field-label">标题：</span>
+            <label class="field-label">
+                <el-icon><Promotion /></el-icon>
+                标题
+            </label>
             <el-input 
                 v-model="fields.title_text"
                 show-word-limit 
-                type="textarea" 
+                type="textarea"
+                :rows="2"
                 @input="onUpdate('title_text', fields.title_text)"
-                placeholder="请输入标题" />
+                placeholder="请输入图片盒子标题" />
         </div>
         
         <div class="mb-4">
-            <span class="field-label">描述：</span>
+            <label class="field-label">
+                <el-icon><Document /></el-icon>
+                描述
+            </label>
             <el-input 
                 v-model="fields.description_text"
                 show-word-limit 
                 type="textarea" 
                 :rows="3"
                 @input="onUpdate('description_text', fields.description_text)"
-                placeholder="请输入描述" />
+                placeholder="请输入图片盒子描述" />
         </div>
     </div>
 </template>
 
 <script setup>
+import { Promotion, Document } from '@element-plus/icons-vue';
+
 const props = defineProps({
     nodeId: {
         type: String,
@@ -43,5 +52,11 @@ const props = defineProps({
 <style scoped>
 .mb-4 {
     margin-bottom: 1rem;
+}
+
+.field-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 </style>

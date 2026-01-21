@@ -1,30 +1,53 @@
 <template>
-  <div class="flex justify-between gap-4 px-10 py-10">
-    <div class="w-1/2 __border-shadow sticky top-0 h-fit">
-      <el-button class="absolute right-0 top-0" type="primary" @click="dialogVisible = true">上传截图</el-button>
-      <img :src="pagePic.file_url" alt="page picture" v-if="pagePic" />
-      <el-empty v-else description="未上传截图" />
+  <div class="page-mode-container">
+    <!-- 左侧：截图预览 -->
+    <div class="preview-section">
+      <div class="preview-card">
+        <div class="preview-header">
+          <h3>页面预览</h3>
+          <el-button type="primary" @click="dialogVisible = true" size="small">
+            <el-icon><Upload /></el-icon>
+            上传截图
+          </el-button>
+        </div>
+        <div class="preview-content">
+          <img :src="pagePic.file_url" alt="page picture" v-if="pagePic" class="preview-image" />
+          <el-empty v-else description="未上传截图" />
+        </div>
+      </div>
     </div>
-    <div class="w-1/2 __border-shadow">
-      <div v-if="state?.pageId && state?.editableMap">
-        <div v-for="(part, index) in state.originData" :key="index" class="mb-4">
-          <el-collapse accordion class="px-4">
+
+    <!-- 右侧：编辑区域 -->
+    <div class="editor-section">
+      <div v-if="state?.pageId && state?.editableMap" class="editor-content">
+        <div v-for="(part, index) in state.originData" :key="index" class="section-block">
+          <el-collapse accordion>
             <el-collapse-item 
               v-if="!part.settings?.hide_desktop" 
-              :title="`板块-${index + 1}-${part.id}-${part.elType}`" 
               :name="`part-${index}`">
-              <div v-for="topNode in part.elements" :key="topNode.id">
-                <DataExtractor 
-                  v-if="!topNode.settings?.hide_desktop" 
-                  :original-node="topNode"
-                  :editable-map="state.editableMap"
-                  @update:field="handleFieldUpdate" />
+              <template #title>
+                <div class="collapse-title">
+                  <el-icon class="collapse-icon"><Grid /></el-icon>
+                  <span class="collapse-text">板块 {{ index + 1 }}</span>
+                  <el-tag size="small" type="info">{{ part.elType }}</el-tag>
+                </div>
+              </template>
+              <div class="collapse-content">
+                <div v-for="topNode in part.elements" :key="topNode.id">
+                  <DataExtractor 
+                    v-if="!topNode.settings?.hide_desktop" 
+                    :original-node="topNode"
+                    :editable-map="state.editableMap"
+                    @update:field="handleFieldUpdate" />
+                </div>
               </div>
             </el-collapse-item>
           </el-collapse>
         </div>
       </div>
-      <el-empty description="非Elementor" v-else />
+      <div v-else class="empty-state">
+        <el-empty description="非Elementor页面" />
+      </div>
     </div>
   </div>
 
@@ -49,6 +72,7 @@
 </template>
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch, toRaw } from "vue";
+import { Upload, Grid } from '@element-plus/icons-vue';
 import {
   getPageById,
   upload_bind_img,
@@ -238,3 +262,135 @@ defineExpose({
   getFinalData,  // 导出获取最终数据的方法
 });
 </script>
+
+<style scoped>
+.page-mode-container {
+  display: flex;
+  gap: 2rem;
+  padding: 2.5rem;
+  background: #f5f7fa;
+  min-height: calc(100vh - 6.25rem);
+}
+
+/* 左侧预览区域 */
+.preview-section {
+  flex: 0 0 45%;
+  position: sticky;
+  top: 2.5rem;
+  height: fit-content;
+}
+
+.preview-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e4e7ed;
+  background: linear-gradient(to bottom, #ffffff, #fafbfc);
+}
+
+.preview-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #303133;
+}
+
+.preview-content {
+  padding: 1.5rem;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 右侧编辑区域 */
+.editor-section {
+  flex: 1;
+}
+
+.editor-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-block {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.section-block:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.collapse-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  color: #303133;
+  padding: 0.25rem 0;
+}
+
+.collapse-icon {
+  color: #409eff;
+  font-size: 1.25rem;
+}
+
+.collapse-text {
+  font-size: 1rem;
+}
+
+.collapse-content {
+  padding: 1.5rem;
+  background: #fafbfc;
+}
+
+.empty-state {
+  background: white;
+  border-radius: 12px;
+  padding: 4rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 全局折叠面板样式优化 */
+:deep(.el-collapse) {
+  border: none;
+}
+
+:deep(.el-collapse-item__header) {
+  padding: 1.25rem 1.5rem;
+  background: white;
+  border: none;
+  font-weight: 500;
+  height: auto;
+  line-height: 1.5;
+}
+
+:deep(.el-collapse-item__wrap) {
+  border: none;
+  background: #fafbfc;
+}
+
+:deep(.el-collapse-item__content) {
+  padding: 0;
+}
+</style>

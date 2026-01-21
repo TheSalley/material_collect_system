@@ -80,7 +80,7 @@ const route = useRoute();
 // 翻译配置
 const translateConfig = reactive({
   sourceLanguage: 'en',
-  targetLanguage: 'ar'
+  targetLanguage: 'fr'
 });
 
 // 是否正在翻译状态

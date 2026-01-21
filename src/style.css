@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 :root {
+  --field-label-color: #606266;
+  --field-border-color: #dcdfe6;
+  --field-bg-hover: #f5f7fa;
 }
 
 @layer base {
@@ -11,12 +14,109 @@
   }
 }
 
-
-
 #app {
   height: 100%;
 }
 
 .__border-shadow {
   box-shadow: var(--el-box-shadow);
+}
+
+/* 字段组件统一样式 */
+.field-item {
+  padding: 1.25rem;
+  border-radius: 8px;
+  background: white;
+  margin-bottom: 1rem;
+  border: 1px solid #e4e7ed;
+  transition: all 0.3s ease;
+}
+
+.field-item:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+}
+
+.field-item:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  color: var(--field-label-color);
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.3px;
+}
+
+.field-item .mb-4 {
+  margin-bottom: 1rem;
+}
+
+.field-item .mb-4:last-child {
+  margin-bottom: 0;
+}
+
+/* Element Plus 输入框优化 */
+.field-item .el-input__wrapper {
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  transition: all 0.3s ease;
+}
+
+.field-item .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px #c0c4cc inset;
+}
+
+.field-item .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+
+.field-item .el-textarea__inner {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.field-item .el-textarea__inner:hover {
+  border-color: #c0c4cc;
+}
+
+.field-item .el-textarea__inner:focus {
+  border-color: #409eff;
+}
+
+/* 上传组件优化 */
+.field-item .el-upload {
+  width: 100%;
+}
+
+.field-item .el-button {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* 图片预览优化 */
+.image-preview {
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #e4e7ed;
+  transition: all 0.3s ease;
+}
+
+.image-preview:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 12px rgba(64, 158, 255, 0.15);
+}
+
+/* 富文本编辑器优化 */
+.field-item .ql-container {
+  border-radius: 6px;
+  border-color: #dcdfe6;
+}
+
+.field-item .ql-toolbar {
+  border-radius: 6px 6px 0 0;
+  border-color: #dcdfe6;
+  background: #fafbfc;
 }

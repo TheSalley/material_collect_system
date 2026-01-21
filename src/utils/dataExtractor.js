@@ -9,7 +9,7 @@
 const EDITABLE_FIELDS_MAP = {
   // Basic 组件
   'button': ['text', 'link', 'size'],
-  'heading': ['title', 'header_size'],
+  'heading': ['title'],
   'text-editor': ['editor'],
   'video': ['youtube_url', 'video_type'],
   'image': ['image', 'caption', 'link'],
@@ -26,6 +26,12 @@ const EDITABLE_FIELDS_MAP = {
     'ekit_icon_box_description_text', 
     'ekit_icon_box_btn_text'
   ],
+  'elementskit-image-box': [
+    'ekit_image_box_title_text', 
+    'ekit_image_box_description_text', 
+    'ekit_image_box_btn_text',
+    'ekit_image_box_image'
+  ],
   
   // 更多 Elementor 基础组件
   'divider': ['style', 'gap'],
@@ -39,6 +45,7 @@ const EDITABLE_FIELDS_MAP = {
   'image-gallery': ['gallery'],
   'testimonial': ['testimonial_content', 'testimonial_name', 'testimonial_job'],
   'tabs': ['tabs'],
+  'slides': ['slides'],
   'social-icons': ['social_icon_list'],
   'alert': ['alert_title', 'alert_description'],
   'audio': ['source_type'],

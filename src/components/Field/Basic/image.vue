@@ -58,12 +58,13 @@ const customUpload = async (file) => {
 
     if (res.code === 0 && res.data[0].success) {
       ElMessage.success("图片上传成功！");
-      const updatedImage = {
-      ...value.value,
-      url: res.data[0].data.url,
-      id: res.data[0].data.attachment_id
-    };
-      props.onUpdate('image', updatedImage);
+      // 直接修改原对象，避免创建新对象破坏数据结构
+      if (!props.fields.image) {
+        props.fields.image = {};
+      }
+      props.fields.image.url = res.data[0].data.url;
+      props.fields.image.id = res.data[0].data.attachment_id;
+      props.onUpdate('image', props.fields.image);
     } else {
       ElMessage.error("上传失败：" + res.message);
     }
