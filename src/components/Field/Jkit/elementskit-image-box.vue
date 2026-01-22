@@ -71,7 +71,7 @@
 <script setup>
 import { computed } from "vue";
 import { Upload as UploadIcon, Promotion, Document, Link, Picture } from '@element-plus/icons-vue';
-import { uploadImage } from "@/apis";
+import { handleImageUpload } from "@/utils/imageUpload";
 
 const Upload = UploadIcon;
 
@@ -96,43 +96,15 @@ const imageUrl = computed(() => {
 });
 
 const handleBeforeUpload = (file) => {
-    const isImage = file.type === "image/jpeg" || file.type === "image/png";
-    const isLt10M = file.size / 1024 / 1024 < 10;
-
-    if (!isImage) {
-        ElMessage.error("仅支持上传 jpg/png 格式的图片！");
-        return false;
-    }
-    if (!isLt10M) {
-        ElMessage.error("图片大小不能超过 10MB!");
-        return false;
-    }
-    customUpload(file);
-    return false;
-};
-
-const customUpload = async (file) => {
-    try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await uploadImage(formData);
-
-        if (res.code === 0 && res.data[0].success) {
-            ElMessage.success("图片上传成功！");
-            // 直接修改原对象，避免创建新对象破坏数据结构
-            if (!props.fields.ekit_image_box_image) {
-                props.fields.ekit_image_box_image = {};
-            }
-            props.fields.ekit_image_box_image.url = res.data[0].data.url;
-            props.fields.ekit_image_box_image.id = res.data[0].data.attachment_id;
-            props.onUpdate('ekit_image_box_image', props.fields.ekit_image_box_image);
-        } else {
-            ElMessage.error("上传失败：" + res.message);
+    return handleImageUpload(file, (url, id) => {
+        // 直接修改原对象，避免创建新对象破坏数据结构
+        if (!props.fields.ekit_image_box_image) {
+            props.fields.ekit_image_box_image = {};
         }
-    } catch (err) {
-        ElMessage.error("上传失败：" + err.message);
-    }
+        props.fields.ekit_image_box_image.url = url;
+        props.fields.ekit_image_box_image.id = id;
+        props.onUpdate('ekit_image_box_image', props.fields.ekit_image_box_image);
+    });
 };
 </script>
 

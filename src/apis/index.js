@@ -122,12 +122,11 @@ export const getPageById = async (post_id, site_id) => {
  * 上传Elementor 图片到媒体库
  */
 export const uploadImage = async (formdata) => {
-  const { websiteInfo, access_token } = useGlobalStore();
+  const { access_token } = useGlobalStore();
   return await fetchWithAuth(config.baseUrl + "/api/proxy/upload_image", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${access_token}`,
-      website: websiteInfo.url,
     },
     body: formdata,
   });

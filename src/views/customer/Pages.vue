@@ -1,60 +1,90 @@
 <template>
-  <main class="flex-1 flex flex-col">
-    <header
-      class="bg-card-light/80 dark:bg-card-dark/80 backdrop-blur-sm sticky top-0 z-10 px-6 lg:px-8 border-b border-border-light dark:border-border-dark h-[6.25rem] flex items-center"
-    >
-      <div class="flex justify-between items-center w-full">
-        <div class="flex flex-col gap-1">
-          <p class="text-xl font-semibold text-gray-900 dark:text-white">
-            客户详情
-          </p>
-          <div class="flex flex-wrap gap-1.5 items-center">
-            <a
-              class="text-gray-500 dark:text-gray-400 text-sm font-medium leading-normal hover:text-primary"
-              href="#"
-              >客户管理</a
+  <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
+    <!-- 页面头部 -->
+    <header class="sticky top-0 z-10 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-600 px-6 py-4 flex-shrink-0">
+      <div class="flex justify-between items-center w-full flex-wrap gap-4">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-3">
+            <el-icon class="text-blue-500 text-2xl"><Document /></el-icon>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">页面编辑</h1>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <a 
+              href="#" 
+              @click.prevent="router.push('/')"
+              class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
             >
-            <span
-              class="material-symbols-outlined text-gray-400 dark:text-gray-500 text-base"
-              style="font-size: 16px"
-              >></span
-            >
-            <span
-              class="text-gray-800 dark:text-gray-200 text-sm font-medium leading-normal"
-              >{{ websiteInfo.nickname }}</span
-            >
+              <el-icon><House /></el-icon>
+              网站信息
+            </a>
+            <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
+            <span class="text-gray-700 dark:text-gray-300 font-medium">{{ websiteInfo.nickname || '页面编辑' }}</span>
           </div>
         </div>
-        <div class="flex gap-4 items-center">
-          <div class="flex items-center gap-2">
-            <span>从:</span>
-            <el-select v-model="translateConfig.sourceLanguage" placeholder="请选择源语言" style="width: 120px">
-              <el-option label="中文" value="zh" />
-              <el-option label="法语" value="fr" />
-              <el-option label="英语" value="en" />
-              <el-option label="日语" value="ja" />
-              <el-option label="韩语" value="ko" />
-              <el-option label="阿拉伯语" value="ar" />
-            </el-select>
+        
+        <!-- 工具栏 -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- 翻译工具 -->
+          <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-600">
+            <div class="flex items-center gap-2">
+              <el-icon class="text-gray-500 dark:text-gray-400"><Sort /></el-icon>
+              <span class="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">从:</span>
+              <el-select 
+                v-model="translateConfig.sourceLanguage" 
+                placeholder="源语言" 
+                size="default"
+                style="width: 120px"
+              >
+                <el-option label="中文" value="zh" />
+                <el-option label="法语" value="fr" />
+                <el-option label="英语" value="en" />
+                <el-option label="日语" value="ja" />
+                <el-option label="韩语" value="ko" />
+                <el-option label="阿拉伯语" value="ar" />
+              </el-select>
+            </div>
+            <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">到:</span>
+              <el-select 
+                v-model="translateConfig.targetLanguage" 
+                placeholder="目标语言" 
+                size="default"
+                style="width: 120px"
+              >
+                <el-option label="中文" value="zh" />
+                <el-option label="法语" value="fr" />
+                <el-option label="英语" value="en" />
+                <el-option label="日语" value="ja" />
+                <el-option label="韩语" value="ko" />
+                <el-option label="阿拉伯语" value="ar" />
+              </el-select>
+            </div>
+            <el-button 
+              type="success" 
+              :icon="Sort"
+              @click="toggleTranslate"
+              size="default"
+            >
+              一键翻译
+            </el-button>
           </div>
-          <div class="flex items-center gap-2">
-            <span>到:</span>
-            <el-select v-model="translateConfig.targetLanguage" placeholder="请选择目标语言" style="width: 120px">
-              <el-option label="中文" value="zh" />
-              <el-option label="法语" value="fr" />
-              <el-option label="英语" value="en" />
-              <el-option label="日语" value="ja" />
-              <el-option label="韩语" value="ko" />
-              <el-option label="阿拉伯语" value="ar" />
-            </el-select>
-          </div>
-          <el-button type="success" @click="toggleTranslate">一键翻译</el-button>
-          <el-button type="primary" @click="handleSave">保存</el-button>
+          
+          <!-- 保存按钮 -->
+          <el-button 
+            type="primary" 
+            :icon="Check"
+            @click="handleSave"
+            size="large"
+          >
+            保存
+          </el-button>
         </div>
       </div>
     </header>
+
     <!-- 页面数据 -->
-    <div v-if="pageData?.id">
+    <div class="flex-1 overflow-auto min-h-0" v-if="pageData?.id">
       <template v-if="websiteInfo.mode === 1">
         <ModuleMode :pageId="pageData.id" />
       </template>
@@ -62,7 +92,17 @@
         <PageMode ref="PageModeNode" :pageId="pageData.id" />
       </template>
     </div>
-  </main>
+    
+    <!-- 空状态 -->
+    <div v-else class="flex-1 flex items-center justify-center">
+      <div class="text-center">
+        <el-icon class="text-6xl text-gray-300 dark:text-gray-600 mb-4">
+          <Document />
+        </el-icon>
+        <p class="text-gray-500 dark:text-gray-400">请选择要编辑的页面</p>
+      </div>
+    </div>
+  </div>
 </template>
 <script setup>
 import { ref, reactive, onMounted, watch, nextTick, provide } from "vue";
@@ -70,7 +110,12 @@ import { useGlobalStore } from "@/stores/global.js";
 import { updatePageById, translate } from "@/apis/index";
 import ModuleMode from "@/components/ModuleMode.vue";
 import PageMode from "@/components/PageMode.vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import {
+  Document, House, ArrowRight, Sort, Check
+} from '@element-plus/icons-vue';
+
+const router = useRouter();
 
 let pageData = ref(null);
 const PageModeNode = ref(null);

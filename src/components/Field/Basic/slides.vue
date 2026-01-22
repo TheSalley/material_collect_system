@@ -78,7 +78,7 @@
                         </div>
                         <el-upload 
                             action="#" 
-                            :before-upload="(file) => handleImageUpload(file, index)"
+                            :before-upload="(file) => handleSlideImageUpload(file, index)"
                             :show-file-list="false">
                             <el-button type="primary" :icon="Upload">
                                 {{ slide.background_image?.url ? '更换图片' : '上传图片' }}
@@ -99,7 +99,7 @@
 <script setup>
 import { ref } from "vue";
 import { Upload as UploadIcon, Promotion, Document, Link, Picture, PictureFilled } from '@element-plus/icons-vue';
-import { uploadImage } from "@/apis";
+import { handleImageUpload } from "@/utils/imageUpload";
 
 const Upload = UploadIcon;
 
@@ -130,46 +130,19 @@ const handleUpdate = (slideIndex, fieldName, value) => {
 };
 
 // 处理图片上传
-const handleImageUpload = async (file, slideIndex) => {
-    const isImage = file.type === "image/jpeg" || file.type === "image/png";
-    const isLt10M = file.size / 1024 / 1024 < 10;
-
-    if (!isImage) {
-        ElMessage.error("仅支持上传 jpg/png 格式的图片！");
-        return false;
-    }
-    if (!isLt10M) {
-        ElMessage.error("图片大小不能超过 10MB!");
-        return false;
-    }
-
-    try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await uploadImage(formData);
-
-        if (res.code === 0 && res.data[0].success) {
-            ElMessage.success("图片上传成功！");
-            
-            // 直接修改原对象，不创建新对象
-            const currentSlide = props.fields.slides[slideIndex];
-            if (!currentSlide.background_image) {
-                currentSlide.background_image = {};
-            }
-            currentSlide.background_image.url = res.data[0].data.url;
-            currentSlide.background_image.id = res.data[0].data.attachment_id;
-            
-            // 触发更新，传递原数组
-            props.onUpdate('slides', props.fields.slides);
-        } else {
-            ElMessage.error("上传失败：" + res.message);
+const handleSlideImageUpload = async (file, slideIndex) => {
+    return handleImageUpload(file, (url, id) => {
+        // 直接修改原对象，不创建新对象
+        const currentSlide = props.fields.slides[slideIndex];
+        if (!currentSlide.background_image) {
+            currentSlide.background_image = {};
         }
-    } catch (err) {
-        ElMessage.error("上传失败：" + err.message);
-    }
-
-    return false;
+        currentSlide.background_image.url = url;
+        currentSlide.background_image.id = id;
+        
+        // 触发更新，传递原数组
+        props.onUpdate('slides', props.fields.slides);
+    });
 };
 </script>
 
