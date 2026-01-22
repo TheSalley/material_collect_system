@@ -46,6 +46,7 @@ const EDITABLE_FIELDS_MAP = {
   'testimonial': ['testimonial_content', 'testimonial_name', 'testimonial_job'],
   'tabs': ['tabs'],
   'slides': ['slides'],
+  'timeline-widget-addon': ['twae_list'],
   'social-icons': ['social_icon_list'],
   'alert': ['alert_title', 'alert_description'],
   'audio': ['source_type'],

@@ -36,6 +36,7 @@ const getFieldComponent = (widgetType) => {
     `/src/components/Field/Basic/${widgetType}.vue`,
     `/src/components/Field/General/${widgetType}.vue`,
     `/src/components/Field/Jkit/${widgetType}.vue`,
+    `/src/components/Field/Other/${widgetType}.vue`,
   ];
 
   // 返回第一个找到的组件
