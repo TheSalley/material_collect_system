@@ -5,7 +5,7 @@
       <div class="flex flex-col gap-2">
         <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
           <el-icon class="text-blue-500 text-4xl"><UserFilled /></el-icon>
-          客户管理
+          站点管理
         </h1>
         <p class="text-sm text-gray-500 dark:text-gray-400">管理和配置所有客户站点信息</p>
       </div>

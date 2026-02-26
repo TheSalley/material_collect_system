@@ -15,7 +15,7 @@
               class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
             >
               <el-icon><House /></el-icon>
-              客户管理
+              站点管理
             </a>
             <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
             <span class="text-gray-700 dark:text-gray-300 font-medium">{{ websiteInfo.nickname || '客户详情' }}</span>

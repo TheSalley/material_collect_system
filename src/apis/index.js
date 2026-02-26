@@ -165,6 +165,19 @@ export const getList = async () => {
 
 /**
  *
+ * 获取用户列表
+ */
+export const getUserList = async () => {
+  const { access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + "/api/user/list", {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  });
+};
+
+/**
+ *
  * 上传并绑定图片
  */
 export const upload_bind_img = async (formdata) => {

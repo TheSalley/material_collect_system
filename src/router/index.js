@@ -32,7 +32,13 @@ const adminRoutes = [
         path: "",
         name: "AdminList",
         component: () => import("@/views/admin/List.vue"),
-        meta: { title: "客户管理" },
+        meta: { title: "站点管理" },
+      },
+      {
+        path: "userList",
+        name: "UserList",
+        component: () => import("@/views/admin/UserList.vue"),
+        meta: { title: "用户管理" },
       },
       {
         path: "detail",
