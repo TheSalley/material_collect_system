@@ -62,6 +62,8 @@
                 size="large"
                 class="flex-1"
                 :icon="Right"
+                :loading="loading"
+                :disabled="loading"
               >
                 登录
               </el-button>
@@ -69,6 +71,7 @@
                 @click="resetForm"
                 size="large"
                 :icon="Refresh"
+                :disabled="loading"
               >
                 重置
               </el-button>
@@ -116,6 +119,7 @@ const rules = {
 };
 
 const loginForm = ref(null);
+const loading = ref(false);
 
 const handleLogin = async () => {
   loginForm.value.validate(async (valid) => {
@@ -123,23 +127,28 @@ const handleLogin = async () => {
       ElMessage.error("请正确填写用户名和密码");
       return;
     }
-    const res = await login({
-      username: form.value.username,
-      password: form.value.password,
-    });
-    if (res.code === 0) {
-      globalStore.user = res.data.user;
-      globalStore.access_token = res.data.access_token;
-      globalStore.isLogin = true;
-      ElMessage.success("登录成功");
-      router.push("/");
-    } else {
-      ElMessageBox.alert(res.message, "提示：", {
-        confirmButtonText: "OK",
-        callback: () => {
-          loginForm.value.resetFields();
-        },
+    loading.value = true;
+    try {
+      const res = await login({
+        username: form.value.username,
+        password: form.value.password,
       });
+      if (res.code === 0) {
+        globalStore.user = res.data.user;
+        globalStore.access_token = res.data.access_token;
+        globalStore.isLogin = true;
+        ElMessage.success("登录成功");
+        router.push("/");
+      } else {
+        ElMessageBox.alert(res.message, "提示：", {
+          confirmButtonText: "OK",
+          callback: () => {
+            loginForm.value.resetFields();
+          },
+        });
+      }
+    } finally {
+      loading.value = false;
     }
   });
 };

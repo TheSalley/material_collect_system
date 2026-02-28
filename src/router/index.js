@@ -11,15 +11,15 @@ const publicRoutes = [
       hidden: true,
     },
   },
-  {
-    path: "/:pathMatch(.*)*",
-    name: "NotFound",
-    component: () => import("@/views/404.vue"),
-    meta: {
-      hidden: true,
-    },
-  },
 ];
+
+// 404 单独定义，在动态添加角色路由之后再注册，避免匹配到 "/"
+const notFoundRoute = {
+  path: "/:pathMatch(.*)*",
+  name: "NotFound",
+  component: () => import("@/views/404.vue"),
+  meta: { hidden: true },
+};
 
 // adminRoutes 优化
 const adminRoutes = [
@@ -102,13 +102,20 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // 3. 已登录但动态路由未添加 → 先添加再重定向
+  // 未登录访问非登录页 → 去登录
+  if (!access_token && to.path !== "/login") {
+    next("/login");
+    return;
+  }
+
+  // 已登录但动态路由未添加 → 先添加再重定向
   if (access_token && !isDynamicRoutesAdded) {
     try {
-      await addProtectedRoutes(user.role);
+      const role = (user?.role ?? "user").toString().toLowerCase();
+      await addProtectedRoutes(role);
       isDynamicRoutesAdded = true;
 
-      next({ path: to.path, replace: true });
+      next({ path: to.path === "/login" ? "/" : to.path, replace: true });
       return;
     } catch (err) {
       next("/login");
@@ -116,13 +123,8 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
-  // 特殊处理：如果访问根路径且未登录，重定向到登录页
-  if (to.path === "/" && !access_token) {
-    next("/login");
-    return;
-  }
   next();
 });
 
 export default router;
-export { adminRoutes, userRoutes, publicRoutes };
+export { adminRoutes, userRoutes, publicRoutes, notFoundRoute };

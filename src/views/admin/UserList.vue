@@ -33,7 +33,7 @@
             type="primary" 
             size="large"
             :icon="Plus"
-            disabled
+            @click="openAddDrawer"
           >
             添加新用户
           </el-button>
@@ -143,10 +143,100 @@
       </div>
     </div>
 
+    <!-- 添加用户抽屉 -->
+    <el-drawer
+      v-model="addDrawer"
+      title="添加新用户"
+      direction="rtl"
+      size="500px"
+      :close-on-click-modal="false"
+    >
+      <template #header>
+        <div class="flex items-center gap-3">
+          <el-icon class="text-green-500 text-xl"><Plus /></el-icon>
+          <span class="text-lg font-semibold text-gray-900 dark:text-white">添加新用户</span>
+        </div>
+      </template>
+      <template #default>
+        <el-form
+          ref="addFormRef"
+          :model="addForm"
+          :rules="addFormRules"
+          label-width="100px"
+          class="py-5"
+          label-position="left"
+        >
+          <el-form-item label="用户名" prop="username">
+            <el-input
+              v-model="addForm.username"
+              placeholder="请输入用户名"
+              clearable
+            >
+              <template #prefix>
+                <el-icon><User /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+          <el-form-item label="密码" prop="password">
+            <el-input
+              v-model="addForm.password"
+              type="password"
+              placeholder="请输入密码"
+              show-password
+              clearable
+            >
+              <template #prefix>
+                <el-icon><Lock /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+          <el-form-item label="角色" prop="role">
+            <el-select
+              v-model="addForm.role"
+              placeholder="请选择角色"
+              class="w-full"
+            >
+              <el-option label="管理员" value="admin" />
+              <el-option label="用户" value="user" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="站点" prop="site_id">
+            <el-select
+              v-model="addForm.site_id"
+              filterable
+              clearable
+              placeholder="请选择站点（单选）"
+              class="w-full"
+              :loading="siteListLoading"
+            >
+              <el-option
+                v-for="site in siteList"
+                :key="site.site_id"
+                :label="`${site.site_name || site.site_id}${site.demo_site ? ' (' + site.demo_site + ')' : ''}`"
+                :value="site.site_id"
+              />
+            </el-select>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              从站点列表中选择一个站点；不选则不为该用户绑定站点
+            </div>
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200 dark:border-gray-600">
+          <el-button @click="addDrawer = false" size="large">取消</el-button>
+          <el-button type="primary" @click="onAddSubmit" size="large" :icon="Check" :loading="addSaving">
+            确定添加
+          </el-button>
+        </div>
+      </template>
+    </el-drawer>
+
     <!-- 编辑抽屉 -->
     <el-drawer 
       v-model="drawer" 
       title="编辑用户"
+      direction="rtl"
       size="500px"
       :close-on-click-modal="false"
     >
@@ -221,12 +311,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
-import { getUserList, updateUser } from "@/apis/index.js";
+import { ref, reactive, onMounted, computed, nextTick } from "vue";
+import { getUserList, updateUser, createUser, getList } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import { 
   Search, Plus, Edit, Delete, Clock, 
-  User, UserFilled, CircleCheck, CircleClose, Check, Message
+  User, UserFilled, CircleCheck, CircleClose, Check, Message, Lock
 } from '@element-plus/icons-vue';
 
 const tableData = reactive([]);
@@ -239,6 +329,30 @@ const pageSize = ref(20);
 const router = useRouter();
 
 const drawer = ref(false);
+const addDrawer = ref(false);
+const addFormRef = ref(null);
+const addSaving = ref(false);
+const siteList = ref([]);
+const siteListLoading = ref(false);
+
+const addForm = reactive({
+  username: "",
+  password: "",
+  role: "user",
+  site_id: "",
+});
+
+const addFormRules = {
+  username: [
+    { required: true, message: "请输入用户名", trigger: "blur" },
+    { min: 2, message: "用户名至少 2 个字符", trigger: "blur" },
+  ],
+  password: [
+    { required: true, message: "请输入密码", trigger: "blur" },
+    { min: 6, message: "密码至少 6 位", trigger: "blur" },
+  ],
+  role: [{ required: true, message: "请选择角色", trigger: "change" }],
+};
 
 const form = reactive({
   id: "",
@@ -277,6 +391,67 @@ const formatDate = (dateString) => {
   
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
+
+// 获取站点列表（用于添加用户时选择站点）
+async function fetchSiteList() {
+  siteListLoading.value = true;
+  try {
+    const res = await getList();
+    if (res.code === 0 && Array.isArray(res.data)) {
+      siteList.value = res.data;
+    } else {
+      siteList.value = [];
+    }
+  } catch {
+    siteList.value = [];
+  } finally {
+    siteListLoading.value = false;
+  }
+}
+
+// 打开添加用户抽屉
+async function openAddDrawer() {
+  addForm.username = "";
+  addForm.password = "";
+  addForm.role = "user";
+  addForm.site_id = "";
+  addDrawer.value = true;
+  await fetchSiteList();
+  nextTick(() => {
+    addFormRef.value?.clearValidate();
+  });
+}
+
+// 提交添加用户
+async function onAddSubmit() {
+  if (!addFormRef.value) return;
+  await addFormRef.value.validate(async (valid) => {
+    if (!valid) return;
+    addSaving.value = true;
+    try {
+      const payload = {
+        username: addForm.username,
+        password: addForm.password,
+        role: addForm.role,
+      };
+      if (addForm.site_id) {
+        payload.site_ids = [String(addForm.site_id)];
+      }
+      const res = await createUser(payload);
+      if (res.code === 0) {
+        ElMessage.success("添加成功");
+        addDrawer.value = false;
+        fetchUserList();
+      } else {
+        ElMessage.error(res.message || "添加失败");
+      }
+    } catch (error) {
+      ElMessage.error("添加失败：" + (error.message || "网络错误"));
+    } finally {
+      addSaving.value = false;
+    }
+  });
+}
 
 // 编辑用户
 function edit(data) {

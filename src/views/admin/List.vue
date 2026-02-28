@@ -33,9 +33,9 @@
             type="primary" 
             size="large"
             :icon="Plus"
-            disabled
+            @click="openAddDrawer"
           >
-            添加新客户
+            添加站点
           </el-button>
         </div>
       </div>
@@ -164,6 +164,55 @@
     </div>
   </div>
 
+  <!-- 添加站点抽屉 -->
+  <el-drawer
+    v-model="addDrawer"
+    title="添加站点"
+    direction="rtl"
+    size="500px"
+    :close-on-click-modal="false"
+  >
+    <template #header>
+      <div class="flex items-center gap-3">
+        <el-icon class="text-green-500 text-xl"><Plus /></el-icon>
+        <span class="text-lg font-semibold text-gray-900 dark:text-white">添加站点</span>
+      </div>
+    </template>
+    <template #default>
+      <el-form
+        ref="addFormRef"
+        :model="addForm"
+        :rules="addFormRules"
+        label-width="100px"
+        class="py-5"
+        label-position="left"
+      >
+        <el-form-item label="站点名称" prop="site_name">
+          <el-input
+            v-model="addForm.site_name"
+            placeholder="请输入站点名称"
+            clearable
+          />
+        </el-form-item>
+        <el-form-item label="Demo 名称" prop="demo_site">
+          <el-input
+            v-model="addForm.demo_site"
+            placeholder="请输入 Demo 名称"
+            clearable
+          />
+        </el-form-item>
+      </el-form>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-3 pt-5 border-t border-gray-200 dark:border-gray-600">
+        <el-button @click="addDrawer = false" size="large">取消</el-button>
+        <el-button type="primary" @click="onAddSubmit" size="large" :icon="Check" :loading="addSaving">
+          确定添加
+        </el-button>
+      </div>
+    </template>
+  </el-drawer>
+
   <el-drawer 
     v-model="drawer" 
     title="客户配置"
@@ -240,8 +289,8 @@
   </el-drawer>
 </template>
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
-import { getList, updateUser } from "@/apis/index.js";
+import { ref, reactive, onMounted, computed, nextTick } from "vue";
+import { getList, updateUser, createSite } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global.js";
 import { 
@@ -268,6 +317,25 @@ const filteredTableData = computed(() => {
 let pageList = reactive([]);
 
 const drawer = ref(false);
+const addDrawer = ref(false);
+const addFormRef = ref(null);
+const addSaving = ref(false);
+
+const addForm = reactive({
+  site_name: "",
+  demo_site: "",
+});
+
+const addFormRules = {
+  site_name: [
+    { required: true, message: "请输入站点名称", trigger: "blur" },
+    { min: 1, message: "站点名称不能为空", trigger: "blur" },
+  ],
+  demo_site: [
+    { required: true, message: "请输入 Demo 名称", trigger: "blur" },
+    { min: 1, message: "Demo 名称不能为空", trigger: "blur" },
+  ],
+};
 
 const router = useRouter();
 
@@ -329,19 +397,53 @@ async function onSubmit() {
   }
 }
 
-onMounted(async () => {
+async function fetchList() {
   const res = await getList();
   if (res.code === 0) {
-    res.data.forEach(i => i.mode = 2); // 临时修改
-    tableData.push(...res.data);
-  } else {
-    if (res.code === 401) {
-      ElMessage.error("账号已过期，请重新登录");
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      router.push("/login");
-    } else {
-    }
+    tableData.length = 0;
+    const list = res.data || [];
+    list.forEach(i => (i.mode = 2)); // 临时修改
+    tableData.push(...list);
   }
+  return res;
+}
+
+function openAddDrawer() {
+  addForm.site_name = "";
+  addForm.demo_site = "";
+  addDrawer.value = true;
+  nextTick(() => {
+    addFormRef.value?.clearValidate();
+  });
+}
+
+async function onAddSubmit() {
+  if (!addFormRef.value) return;
+  await addFormRef.value.validate(async (valid) => {
+    if (!valid) return;
+    addSaving.value = true;
+    try {
+      const res = await createSite({
+        site_name: addForm.site_name,
+        demo_site: addForm.demo_site,
+      });
+      if (res.code === 0) {
+        ElMessage.success(res.message || "创建成功");
+        addDrawer.value = false;
+        await fetchList();
+      } else {
+        ElMessage.error(res.message || "创建失败");
+      }
+    } catch (error) {
+      ElMessage.error("创建失败：" + (error.message || "网络错误"));
+    } finally {
+      addSaving.value = false;
+    }
+  });
+}
+
+onMounted(() => {
+  fetchList();
 });
 
 function edit(data) {

@@ -1,35 +1,31 @@
 import router from "@/router";
-import { adminRoutes, userRoutes, publicRoutes } from "@/router"; // 导入角色专属路由
+import { adminRoutes, userRoutes, publicRoutes, notFoundRoute } from "@/router";
 
-// 根据角色动态添加对应的路由
+// 根据角色动态添加对应的路由（最后再添加 404，保证 "/" 先被角色路由匹配）
 export function addProtectedRoutes(role) {
   return new Promise((resolve) => {
     let routesToAdd = [];
+    const r = (role || "user").toString().toLowerCase();
 
-    // 1. 根据角色选择要添加的路由
-    if (role === "admin") {
+    if (r === "admin" || r === "administrator") {
       routesToAdd = adminRoutes;
-    } else if (role === "customer") {
+    } else if (r === "customer" || r === "user") {
       routesToAdd = userRoutes;
     }
     routesToAdd.forEach((route) => {
       router.addRoute(route);
     });
+    router.addRoute(notFoundRoute);
     resolve();
   });
 }
 
-// 重置路由
+// 重置路由（登出时移除所有动态路由，含 404，只保留 /login）
 export function resetRoutes() {
   return new Promise((resolve) => {
-    
-    // 获取当前所有路由
     const allRoutes = router.getRoutes();
-    
-    // 移除所有动态添加的路由（除了公共路由）
     allRoutes.forEach((route) => {
-      // 只移除非公共路由
-      if (route.name && !['Login', 'NotFound'].includes(route.name)) {
+      if (route.name && route.name !== "Login") {
         router.removeRoute(route.name);
       }
     });

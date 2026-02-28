@@ -26,7 +26,7 @@
           </p>
           <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 text-left">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <el-icon class="text-blue-500"><Lightbulb /></el-icon>
+              <el-icon class="text-blue-500"><Sunny /></el-icon>
               计划功能
             </h3>
             <ul class="space-y-3">
@@ -55,5 +55,5 @@
 </template>
 
 <script setup>
-import { InfoFilled, Tools, Lightbulb, CircleCheck } from '@element-plus/icons-vue';
+import { InfoFilled, Tools, Sunny, CircleCheck } from '@element-plus/icons-vue';
 </script>

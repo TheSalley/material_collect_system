@@ -164,6 +164,21 @@ export const getList = async () => {
 };
 
 /**
+ * 创建站点
+ */
+export const createSite = async (payload) => {
+  const { access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + "/api/site/create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${access_token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
  *
  * 获取用户列表
  */
@@ -173,6 +188,21 @@ export const getUserList = async () => {
     headers: {
       Authorization: `Bearer ${access_token}`,
     },
+  });
+};
+
+/**
+ * 创建用户
+ */
+export const createUser = async (payload) => {
+  const { access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + "/api/user/add", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${access_token}`,
+    },
+    body: JSON.stringify(payload),
   });
 };
 
