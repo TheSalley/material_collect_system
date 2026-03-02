@@ -138,7 +138,17 @@ const handleLogin = async () => {
         globalStore.access_token = res.data.access_token;
         globalStore.isLogin = true;
         ElMessage.success("登录成功");
-        router.push("/");
+        
+        // 等待 store 更新完成后再跳转
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // 根据角色跳转到不同页面
+        const role = (res.data.user?.role ?? "user").toString().toLowerCase();
+        if (role === "admin" || role === "administrator") {
+          router.push("/");
+        } else {
+          router.push("/siteInfo");
+        }
       } else {
         ElMessageBox.alert(res.message, "提示：", {
           confirmButtonText: "OK",

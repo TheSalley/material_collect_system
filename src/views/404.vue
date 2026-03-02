@@ -16,7 +16,7 @@
           type="primary" 
           size="large"
           :icon="ArrowLeft"
-          @click="router.push('/')"
+          @click="goHome"
         >
           返回首页
         </el-button>
@@ -34,7 +34,18 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
+import { useGlobalStore } from '@/stores/global';
 import { ArrowLeft, Refresh, DocumentDelete } from '@element-plus/icons-vue';
 
 const router = useRouter();
+const globalStore = useGlobalStore();
+
+const goHome = () => {
+  const role = (globalStore.user?.role ?? "user").toString().toLowerCase();
+  if (role === "admin" || role === "administrator") {
+    router.push("/");
+  } else {
+    router.push("/siteInfo");
+  }
+};
 </script>
