@@ -43,9 +43,9 @@ const globalStore = useGlobalStore();
 const goHome = () => {
   const role = (globalStore.user?.role ?? "user").toString().toLowerCase();
   if (role === "admin" || role === "administrator") {
-    router.push("/");
+    router.push({ name: "AdminList", replace: true });
   } else {
-    router.push("/siteInfo");
+    router.push({ name: "CustomerHome", replace: true });
   }
 };
 </script>

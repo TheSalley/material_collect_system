@@ -11,7 +11,7 @@
           <div class="flex items-center gap-2 text-sm">
             <a 
               href="#" 
-              @click.prevent="router.push('/')"
+              @click.prevent="router.push({ name: 'AdminList' })"
               class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
             >
               <el-icon><House /></el-icon>
@@ -24,7 +24,7 @@
         <div class="flex items-center gap-3">
           <el-button 
             :icon="ArrowLeft"
-            @click="router.push('/')"
+            @click="router.push({ name: 'AdminList' })"
           >
             返回
           </el-button>

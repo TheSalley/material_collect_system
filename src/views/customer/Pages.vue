@@ -11,7 +11,7 @@
           <div class="flex items-center gap-2 text-sm">
             <a 
               href="#" 
-              @click.prevent="router.push('/siteInfo')"
+              @click.prevent="router.push({ name: 'CustomerHome' })"
               class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
             >
               <el-icon><House /></el-icon>

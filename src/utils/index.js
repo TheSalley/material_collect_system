@@ -30,13 +30,15 @@ export function addProtectedRoutes(role) {
     
     while (retryCount < 3 && !routeAdded) {
       const routes = router.getRoutes();
-      const rootRoute = routes.find(r => r.path === "/" && r.meta?.requiresAuth);
+      // admin 使用 /admin，user 使用 /
+      const rootRoutePath = (r === "admin" || r === "administrator") ? "/admin" : "/";
+      const rootRoute = routes.find(route => route.path === rootRoutePath && route.meta?.requiresAuth);
       
       if (rootRoute) {
         // 验证子路由是否存在
         const hasChildRoute = rootRoute.children?.some(child => {
           if (r === "admin" || r === "administrator") {
-            return child.path === ""; // admin 使用空路径
+            return child.path === "list"; // admin 使用 list
           } else {
             return child.path === "siteInfo"; // user 使用 siteInfo
           }

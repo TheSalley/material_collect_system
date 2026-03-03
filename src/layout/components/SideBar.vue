@@ -9,19 +9,19 @@
       <div class="flex flex-col gap-2">
         <el-menu default-active="2" router>
           <template v-for="route in accessibleRoutes" :key="route.path">
-            <el-sub-menu v-if="route.children.length" :index="route.path">
+            <el-sub-menu v-if="route.children && route.children.length && route.children.some(child => !child.meta?.hidden)" :index="route.path">
               <template #title>
                 <!-- <el-icon><location /></el-icon> -->
                 <span>{{ route.meta.title }}</span>
               </template>
               <el-menu-item
-                v-for="sub_route in route.children"
+                v-for="sub_route in route.children.filter(child => !child.meta?.hidden)"
                 :key="sub_route.id"
                 :index="route.path.split(':')[0] + sub_route.id"
                 >{{ sub_route.post_name }}</el-menu-item
               >
             </el-sub-menu>
-            <el-menu-item v-else :index="route.path">
+            <el-menu-item v-else-if="!route.children || route.children.length === 0" :index="route.path">
               <!-- <el-icon><icon-menu /></el-icon> -->
               <span>{{ route.meta.title }}</span>
             </el-menu-item>

@@ -91,10 +91,11 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, nextTick } from "vue";
 import { login } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
+import { addProtectedRoutes } from "@/utils";
 import { User, Lock, Right, Refresh } from '@element-plus/icons-vue';
 import "element-plus/theme-chalk/el-message.css";
 import "element-plus/theme-chalk/el-message-box.css";
@@ -139,15 +140,50 @@ const handleLogin = async () => {
         globalStore.isLogin = true;
         ElMessage.success("登录成功");
         
-        // 等待 store 更新完成后再跳转
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // 根据角色跳转到不同页面
+        // 根据角色添加路由
         const role = (res.data.user?.role ?? "user").toString().toLowerCase();
-        if (role === "admin" || role === "administrator") {
-          router.push("/");
+        await addProtectedRoutes(role);
+        
+        // 等待路由添加完成后再跳转
+        await new Promise(resolve => setTimeout(resolve, 150));
+        await nextTick();
+        await nextTick();
+        
+        // 根据角色跳转到不同页面（使用路由名称更安全）
+        const targetRouteName = role === "admin" || role === "administrator" ? "AdminList" : "CustomerHome";
+        
+        // 验证路由是否可以解析
+        let canResolve = false;
+        let retryCount = 0;
+        
+        while (retryCount < 5 && !canResolve) {
+          try {
+            const resolved = router.resolve({ name: targetRouteName });
+            if (resolved.name && resolved.name !== "NotFound") {
+              canResolve = true;
+            }
+          } catch (err) {
+            // 解析失败，继续重试
+          }
+          
+          if (!canResolve) {
+            retryCount++;
+            if (retryCount < 5) {
+              await new Promise(resolve => setTimeout(resolve, 50));
+              await nextTick();
+            }
+          }
+        }
+        
+        if (canResolve) {
+          router.push({ name: targetRouteName, replace: true });
         } else {
-          router.push("/siteInfo");
+          // 如果无法解析，使用路径跳转
+          if (role === "admin" || role === "administrator") {
+            router.push({ path: "/admin/list", replace: true });
+          } else {
+            router.push({ path: "/siteInfo", replace: true });
+          }
         }
       } else {
         ElMessageBox.alert(res.message, "提示：", {
