@@ -232,6 +232,16 @@ router.beforeEach(async (to, from, next) => {
           // user 访问 /siteInfo，使用路由名称跳转
           targetName = "CustomerHome";
         }
+      } else if (to.path.startsWith("/pages/")) {
+        // 如果访问 /pages/:id，根据角色跳转
+        if (role === "admin" || role === "administrator") {
+          // admin 访问 /pages/:id，重定向到 /admin/pages/:id
+          const pageId = to.path.replace("/pages/", "");
+          targetPath = `/admin/pages/${pageId}`;
+        } else {
+          // user 访问 /pages/:id，保持原路径
+          targetPath = to.path;
+        }
       }
       
       // 路由已添加，优先使用路由名称跳转更安全
@@ -291,6 +301,17 @@ router.beforeEach(async (to, from, next) => {
     } catch (err) {
       console.error("添加路由失败:", err);
       next("/login");
+      return;
+    }
+  }
+
+  // 处理已登录用户访问 /pages/:id 的情况
+  if (access_token && to.path.startsWith("/pages/")) {
+    const role = (user?.role ?? "user").toString().toLowerCase();
+    if (role === "admin" || role === "administrator") {
+      // admin 访问 /pages/:id，重定向到 /admin/pages/:id
+      const pageId = to.path.replace("/pages/", "");
+      next({ path: `/admin/pages/${pageId}`, replace: true });
       return;
     }
   }

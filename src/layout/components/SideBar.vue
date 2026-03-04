@@ -7,23 +7,35 @@
     </div>
     <div class="flex flex-col justify-between flex-grow">
       <div class="flex flex-col gap-2">
-        <el-menu default-active="2" router>
-          <template v-for="route in accessibleRoutes" :key="route.path">
-            <el-sub-menu v-if="route.children && route.children.length && route.children.some(child => !child.meta?.hidden)" :index="route.path">
+        <el-menu :default-active="activeMenu" router>
+          <template v-for="menuRoute in accessibleRoutes" :key="menuRoute.path">
+            <!-- 动态页面列表：显示为子菜单 -->
+            <el-sub-menu v-if="menuRoute.path.includes('/pages/:id') && menuRoute.children && menuRoute.children.length > 0" :index="menuRoute.path">
               <template #title>
                 <!-- <el-icon><location /></el-icon> -->
-                <span>{{ route.meta.title }}</span>
+                <span>{{ menuRoute.meta.title }}</span>
               </template>
               <el-menu-item
-                v-for="sub_route in route.children.filter(child => !child.meta?.hidden)"
+                v-for="sub_route in menuRoute.children.filter(child => !child.meta?.hidden)"
                 :key="sub_route.id"
-                :index="route.path.split(':')[0] + sub_route.id"
+                :index="menuRoute.path.split(':')[0] + sub_route.id"
                 >{{ sub_route.post_name }}</el-menu-item
               >
             </el-sub-menu>
-            <el-menu-item v-else-if="!route.children || route.children.length === 0" :index="route.path">
+            <!-- 普通路由：如果有子路由，显示子路由为独立菜单项 -->
+            <template v-else-if="menuRoute.children && menuRoute.children.length > 0">
+              <el-menu-item
+                v-for="child in menuRoute.children.filter(child => !child.meta?.hidden)"
+                :key="child.path"
+                :index="getChildMenuIndex(menuRoute, child)"
+              >
+                <span>{{ child.meta?.title || child.name }}</span>
+              </el-menu-item>
+            </template>
+            <!-- 没有子路由：显示为普通菜单项 -->
+            <el-menu-item v-else :index="getMenuIndex(menuRoute)">
               <!-- <el-icon><icon-menu /></el-icon> -->
-              <span>{{ route.meta.title }}</span>
+              <span>{{ menuRoute.meta.title }}</span>
             </el-menu-item>
           </template>
         </el-menu>
@@ -93,11 +105,12 @@
 <script setup>
 import { computed, nextTick } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { resetRoutes } from "@/utils/index"
 
 const { user, clearUser } = useGlobalStore();
 const router = useRouter();
+const route = useRoute();
 
 const accessibleRoutes = computed(() => {
   let arr = router.getRoutes().reverse().filter((item) => {
@@ -114,6 +127,61 @@ const accessibleRoutes = computed(() => {
     return arr;
   }
   return arr;
+});
+
+// 获取菜单项的 index
+const getMenuIndex = (menuRoute) => {
+  return menuRoute.path;
+};
+
+// 获取子路由菜单项的 index
+const getChildMenuIndex = (menuRoute, child) => {
+  // 如果是动态路由，需要特殊处理
+  if (child.path.includes(':')) {
+    return `${menuRoute.path}/${child.path}`;
+  }
+  return `${menuRoute.path}/${child.path}`;
+};
+
+// 计算当前激活的菜单项
+const activeMenu = computed(() => {
+  const currentPath = route.path;
+  
+  // 遍历可访问的路由，找到匹配的菜单项
+  for (const menuRoute of accessibleRoutes.value) {
+    // 检查是否是当前路由的父路由
+    if (currentPath.startsWith(menuRoute.path) || menuRoute.path === '/') {
+      // 如果有子路由，检查是否匹配子路由
+      if (menuRoute.children && menuRoute.children.length > 0) {
+        for (const child of menuRoute.children) {
+          // 跳过隐藏的子路由
+          if (child.meta?.hidden) continue;
+          
+          const childPath = `${menuRoute.path === '/' ? '' : menuRoute.path}/${child.path}`;
+          // 处理动态路由（页面列表）
+          if (child.path.includes(':')) {
+            const pattern = childPath.replace(/:[^/]+/g, '[^/]+');
+            const regex = new RegExp(`^${pattern}$`);
+            if (regex.test(currentPath)) {
+              // 对于动态路由，返回完整的匹配路径
+              return currentPath;
+            }
+          } else {
+            // 精确匹配或路径前缀匹配
+            if (currentPath === childPath || currentPath.startsWith(childPath + '/')) {
+              return childPath;
+            }
+          }
+        }
+      }
+      // 如果没有子路由或没有匹配的子路由，检查是否是父路由本身
+      if (currentPath === menuRoute.path) {
+        return menuRoute.path;
+      }
+    }
+  }
+  
+  return currentPath;
 });
 
 async function logout() {

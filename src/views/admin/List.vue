@@ -41,13 +41,15 @@
       </div>
 
       <!-- 表格区域 -->
-      <div class="flex-1 overflow-auto min-h-0">
+      <div class="flex-1 overflow-auto min-h-0 overflow-x-hidden">
         <el-table 
           :data="filteredTableData" 
           :stripe="true"
           :highlight-current-row="true"
           class="w-full"
           empty-text="暂无数据"
+          style="width: 100%"
+          v-loading="loading"
         >
           <el-table-column prop="site_id" label="ID" width="200">
             <template #default="scope">
@@ -55,11 +57,11 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="site_name" label="站点名称" min-width="200">
+          <el-table-column prop="site_name" label="站点名称" min-width="150" show-overflow-tooltip>
             <template #default="scope">
               <div class="flex items-center gap-2">
-                <el-icon class="text-blue-500 text-base"><Link /></el-icon>
-                <span class="font-medium text-gray-900 dark:text-white">{{ scope.row.site_name || '-' }}</span>
+                <el-icon class="text-blue-500 text-base flex-shrink-0"><Link /></el-icon>
+                <span class="font-medium text-gray-900 dark:text-white truncate">{{ scope.row.site_name || '-' }}</span>
               </div>
             </template>
           </el-table-column>
@@ -73,15 +75,15 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="wp_base_url" label="网址" min-width="200">
+          <el-table-column prop="wp_base_url" label="网址" min-width="200" show-overflow-tooltip>
             <template #default="scope">
               <a 
                 :href="scope.row.wp_base_url" 
                 target="_blank" 
-                class="flex items-center gap-1.5 text-blue-500 hover:text-blue-600 hover:underline transition-colors"
+                class="flex items-center gap-1.5 text-blue-500 hover:text-blue-600 hover:underline transition-colors truncate"
               >
                 <el-icon><Link /></el-icon>
-                <span>{{ scope.row.wp_base_url }}</span>
+                <span class="truncate">{{ scope.row.wp_base_url }}</span>
               </a>
             </template>
           </el-table-column>
@@ -300,6 +302,7 @@ import {
 
 const tableData = reactive([]);
 const searchValue = ref("");
+const loading = ref(false);
 
 // 过滤后的表格数据
 const filteredTableData = computed(() => {
@@ -398,14 +401,22 @@ async function onSubmit() {
 }
 
 async function fetchList() {
-  const res = await getList();
-  if (res.code === 0) {
-    tableData.length = 0;
-    const list = res.data || [];
-    list.forEach(i => (i.mode = 2)); // 临时修改
-    tableData.push(...list);
+  loading.value = true;
+  try {
+    const res = await getList();
+    if (res.code === 0) {
+      tableData.length = 0;
+      const list = res.data || [];
+      list.forEach(i => (i.mode = 2)); // 临时修改
+      tableData.push(...list);
+    }
+    return res;
+  } catch (error) {
+    ElMessage.error("获取站点列表失败：" + (error.message || "网络错误"));
+    return { code: -1, message: error.message };
+  } finally {
+    loading.value = false;
   }
-  return res;
 }
 
 function openAddDrawer() {
@@ -459,7 +470,7 @@ function edit(data) {
 function config(data) {
   const { setWebsiteInfo } = useGlobalStore();
   setWebsiteInfo(data);
-  router.push({ path: "/detail", query: { id: data.id } });
+  router.push({ name: "AdminDetail", query: { id: data.id } });
 }
 </script>
 

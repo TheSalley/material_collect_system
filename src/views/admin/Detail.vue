@@ -232,7 +232,15 @@ const transform_page_list = computed(() => {
 
 
 function edit(row) {
-  router.push({ path: `/pages/${row.ID}` });
+  // 根据用户角色决定跳转路径
+  const role = (user?.role ?? "user").toString().toLowerCase();
+  if (role === "admin" || role === "administrator") {
+    // admin 用户跳转到 /admin/pages/:id
+    router.push({ path: `/admin/pages/${row.ID}` });
+  } else {
+    // user 用户跳转到 /pages/:id
+    router.push({ path: `/pages/${row.ID}` });
+  }
 }
 
 async function handleSave() {

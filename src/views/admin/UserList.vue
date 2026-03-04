@@ -41,13 +41,14 @@
       </div>
 
       <!-- 表格区域 -->
-      <div class="flex-1 overflow-auto min-h-0">
+      <div class="flex-1 overflow-auto min-h-0 overflow-x-hidden">
         <el-table 
           :data="filteredTableData" 
           :stripe="true"
           :highlight-current-row="true"
           class="w-full"
           empty-text="暂无数据"
+          style="width: 100%"
           v-loading="loading"
         >
           <el-table-column prop="id" label="ID" width="100">
@@ -56,16 +57,16 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="username" label="用户名" width="150">
+          <el-table-column prop="username" label="用户名" min-width="120" show-overflow-tooltip>
             <template #default="scope">
               <div class="flex items-center gap-2">
-                <el-icon class="text-blue-500 text-base"><UserFilled /></el-icon>
-                <span class="font-medium text-gray-900 dark:text-white">{{ scope.row.username || '-' }}</span>
+                <el-icon class="text-blue-500 text-base flex-shrink-0"><UserFilled /></el-icon>
+                <span class="font-medium text-gray-900 dark:text-white truncate">{{ scope.row.username || '-' }}</span>
               </div>
             </template>
           </el-table-column>
           
-          <el-table-column prop="role" label="角色" width="120" align="center">
+          <el-table-column prop="role" label="角色" width="100" align="center">
             <template #default="scope">
               <el-tag 
                 :type="scope.row.role === 'admin' ? 'danger' : 'info'"
@@ -77,28 +78,28 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="status" label="状态" width="100" align="center">
+          <el-table-column prop="is_deleted" label="状态" width="100" align="center">
             <template #default="scope">
               <el-tag 
-                :type="scope.row.status === 1 ? 'success' : 'danger'"
+                :type="scope.row.is_deleted === 0 ? 'success' : 'danger'"
                 size="small"
                 effect="dark"
                 round
               >
                 <el-icon class="mr-1">
-                  <CircleCheck v-if="scope.row.status === 1" />
+                  <CircleCheck v-if="scope.row.is_deleted === 0" />
                   <CircleClose v-else />
                 </el-icon>
-                {{ scope.row.status === 1 ? "启用" : "禁用" }}
+                {{ scope.row.is_deleted === 0 ? "启用" : "禁用" }}
               </el-tag>
             </template>
           </el-table-column>
           
-          <el-table-column prop="created_at" label="创建时间" width="280">
+          <el-table-column prop="created_at" label="创建时间" width="180" show-overflow-tooltip>
             <template #default="scope">
-              <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm">
-                <el-icon class="text-gray-400 dark:text-gray-500"><Clock /></el-icon>
-                <span>{{ formatDate(scope.row.created_at) }}</span>
+              <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm whitespace-nowrap">
+                <el-icon class="text-gray-400 dark:text-gray-500 flex-shrink-0"><Clock /></el-icon>
+                <span class="truncate">{{ formatDate(scope.row.created_at) }}</span>
               </div>
             </template>
           </el-table-column>
@@ -133,8 +134,7 @@
       <!-- 分页 -->
       <div class="flex justify-end px-6 py-5 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
         <el-pagination
-          v-model:current-page="currentPage"
-          :page-size="pageSize"
+          :page-size="20"
           :pager-count="11"
           layout="total, prev, pager, next, jumper"
           :total="filteredTableData.length"
@@ -318,15 +318,15 @@ import {
   Search, Plus, Edit, Delete, Clock, 
   User, UserFilled, CircleCheck, CircleClose, Check, Message, Lock
 } from '@element-plus/icons-vue';
+import { useGlobalStore } from "@/stores/global.js";
 
 const tableData = reactive([]);
 const searchValue = ref("");
 const loading = ref(false);
 const saving = ref(false);
-const currentPage = ref(1);
-const pageSize = ref(20);
 
 const router = useRouter();
+const globalStore = useGlobalStore();
 
 const drawer = ref(false);
 const addDrawer = ref(false);
@@ -371,9 +371,7 @@ const filteredTableData = computed(() => {
   const keyword = searchValue.value.toLowerCase();
   return tableData.filter(item => 
     (item.username && item.username.toLowerCase().includes(keyword)) ||
-    (item.email && item.email.toLowerCase().includes(keyword)) ||
-    (item.role && item.role.toLowerCase().includes(keyword)) ||
-    (item.nickname && item.nickname.toLowerCase().includes(keyword))
+    (item.role && item.role.toLowerCase().includes(keyword))
   );
 });
 
@@ -459,8 +457,8 @@ function edit(data) {
   form.username = data.username || '';
   form.email = data.email || '';
   form.nickname = data.nickname || '';
-  form.role = data.role || 'customer';
-  form.status = data.status === 1 ? true : false;
+  form.role = data.role === 'admin' ? 'administrator' : 'customer';
+  form.status = data.is_deleted === 0 ? true : false;
   drawer.value = true;
 }
 
@@ -493,8 +491,8 @@ async function onSubmit() {
       username: form.username,
       email: form.email,
       nickname: form.nickname,
-      role: form.role,
-      status: form.status ? 1 : 2,
+      role: form.role === 'administrator' ? 'admin' : 'user',
+      status: form.status ? 0 : 1, // is_deleted: 0=启用, 1=禁用
     });
     
     if (res.code === 0) {
@@ -506,10 +504,16 @@ async function onSubmit() {
       // 更新表格数据
       const index = tableData.findIndex(item => item.id === form.id);
       if (index !== -1) {
-        Object.assign(tableData[index], res.data);
+        Object.assign(tableData[index], {
+          ...res.data,
+          role: res.data.role || (form.role === 'administrator' ? 'admin' : 'user'),
+          is_deleted: res.data.is_deleted !== undefined ? res.data.is_deleted : (form.status ? 0 : 1)
+        });
       }
       
       drawer.value = false;
+      // 刷新列表
+      await fetchUserList();
     } else {
       ElMessage({
         message: res.message || "保存失败",
