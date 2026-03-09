@@ -117,6 +117,61 @@ export const getPageById = async (post_id, site_id) => {
     },
   });
 };
+
+/**
+ * 获取站点标题
+ */
+export const getSiteTitle = async (site_id) => {
+  const { access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + `/api/proxy/site_title?site_id=${site_id}`, {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  });
+};
+
+/**
+ * 获取站点 favicon/icon
+ */
+export const getSiteIcon = async (site_id) => {
+  const { access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + `/api/proxy/site_icon?site_id=${site_id}`, {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  });
+};
+
+/**
+ * 更新站点标题
+ */
+export const updateSiteTitle = async (site_id, title) => {
+  const { access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/site_title", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${access_token}`,
+    },
+    body: JSON.stringify({ site_id, title }),
+  });
+};
+
+/**
+ * 更新站点 favicon/icon
+ */
+export const updateSiteIcon = async (site_id, attachment_id, icon_url) => {
+  const { access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/site_icon", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${access_token}`,
+    },
+    body: JSON.stringify({ site_id, attachment_id, icon_url }),
+  });
+};
+
 /**
  *
  * 上传Elementor 图片到媒体库

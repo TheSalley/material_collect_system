@@ -36,6 +36,7 @@
                 style="width: 120px"
               >
                 <el-option label="中文" value="zh" />
+                <el-option label="俄语" value="ru" />
                 <el-option label="法语" value="fr" />
                 <el-option label="英语" value="en" />
                 <el-option label="日语" value="ja" />
@@ -53,6 +54,7 @@
                 style="width: 120px"
               >
                 <el-option label="中文" value="zh" />
+                <el-option label="俄语" value="ru" />
                 <el-option label="法语" value="fr" />
                 <el-option label="英语" value="en" />
                 <el-option label="日语" value="ja" />

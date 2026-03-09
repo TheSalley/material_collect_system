@@ -57,11 +57,11 @@ const adminRoutes = [
   },
 ];
 
-// userRoutes 优化
+// 用户身份路由（role 为 user 或 customer 时使用）
 const userRoutes = [
   {
     path: "/",
-    meta: { requiresAuth: true, role: "customer", hidden: true },
+    meta: { requiresAuth: true, role: "user", hidden: true },
     component: () => import("@/layout/index.vue"),
     children: [
       {
@@ -118,10 +118,10 @@ router.beforeEach(async (to, from, next) => {
   // 已登录访问登录页 → 根据角色跳转
   if (access_token && to.path === "/login") {
     const role = (user?.role ?? "user").toString().toLowerCase();
-    // 检查路由是否已添加
+    // 检查路由是否已添加（根路径可能是 '' 或 '/'）
     const routes = router.getRoutes();
     const hasProtectedRoute = routes.some(r => 
-      (r.path === "/admin" || r.path === "/") && r.meta?.requiresAuth
+      (r.path === "/admin" || r.path === "/" || r.path === "") && r.meta?.requiresAuth
     );
     
     if (!hasProtectedRoute) {
@@ -191,13 +191,11 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // 已登录但动态路由未添加 → 先添加再重定向
-  // 检查路由是否已添加（通过检查是否存在受保护的路由）
+  // 已登录但动态路由未添加 → 先添加再重定向（addProtectedRoutes 内部已做幂等，重复调用不会重复添加）
   const routes = router.getRoutes();
   const hasProtectedRoute = routes.some(r => 
-    (r.path === "/admin" || r.path === "/") && r.meta?.requiresAuth
+    (r.path === "/admin" || r.path === "/" || r.path === "") && r.meta?.requiresAuth
   );
-  
   if (access_token && (!isDynamicRoutesAdded || !hasProtectedRoute)) {
     try {
       const role = (user?.role ?? "user").toString().toLowerCase();

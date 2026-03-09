@@ -92,7 +92,7 @@
 
 <script setup>
 import { ref, nextTick } from "vue";
-import { login } from "@/apis/index.js";
+import { login, getPages } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
 import { addProtectedRoutes } from "@/utils";
@@ -138,10 +138,35 @@ const handleLogin = async () => {
         globalStore.user = res.data.user;
         globalStore.access_token = res.data.access_token;
         globalStore.isLogin = true;
-        ElMessage.success("登录成功");
-        
-        // 根据角色添加路由
+        // 保存登录返回的站点列表，并默认选中第一个站点（客户端页面用）
+        globalStore.sites = res.data.sites || [];
+        if (globalStore.sites.length > 0) {
+          globalStore.setWebsiteInfo(globalStore.sites[0]);
+        } else {
+          globalStore.setWebsiteInfo(null);
+        }
+
         const role = (res.data.user?.role ?? "user").toString().toLowerCase();
+        // 用户身份：拉取当前站点的页面列表，供侧栏「页面列表」展示
+        if ((role === "user" || role === "customer") && globalStore.websiteInfo?.site_id) {
+          try {
+            const pageRes = await getPages(globalStore.websiteInfo.site_id);
+            if (pageRes?.code === 0 && Array.isArray(pageRes.data)) {
+              globalStore.sitePageList = pageRes.data.map((p) => ({
+                id: p.ID ?? p.id,
+                post_name: p.post_name ?? p.post_title ?? "",
+              }));
+            } else {
+              globalStore.sitePageList = [];
+            }
+          } catch {
+            globalStore.sitePageList = [];
+          }
+        }
+
+        ElMessage.success("登录成功");
+
+        // 根据角色添加路由
         await addProtectedRoutes(role);
         
         // 等待路由添加完成后再跳转

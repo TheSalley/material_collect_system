@@ -24,13 +24,27 @@
             </el-sub-menu>
             <!-- 普通路由：如果有子路由，显示子路由为独立菜单项 -->
             <template v-else-if="menuRoute.children && menuRoute.children.length > 0">
-              <el-menu-item
-                v-for="child in menuRoute.children.filter(child => !child.meta?.hidden)"
-                :key="child.path"
-                :index="getChildMenuIndex(menuRoute, child)"
-              >
-                <span>{{ child.meta?.title || child.name }}</span>
-              </el-menu-item>
+              <template v-for="child in menuRoute.children.filter(child => !child.meta?.hidden)" :key="child.path">
+                <!-- 用户身份且为「页面列表」且已拉取到页面数据：显示为子菜单 -->
+                <el-sub-menu
+                  v-if="isUserRole && child.path === 'pages/:id' && sitePageList.length > 0"
+                  :index="'/pages/' + (websiteInfo?.site_id || '')"
+                >
+                  <template #title>
+                    <span>{{ child.meta?.title || child.name }}</span>
+                  </template>
+                  <el-menu-item
+                    v-for="page in sitePageList"
+                    :key="page.id"
+                    :index="'/pages/' + page.id"
+                  >
+                    {{ page.post_name }}
+                  </el-menu-item>
+                </el-sub-menu>
+                <el-menu-item v-else :index="getChildMenuIndex(menuRoute, child)">
+                  <span>{{ child.meta?.title || child.name }}</span>
+                </el-menu-item>
+              </template>
             </template>
             <!-- 没有子路由：显示为普通菜单项 -->
             <el-menu-item v-else :index="getMenuIndex(menuRoute)">
@@ -108,14 +122,32 @@ import { useGlobalStore } from "@/stores/global.js";
 import { useRouter, useRoute } from "vue-router";
 import { resetRoutes } from "@/utils/index"
 
-const { user, clearUser } = useGlobalStore();
+const { user, clearUser, websiteInfo, sitePageList } = useGlobalStore();
 const router = useRouter();
 const route = useRoute();
 
+// role 为 user 表示用户身份（customer 同）
+const isUserRole = computed(() => {
+  const r = (user?.role ?? "").toString().toLowerCase();
+  return r === "user" || r === "customer";
+});
+
 const accessibleRoutes = computed(() => {
+  const isUser = (user?.role ?? "").toString().toLowerCase() === "user" || (user?.role ?? "").toString().toLowerCase() === "customer";
   let arr = router.getRoutes().reverse().filter((item) => {
-    if (item.meta?.hidden) return false;
-    if (user.role === 'administrator' && item.path === '/pages/:id') return false;
+    // 用户身份时保留根布局路由（path 为 '' 或 '/'），否则无法展示子菜单
+    if (item.meta?.hidden && !(isUser && (item.path === "/" || item.path === ""))) return false;
+    if (user.role === "administrator" && item.path === "/pages/:id") return false;
+    // getRoutes() 为扁平列表，子路由也会出现在顶层；用户身份下排除顶层子路径，避免与根布局的子项重复
+    if (isUser && (item.path === "siteInfo" || item.path === "pages/:id")) return false;
+    return true;
+  });
+  // 按 path 去重（根路径 '' 与 '/' 视为同一项），避免重复菜单
+  const seen = new Set();
+  arr = arr.filter((item) => {
+    const key = item.path === "" ? "/" : item.path;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
   if (user.page_list) {
@@ -124,23 +156,27 @@ const accessibleRoutes = computed(() => {
         item.children = JSON.parse(user.page_list);
       }
     });
-    return arr;
   }
   return arr;
 });
 
-// 获取菜单项的 index
+// 获取菜单项的 index（动态路由需替换为实际 site_id）
 const getMenuIndex = (menuRoute) => {
+  if (menuRoute.path === "/pages/:id" && websiteInfo?.site_id) {
+    return `/pages/${websiteInfo.site_id}`;
+  }
   return menuRoute.path;
 };
 
 // 获取子路由菜单项的 index
 const getChildMenuIndex = (menuRoute, child) => {
-  // 如果是动态路由，需要特殊处理
-  if (child.path.includes(':')) {
-    return `${menuRoute.path}/${child.path}`;
+  const base = menuRoute.path === '/' ? '' : menuRoute.path;
+  const fullPath = `${base}/${child.path}`.replace(/\/+/g, '/');
+  // 动态路由 pages/:id 替换为当前站点 id，避免跳转到字面量 /pages/:id
+  if (child.path === 'pages/:id' && websiteInfo?.site_id) {
+    return `${base ? base + '/' : '/'}pages/${websiteInfo.site_id}`.replace(/\/+/g, '/');
   }
-  return `${menuRoute.path}/${child.path}`;
+  return fullPath;
 };
 
 // 计算当前激活的菜单项

@@ -3,6 +3,7 @@ import { adminRoutes, userRoutes, publicRoutes, notFoundRoute } from "@/router";
 import { nextTick } from "vue";
 
 // 根据角色动态添加对应的路由（最后再添加 404，保证 "/" 先被角色路由匹配）
+// 幂等：若该角色根路由已存在则不再添加，避免 main.js 与 beforeEach 重复添加导致重复菜单
 export function addProtectedRoutes(role) {
   return new Promise(async (resolve) => {
     let routesToAdd = [];
@@ -10,11 +11,23 @@ export function addProtectedRoutes(role) {
 
     if (r === "admin" || r === "administrator") {
       routesToAdd = adminRoutes;
-    } else if (r === "customer" || r === "user") {
+    } else if (r === "user" || r === "customer") {
       routesToAdd = userRoutes;
     }
-    
-    // 添加路由
+
+    const currentRoutes = router.getRoutes();
+    const rootPaths = r === "admin" || r === "administrator" ? ["/admin"] : ["/", ""];
+    const alreadyAdded = currentRoutes.some(
+      (route) =>
+        rootPaths.includes(route.path) &&
+        route.meta?.requiresAuth &&
+        route.children?.some((c) => (r === "admin" || r === "administrator" ? c.path === "list" : c.path === "siteInfo"))
+    );
+    if (alreadyAdded) {
+      resolve();
+      return;
+    }
+
     routesToAdd.forEach((route) => {
       router.addRoute(route);
     });
