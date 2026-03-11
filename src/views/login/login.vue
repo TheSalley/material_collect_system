@@ -166,50 +166,12 @@ const handleLogin = async () => {
 
         ElMessage.success("登录成功");
 
-        // 根据角色添加路由
+        // 根据角色添加路由（addProtectedRoutes 内部已确保路由可解析）
         await addProtectedRoutes(role);
         
-        // 等待路由添加完成后再跳转
-        await new Promise(resolve => setTimeout(resolve, 150));
-        await nextTick();
-        await nextTick();
-        
-        // 根据角色跳转到不同页面（使用路由名称更安全）
+        // 根据角色跳转到对应页面
         const targetRouteName = role === "admin" || role === "administrator" ? "AdminList" : "CustomerHome";
-        
-        // 验证路由是否可以解析
-        let canResolve = false;
-        let retryCount = 0;
-        
-        while (retryCount < 5 && !canResolve) {
-          try {
-            const resolved = router.resolve({ name: targetRouteName });
-            if (resolved.name && resolved.name !== "NotFound") {
-              canResolve = true;
-            }
-          } catch (err) {
-            // 解析失败，继续重试
-          }
-          
-          if (!canResolve) {
-            retryCount++;
-            if (retryCount < 5) {
-              await new Promise(resolve => setTimeout(resolve, 50));
-              await nextTick();
-            }
-          }
-        }
-        
-        if (canResolve) {
-          router.push({ name: targetRouteName, replace: true });
-        } else {
-          // 如果无法解析，使用路径跳转
-          if (role === "admin" || role === "administrator") {
-            router.push({ path: "/admin/list", replace: true });
-          } else {
-            router.push({ path: "/siteInfo", replace: true });
-          }
-        }
+        router.replace({ name: targetRouteName });
       } else {
         ElMessageBox.alert(res.message, "提示：", {
           confirmButtonText: "OK",

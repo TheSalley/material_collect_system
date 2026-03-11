@@ -144,19 +144,19 @@ router.beforeEach(async (to, from, next) => {
         // 等待路由完全添加完成
         await nextTick();
         await nextTick();
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       } catch (err) {
         console.error("添加路由失败:", err);
       }
     }
     
     // 根据角色跳转（路由已添加，使用路由名称更安全）
-    // 先验证路由是否可以解析
+    // 先验证路由是否可以解析，增加重试次数和等待时间
     const targetRouteName = role === "admin" || role === "administrator" ? "AdminList" : "CustomerHome";
     let canResolve = false;
     let retryCount = 0;
     
-    while (retryCount < 3 && !canResolve) {
+    while (retryCount < 10 && !canResolve) {
       try {
         const resolved = router.resolve({ name: targetRouteName });
         if (resolved.name && resolved.name !== "NotFound") {
@@ -168,8 +168,8 @@ router.beforeEach(async (to, from, next) => {
       
       if (!canResolve) {
         retryCount++;
-        if (retryCount < 3) {
-          await new Promise(resolve => setTimeout(resolve, 50));
+        if (retryCount < 10) {
+          await new Promise(resolve => setTimeout(resolve, 100));
           await nextTick();
         }
       }
@@ -178,27 +178,9 @@ router.beforeEach(async (to, from, next) => {
     if (canResolve) {
       next({ name: targetRouteName, replace: true });
     } else {
-      // 如果仍然无法解析，再次等待并重试一次
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await nextTick();
-      
-      // 最后尝试解析路由
-      try {
-        const finalResolved = router.resolve({ name: targetRouteName });
-        if (finalResolved.name && finalResolved.name !== "NotFound") {
-          next({ name: targetRouteName, replace: true });
-          return;
-        }
-      } catch (err) {
-        // 解析失败
-      }
-      
       // 如果仍然无法解析，使用路径跳转（路由应该已经添加）
-      if (role === "admin" || role === "administrator") {
-        next({ path: "/admin/list", replace: true });
-      } else {
-        next({ path: "/siteInfo", replace: true });
-      }
+      const targetPath = role === "admin" || role === "administrator" ? "/admin/list" : "/siteInfo";
+      next({ path: targetPath, replace: true });
     }
     return;
   }
@@ -214,10 +196,10 @@ router.beforeEach(async (to, from, next) => {
       await addProtectedRoutes(role);
       isDynamicRoutesAdded = true;
 
-      // 等待路由完全添加完成
+      // 等待路由完全添加完成，增加等待时间确保路由就绪
       await nextTick();
       await nextTick();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // 根据角色确定目标路径或名称
       let targetPath = to.path;
@@ -255,12 +237,12 @@ router.beforeEach(async (to, from, next) => {
       }
       
       // 路由已添加，优先使用路由名称跳转更安全
-      // 先验证路由是否可以解析
+      // 先验证路由是否可以解析，增加重试次数
       if (targetName) {
         let canResolve = false;
         let retryCount = 0;
         
-        while (retryCount < 3 && !canResolve) {
+        while (retryCount < 10 && !canResolve) {
           try {
             const resolved = router.resolve({ name: targetName });
             if (resolved.name && resolved.name !== "NotFound") {
@@ -272,8 +254,8 @@ router.beforeEach(async (to, from, next) => {
           
           if (!canResolve) {
             retryCount++;
-            if (retryCount < 3) {
-              await new Promise(resolve => setTimeout(resolve, 50));
+            if (retryCount < 10) {
+              await new Promise(resolve => setTimeout(resolve, 100));
               await nextTick();
             }
           }
@@ -282,22 +264,7 @@ router.beforeEach(async (to, from, next) => {
         if (canResolve) {
           next({ name: targetName, replace: true });
         } else {
-          // 如果无法解析，再次等待并重试一次
-          await new Promise(resolve => setTimeout(resolve, 100));
-          await nextTick();
-          
-          // 最后尝试解析路由
-          try {
-            const finalResolved = router.resolve({ name: targetName });
-            if (finalResolved.name && finalResolved.name !== "NotFound") {
-              next({ name: targetName, replace: true });
-              return;
-            }
-          } catch (err) {
-            // 解析失败
-          }
-          
-          // 如果仍然无法解析，使用路径跳转
+          // 如果无法解析，使用路径跳转
           if (targetName === "AdminList") {
             next({ path: "/admin/list", replace: true });
           } else {

@@ -56,6 +56,11 @@
               <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.site_id }}</span>
             </template>
           </el-table-column>
+          <el-table-column prop="wp_auth_token" label="Token" width="200">
+            <template #default="scope">
+              <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.wp_auth_token }}</span>
+            </template>
+          </el-table-column>
           
           <el-table-column prop="site_name" label="站点名称" min-width="150" show-overflow-tooltip>
             <template #default="scope">

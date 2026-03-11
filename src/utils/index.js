@@ -37,42 +37,32 @@ export function addProtectedRoutes(role) {
     await nextTick();
     await nextTick();
     
-    // 验证路由是否添加成功，最多重试3次
+    // 验证路由是否添加成功，并确保路由可以被解析
+    const targetRouteName = (r === "admin" || r === "administrator") ? "AdminList" : "CustomerHome";
     let retryCount = 0;
-    let routeAdded = false;
+    let routeReady = false;
     
-    while (retryCount < 3 && !routeAdded) {
-      const routes = router.getRoutes();
-      // admin 使用 /admin，user 使用 /
-      const rootRoutePath = (r === "admin" || r === "administrator") ? "/admin" : "/";
-      const rootRoute = routes.find(route => route.path === rootRoutePath && route.meta?.requiresAuth);
-      
-      if (rootRoute) {
-        // 验证子路由是否存在
-        const hasChildRoute = rootRoute.children?.some(child => {
-          if (r === "admin" || r === "administrator") {
-            return child.path === "list"; // admin 使用 list
-          } else {
-            return child.path === "siteInfo"; // user 使用 siteInfo
-          }
-        });
-        
-        if (hasChildRoute) {
-          routeAdded = true;
+    while (retryCount < 10 && !routeReady) {
+      try {
+        // 验证路由是否可以被解析
+        const resolved = router.resolve({ name: targetRouteName });
+        if (resolved.name && resolved.name !== "NotFound") {
+          routeReady = true;
         }
+      } catch (err) {
+        // 解析失败，继续重试
       }
       
-      if (!routeAdded) {
+      if (!routeReady) {
         retryCount++;
-        if (retryCount < 3) {
-          // 等待后重试
-          await new Promise(resolve => setTimeout(resolve, 50));
+        if (retryCount < 10) {
+          await new Promise(resolve => setTimeout(resolve, 100));
           await nextTick();
         }
       }
     }
     
-    if (!routeAdded) {
+    if (!routeReady) {
       console.warn("路由添加验证失败，但继续执行");
     }
     
