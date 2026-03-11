@@ -1,7 +1,7 @@
 <template>
   <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
     <div class="px-5 pt-5 flex-shrink-0">
-      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
           <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
           <el-icon class="text-blue-500 text-4xl"><Document /></el-icon>
