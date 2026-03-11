@@ -1,12 +1,12 @@
 <template>
   <div
-    class="flex flex-col gap-4 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark p-4 w-64"
+    class="flex flex-col gap-4 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark p-4 w-64 h-screen overflow-hidden"
   >
     <div class="flex items-center gap-3 px-3 py-2">
       <a href="/"><img class="logo" src="/logo.webp" /></a>
     </div>
-    <div class="flex flex-col justify-between flex-grow">
-      <div class="flex flex-col gap-2">
+    <div class="flex flex-col justify-between flex-1 min-h-0">
+      <div class="flex flex-col gap-2 sidebar-menu-scroll">
         <el-menu :default-active="activeMenu" router>
           <template v-for="menuRoute in accessibleRoutes" :key="menuRoute.path">
             <!-- 动态页面列表：显示为子菜单 -->
@@ -55,7 +55,7 @@
         </el-menu>
       </div>
       <!-- 底部 -->
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1 sidebar-footer">
         <div
           class="flex gap-3 p-3 border-t border-gray-200 dark:border-gray-700 mt-4"
         >
@@ -138,10 +138,31 @@ const accessibleRoutes = computed(() => {
     // 用户身份时保留根布局路由（path 为 '' 或 '/'），否则无法展示子菜单
     if (item.meta?.hidden && !(isUser && (item.path === "/" || item.path === ""))) return false;
     if (user.role === "administrator" && item.path === "/pages/:id") return false;
-    // getRoutes() 为扁平列表，子路由也会出现在顶层；用户身份下排除顶层子路径，避免与根布局的子项重复
-    if (isUser && (item.path === "siteInfo" || item.path === "pages/:id")) return false;
     return true;
   });
+
+  // getRoutes() 为扁平列表：父/子都会出现在同一层。
+  // 用户身份下我们保留了根布局路由（/），因此需要剔除那些“同时也以顶层 route 出现”的子路由，避免菜单重复。
+  if (isUser) {
+    const root = arr.find((r) => r.path === "/" || r.path === "");
+    if (root?.children?.length) {
+      const childFullPaths = new Set(
+        root.children
+          .map((c) => {
+            const base = root.path === "" ? "/" : root.path;
+            const full = `${base === "/" ? "" : base}/${c.path}`.replace(/\/+/g, "/");
+            return full.startsWith("/") ? full : `/${full}`;
+          })
+          .filter(Boolean)
+      );
+      arr = arr.filter((r) => {
+        // 保留根布局本身；剔除顶层的子路由记录（如 /siteInfo、/pages/:id）
+        if (r.path === "/" || r.path === "") return true;
+        return !childFullPaths.has(r.path);
+      });
+    }
+  }
+
   // 按 path 去重（根路径 '' 与 '/' 视为同一项），避免重复菜单
   const seen = new Set();
   arr = arr.filter((item) => {
@@ -238,6 +259,16 @@ async function logout() {
   --el-menu-bg-color: #001428;
   --el-menu-text-color: #fff;
   --el-menu-active-color: #409eff;
+}
+.sidebar-menu-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 12px;
+}
+.sidebar-footer {
+  flex: 0 0 auto;
 }
 .logo {
   padding-inline: 10px;

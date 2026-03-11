@@ -204,6 +204,21 @@ export const updatePageById = async (payload) => {
   });
 };
 
+/**
+ * 创建内容（新闻/文章等）
+ */
+export const contentCreate = async (payload) => {
+  const { access_token } = useGlobalStore();
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/content_create", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${access_token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+};
+
 
 /**
  *

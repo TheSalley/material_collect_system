@@ -196,6 +196,7 @@ function handleIconUpload(file) {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (siteId.value) formData.append("site_id", siteId.value);
       const uploadRes = await uploadImage(formData);
       if (uploadRes?.code !== 0 || !uploadRes?.data?.[0]?.success) {
         ElMessage.error(uploadRes?.message || "上传失败");

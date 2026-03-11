@@ -76,6 +76,18 @@ const userRoutes = [
         component: () => import("@/views/customer/Pages.vue"),
         meta: { title: "页面列表" },
       },
+      {
+        path: "productUpload",
+        name: "ProductUpload",
+        component: () => import("@/views/customer/ProductUpload.vue"),
+        meta: { title: "产品上传" },
+      },
+      {
+        path: "newsUpload",
+        name: "NewsUpload",
+        component: () => import("@/views/customer/NewsUpload.vue"),
+        meta: { title: "新闻上传" },
+      },
     ],
   },
 ];
