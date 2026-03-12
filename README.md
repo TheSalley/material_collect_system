@@ -28,6 +28,11 @@
 
 ## 接口
 
+- [x] 1. 站点标题获取和更新;
+- [x] 2. 站点Favicon 获取和更新;
+
+
+
 1. /api/auth/login/
 2. /api/proxy/get_pages?site_id=${site_id}
 3. /api/proxy/elementor_data?id=${id}

@@ -158,17 +158,20 @@ export const updateSiteTitle = async (site_id, title) => {
 };
 
 /**
- * 更新站点 favicon/icon
+ * 设置站点 favicon/icon（POST form: site_id + file）
+ * 响应: { code: 0, data: { attachment_id }, message }
  */
-export const updateSiteIcon = async (site_id, attachment_id, icon_url) => {
+export const updateSiteIcon = async (site_id, file) => {
   const { access_token } = useGlobalStore();
+  const form = new FormData();
+  form.append("site_id", site_id);
+  form.append("file", file);
   return await fetchWithAuth(config.baseUrl + "/api/proxy/site_icon", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${access_token}`,
     },
-    body: JSON.stringify({ site_id, attachment_id, icon_url }),
+    body: form,
   });
 };
 
@@ -277,8 +280,8 @@ export const createUser = async (payload) => {
 };
 
 /**
- *
- * 上传并绑定图片
+ * 上传页面截图（左侧截图）
+ * formdata 需包含: site_id, elementor_id, file
  */
 export const upload_bind_img = async (formdata) => {
   const globalStore = useGlobalStore();
@@ -292,21 +295,26 @@ export const upload_bind_img = async (formdata) => {
 };
 
 /**
- *
- * 获取绑定的图片
+ * 获取页面截图列表
+ * 响应: { code, data: { list: [{ file_url, ... }], page, page_size, total }, message }
  */
-export const get_bind_img = async (demo, bind_id, bind_mode) => {
+export const get_bind_img = async (site_id, elementor_id) => {
   const globalStore = useGlobalStore();
+  const params = new URLSearchParams({ site_id, elementor_id: String(elementor_id) });
   return await fetchWithAuth(
-    config.baseUrl +
-    "/api/file/get" +
-    `?demo=${demo}&bind_id=${bind_id}&bind_mode=${bind_mode}`,
+    config.baseUrl + "/api/file/get?" + params.toString(),
     {
       headers: {
         Authorization: `Bearer ${globalStore.access_token}`,
       },
     }
   );
+};
+
+/** 将接口返回的相对 file_url 转为完整可访问 URL */
+export const getFileFullUrl = (path) => {
+  if (!path) return "";
+  return path.startsWith("http") ? path : config.baseUrl + "/" + path.replace(/^\//, "");
 };
 
 

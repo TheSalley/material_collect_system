@@ -168,10 +168,10 @@ const handleLogin = async () => {
 
         // 根据角色添加路由（addProtectedRoutes 内部已确保路由可解析）
         await addProtectedRoutes(role);
-        
-        // 根据角色跳转到对应页面
-        const targetRouteName = role === "admin" || role === "administrator" ? "AdminList" : "CustomerHome";
-        router.replace({ name: targetRouteName });
+
+        // 根据角色跳转到对应页面（使用 path 跳转更可靠，避免动态路由未完全就绪时按 name 匹配失败）
+        const targetPath = role === "admin" || role === "administrator" ? "/admin/list" : "/siteInfo";
+        router.replace(targetPath);
       } else {
         ElMessageBox.alert(res.message, "提示：", {
           confirmButtonText: "OK",

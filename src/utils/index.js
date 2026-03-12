@@ -11,7 +11,8 @@ export function addProtectedRoutes(role) {
 
     if (r === "admin" || r === "administrator") {
       routesToAdd = adminRoutes;
-    } else if (r === "user" || r === "customer") {
+    } else {
+      // user、customer 及其他未知角色均使用用户端路由，保证总有可跳转的首页
       routesToAdd = userRoutes;
     }
 

@@ -51,6 +51,7 @@ import {
   getPageById,
   upload_bind_img,
   get_bind_img,
+  getFileFullUrl,
 } from "@/apis/index.js";
 import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
@@ -106,29 +107,34 @@ const customUpload = async (file) => {
     ElMessage.error("未选择模块");
     return;
   }
-  
   try {
-    const { user } = useGlobalStore();
+    const { websiteInfo } = useGlobalStore();
+    const site_id = websiteInfo?.site_id;
+    if (!site_id) {
+      ElMessage.error("未选择站点");
+      return;
+    }
+    const currentModule = state.originData[currentModuleIndex];
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("demo", user.demo);
-    formData.append("bind_mode", user.mode); // 模块模式
-    // 使用当前模块的ID
-    const currentModule = state.originData[currentModuleIndex];
-    formData.append("bind_id", currentModule.id);
+    formData.append("site_id", site_id);
+    formData.append("elementor_id", String(currentModule.id));
 
     const res = await upload_bind_img(formData);
 
     if (res.code === 0) {
-      // 保存当前模块的图片
-      moduleImages.value[currentModuleIndex] = res.data;
+      const res2 = await get_bind_img(site_id, currentModule.id);
+      if (res2?.code === 0 && res2?.data?.list?.[0]) {
+        const item = res2.data.list[0];
+        moduleImages.value[currentModuleIndex] = { ...item, file_url: getFileFullUrl(item.file_url) };
+      }
       ElMessage.success("图片上传成功！");
       dialogVisible.value = false;
     } else {
-      ElMessage.error("上传失败：" + res.message);
+      ElMessage.error("上传失败：" + (res.message || "未知错误"));
     }
   } catch (err) {
-    ElMessage.error("上传失败：" + err.message);
+    ElMessage.error("上传失败：" + (err?.message || "未知错误"));
   }
 };
 
@@ -137,20 +143,23 @@ watch(
   async (newId, oldId) => {
     if (newId) {
       const loadingInstance = ElLoading.service({ fullscreen: true });
-      const { user } = useGlobalStore();
-      const res1 = await getPageById(newId);
+      const { websiteInfo } = useGlobalStore();
+      const site_id = websiteInfo?.site_id;
+      const res1 = await getPageById(newId, site_id);
       if (res1.code === 0 && res1.data.post_id) {
         state.moduleId = res1.data.post_id;
         state.moduleData = JSON.parse(res1.data.meta_value);
         state.originData = JSON.parse(res1.data.meta_value);
         state.meta_id = res1.data.meta_id;
-        
-        // 获取每个模块的图片
-        for (let i = 0; i < state.originData.length; i++) {
-          const module = state.originData[i];
-          const res2 = await get_bind_img(user.demo, module.id, user.mode);
-          if (res2.code === 0) {
-            moduleImages.value[i] = res2.data;
+
+        if (site_id) {
+          for (let i = 0; i < state.originData.length; i++) {
+            const module = state.originData[i];
+            const res2 = await get_bind_img(site_id, module.id);
+            if (res2?.code === 0 && res2?.data?.list?.[0]) {
+              const item = res2.data.list[0];
+              moduleImages.value[i] = { ...item, file_url: getFileFullUrl(item.file_url) };
+            }
           }
         }
       }

@@ -1,11 +1,12 @@
 <template>
   <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
-    <div class="px-5 pt-5 flex-shrink-0">
-        <div class="flex items-start justify-between gap-4">
+    <!-- 页面标题区域（与站点信息一致） -->
+    <div class="px-6 pt-6 flex-shrink-0">
+      <div class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
           <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
-          <el-icon class="text-blue-500 text-4xl"><Document /></el-icon>
-          新闻上传
+            <el-icon class="text-blue-500 text-4xl"><Document /></el-icon>
+            新闻上传
           </h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">上传封面并创建新闻（post）</p>
         </div>
@@ -16,84 +17,70 @@
       </div>
     </div>
 
-    <div class="flex-1 flex flex-col m-5 bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden min-h-0">
-      <div class="flex-1 p-5 md:p-6 overflow-auto">
-        <div class="w-full space-y-5">
-          <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
-            <div class="xl:col-span-8 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 p-5">
-              <div class="flex items-center gap-2">
-                <el-icon class="text-blue-500"><Edit /></el-icon>
-                <h2 class="text-base font-semibold text-gray-900 dark:text-white">新闻内容</h2>
+    <!-- 主内容卡片 -->
+    <div class="flex-1 flex flex-col m-6 bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden min-h-0">
+      <div class="flex-1 p-6 md:p-10 overflow-auto">
+        <div class="space-y-6">
+          <!-- 左侧：截图（仅展示） 右侧：输入区（与站点信息布局一致） -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 左侧：截图（本地占位图） -->
+            <div class="lg:col-span-5 flex flex-col">
+              <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4 flex-1 flex flex-col min-h-[280px]">
+                <div class="flex items-center gap-2 mb-3">
+                  <el-icon class="text-blue-500"><Picture /></el-icon>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">截图</h3>
+                </div>
+                <div class="rounded-lg overflow-hidden min-h-[220px]">
+                  <img :src="productInfoImg" alt="新闻页面示意图" class="w-full h-full object-contain" />
+                </div>
               </div>
-              <el-form class="mt-4" label-position="top">
-                <el-form-item label="新闻标题">
-                  <el-input v-model="form.title" placeholder="请输入新闻标题" clearable />
-                </el-form-item>
-                <el-form-item label="新闻正文">
-                  <div class="news-editor-wrap">
-                    <QuillEditor
-                      v-model="form.content"
-                      :node-id="'news_upload_editor'"
-                      placeholder="请输入新闻正文"
-                    />
-                  </div>
-                </el-form-item>
-              </el-form>
             </div>
 
-            <div class="xl:col-span-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 p-5">
-              <div class="flex items-center gap-2">
-                <el-icon class="text-blue-500"><Picture /></el-icon>
-                <h2 class="text-base font-semibold text-gray-900 dark:text-white">封面</h2>
+            <!-- 右侧：输入区 -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
+              <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
+                <div class="flex items-center gap-2">
+                  <el-icon class="text-blue-500"><Edit /></el-icon>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">新闻标题</h3>
+                </div>
+                <div class="mt-4">
+                  <el-input v-model="form.title" placeholder="请输入新闻标题" clearable />
+                </div>
               </div>
 
-              <div class="mt-4">
-                <div
-                  class="w-full aspect-[16/9] rounded-xl border border-gray-200 dark:border-gray-600 bg-white/60 dark:bg-gray-900/30 flex items-center justify-center overflow-hidden"
-                >
-                  <img v-if="uploaded.url" :src="uploaded.url" class="w-full h-full object-cover" alt="cover" />
-                  <div v-else class="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
-                    <el-icon class="text-4xl"><Picture /></el-icon>
-                    <div class="text-sm">建议比例 16:9</div>
-                  </div>
+              <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
+                <div class="flex items-center gap-2">
+                  <el-icon class="text-blue-500"><Edit /></el-icon>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">新闻正文</h3>
                 </div>
-                <div class="mt-4 flex items-center justify-between gap-3">
-                  <el-upload
-                    action="#"
-                    :before-upload="beforeUpload"
-                    :show-file-list="false"
-                  >
+                <div class="mt-4 news-editor-wrap">
+                  <QuillEditor
+                    v-model="form.content"
+                    :node-id="'news_upload_editor'"
+                    placeholder="请输入新闻正文"
+                  />
+                </div>
+              </div>
+
+              <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
+                <div class="flex items-center gap-2">
+                  <el-icon class="text-blue-500"><Picture /></el-icon>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">封面</h3>
+                </div>
+                <div class="mt-4 flex items-center gap-3 flex-wrap">
+                  <el-upload action="#" :before-upload="beforeUpload" :show-file-list="false">
                     <el-button type="primary" :loading="uploading" :icon="Upload">
                       {{ uploaded.url ? "更换封面" : "上传封面" }}
                     </el-button>
                   </el-upload>
-                  <div class="text-xs text-gray-500 dark:text-gray-400">支持 jpg/png/webp，不超过 10MB</div>
-                </div>
-              </div>
-
-              <div v-if="uploaded.url" class="mt-4 text-sm">
-                <div class="text-xs text-gray-500 dark:text-gray-400">上传结果</div>
-                <div class="mt-1 grid grid-cols-1 gap-2">
-                  <div class="break-all">
-                    <span class="text-gray-700 dark:text-gray-200 font-medium">URL：</span>
-                    <span class="text-gray-600 dark:text-gray-300">{{ uploaded.url }}</span>
-                  </div>
-                  <div>
-                    <span class="text-gray-700 dark:text-gray-200 font-medium">attachment_id：</span>
-                    <span class="text-gray-600 dark:text-gray-300">{{ uploaded.attachment_id ?? "-" }}</span>
-                  </div>
+                  <span v-if="uploaded.attachment_id" class="text-xs text-gray-500 dark:text-gray-400">attachment_id：{{ uploaded.attachment_id }}</span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">支持 jpg/png，不超过 10MB，建议 16:9</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <el-alert
-            v-if="tip"
-            :title="tip"
-            type="info"
-            show-icon
-            :closable="false"
-          />
+          <el-alert v-if="tip" :title="tip" type="info" show-icon :closable="false" />
         </div>
       </div>
     </div>
@@ -107,6 +94,7 @@ import { contentCreate, uploadImage } from "@/apis/index.js";
 import { Document, Edit, Picture, Upload } from "@element-plus/icons-vue";
 import { useGlobalStore } from "@/stores/global.js";
 import QuillEditor from "@/components/QuillEditor.vue";
+import productInfoImg from "@/assets/images/product_info.png";
 
 const { websiteInfo } = useGlobalStore();
 
