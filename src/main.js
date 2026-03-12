@@ -22,6 +22,8 @@ async function initApp() {
     try {
       const role = (user.role ?? "user").toString().toLowerCase();
       await addProtectedRoutes(role);
+      // 等待路由系统完全就绪
+      await new Promise(resolve => setTimeout(resolve, 300));
     } catch (err) {
       console.error("初始化路由失败:", err);
     }
@@ -29,6 +31,9 @@ async function initApp() {
   
   // 挂载应用
   app.mount("#app");
+  
+  // 挂载后等待路由系统就绪
+  await router.isReady();
 }
 
 initApp();

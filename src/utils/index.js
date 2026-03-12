@@ -37,18 +37,26 @@ export function addProtectedRoutes(role) {
     // 等待多个 tick，确保路由完全添加完成并可以被匹配
     await nextTick();
     await nextTick();
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // 验证路由是否添加成功，并确保路由可以被解析
     const targetRouteName = (r === "admin" || r === "administrator") ? "AdminList" : "CustomerHome";
+    const targetPath = (r === "admin" || r === "administrator") ? "/admin/list" : "/siteInfo";
     let retryCount = 0;
     let routeReady = false;
     
-    while (retryCount < 10 && !routeReady) {
+    while (retryCount < 15 && !routeReady) {
       try {
-        // 验证路由是否可以被解析
-        const resolved = router.resolve({ name: targetRouteName });
-        if (resolved.name && resolved.name !== "NotFound") {
+        // 先尝试通过名称解析
+        const resolvedByName = router.resolve({ name: targetRouteName });
+        if (resolvedByName.name && resolvedByName.name !== "NotFound") {
           routeReady = true;
+        } else {
+          // 如果名称解析失败，尝试通过路径解析
+          const resolvedByPath = router.resolve(targetPath);
+          if (resolvedByPath.name && resolvedByPath.name !== "NotFound") {
+            routeReady = true;
+          }
         }
       } catch (err) {
         // 解析失败，继续重试
@@ -56,15 +64,11 @@ export function addProtectedRoutes(role) {
       
       if (!routeReady) {
         retryCount++;
-        if (retryCount < 10) {
+        if (retryCount < 15) {
           await new Promise(resolve => setTimeout(resolve, 100));
           await nextTick();
         }
       }
-    }
-    
-    if (!routeReady) {
-      console.warn("路由添加验证失败，但继续执行");
     }
     
     resolve();

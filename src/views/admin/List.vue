@@ -51,12 +51,12 @@
           style="width: 100%"
           v-loading="loading"
         >
-          <el-table-column prop="site_id" label="ID" width="200">
+          <el-table-column prop="site_id" label="ID" width="280">
             <template #default="scope">
               <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.site_id }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="wp_auth_token" label="Token" width="200">
+          <el-table-column prop="wp_auth_token" label="Token" width="280">
             <template #default="scope">
               <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.wp_auth_token }}</span>
             </template>
@@ -122,7 +122,7 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="updated_at" label="创建时间" width="180">
+          <el-table-column prop="updated_at" label="创建时间" width="280">
             <template #default="scope">
               <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm">
                 <el-icon class="text-gray-400 dark:text-gray-500"><Clock /></el-icon>

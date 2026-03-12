@@ -98,15 +98,83 @@ const router = createRouter({
 });
 
 let isDynamicRoutesAdded = false;
+let isAddingRoutes = false;
 
 // 路由守卫：检测登录状态
 router.beforeEach(async (to, from, next) => {
   const globalStore = useGlobalStore();
   const { user, access_token } = globalStore;
   
+  // /login 路径永远放行（无论是否登录，都允许访问）
+  if (to.path === "/login") {
+    next();
+    return;
+  }
+  
   // 重置动态路由添加状态，确保登出后重新登录可以正确添加路由
   if (!access_token) {
     isDynamicRoutesAdded = false;
+    isAddingRoutes = false;
+  }
+
+  // 未登录访问非登录页 → 去登录
+  if (!access_token) {
+    next("/login");
+    return;
+  }
+
+  // 已登录用户：确保路由已添加
+  if (access_token && user) {
+    const routes = router.getRoutes();
+    const hasProtectedRoute = routes.some(r => 
+      (r.path === "/admin" || r.path === "/" || r.path === "") && r.meta?.requiresAuth
+    );
+    
+    if (!hasProtectedRoute && !isAddingRoutes) {
+      isAddingRoutes = true;
+      try {
+        const role = (user?.role ?? "user").toString().toLowerCase();
+        await addProtectedRoutes(role);
+        isDynamicRoutesAdded = true;
+        
+        // 等待路由完全就绪
+        await nextTick();
+        await nextTick();
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // 验证当前路由是否可以匹配
+        let canMatch = false;
+        try {
+          const resolved = router.resolve(to.path);
+          if (resolved.name && resolved.name !== "NotFound") {
+            canMatch = true;
+          }
+        } catch (err) {
+          // 路由无法匹配
+        }
+        
+        isAddingRoutes = false;
+        
+        // 如果路由可以匹配，继续
+        if (canMatch) {
+          // 如果访问的是根路径，需要跳转
+          if (to.path === "/" || to.path === "") {
+            const targetPath = role === "admin" || role === "administrator" ? "/admin/list" : "/siteInfo";
+            next({ path: targetPath, replace: true });
+            return;
+          }
+          next();
+          return;
+        }
+      } catch (err) {
+        console.error("添加路由失败:", err);
+        isAddingRoutes = false;
+        next("/login");
+        return;
+      }
+    } else {
+      isDynamicRoutesAdded = true;
+    }
   }
 
   // 检查当前访问的路由是否需要认证
@@ -115,169 +183,14 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
-  // 未登录访问登录页 → 直接通过
-  if (!access_token && to.path === "/login") {
-    next();
-    return;
-  }
-
-  // 未登录访问非登录页 → 去登录
-  if (!access_token && to.path !== "/login") {
-    next("/login");
-    return;
-  }
-
-  // 已登录访问登录页 → 根据角色跳转
-  if (access_token && to.path === "/login") {
+  // 已登录访问根路径 → 根据角色跳转
+  if (access_token && (to.path === "/" || to.path === "")) {
     const role = (user?.role ?? "user").toString().toLowerCase();
-    // 检查路由是否已添加（根路径可能是 '' 或 '/'）
-    const routes = router.getRoutes();
-    const hasProtectedRoute = routes.some(r => 
-      (r.path === "/admin" || r.path === "/" || r.path === "") && r.meta?.requiresAuth
-    );
-    
-    if (!hasProtectedRoute) {
-      // 路由未添加，先添加路由
-      try {
-        await addProtectedRoutes(role);
-        isDynamicRoutesAdded = true;
-        // 等待路由完全添加完成
-        await nextTick();
-        await nextTick();
-        await new Promise(resolve => setTimeout(resolve, 200));
-      } catch (err) {
-        console.error("添加路由失败:", err);
-      }
-    }
-    
-    // 根据角色跳转（路由已添加，使用路由名称更安全）
-    // 先验证路由是否可以解析，增加重试次数和等待时间
-    const targetRouteName = role === "admin" || role === "administrator" ? "AdminList" : "CustomerHome";
-    let canResolve = false;
-    let retryCount = 0;
-    
-    while (retryCount < 10 && !canResolve) {
-      try {
-        const resolved = router.resolve({ name: targetRouteName });
-        if (resolved.name && resolved.name !== "NotFound") {
-          canResolve = true;
-        }
-      } catch (err) {
-        // 解析失败，继续重试
-      }
-      
-      if (!canResolve) {
-        retryCount++;
-        if (retryCount < 10) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          await nextTick();
-        }
-      }
-    }
-    
-    if (canResolve) {
-      next({ name: targetRouteName, replace: true });
-    } else {
-      // 如果仍然无法解析，使用路径跳转（路由应该已经添加）
-      const targetPath = role === "admin" || role === "administrator" ? "/admin/list" : "/siteInfo";
-      next({ path: targetPath, replace: true });
-    }
-    return;
-  }
-
-  // 已登录但动态路由未添加 → 先添加再重定向（addProtectedRoutes 内部已做幂等，重复调用不会重复添加）
-  const routes = router.getRoutes();
-  const hasProtectedRoute = routes.some(r => 
-    (r.path === "/admin" || r.path === "/" || r.path === "") && r.meta?.requiresAuth
-  );
-  if (access_token && (!isDynamicRoutesAdded || !hasProtectedRoute)) {
-    try {
-      const role = (user?.role ?? "user").toString().toLowerCase();
-      await addProtectedRoutes(role);
-      isDynamicRoutesAdded = true;
-
-      // 等待路由完全添加完成，增加等待时间确保路由就绪
-      await nextTick();
-      await nextTick();
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // 根据角色确定目标路径或名称
-      let targetPath = to.path;
-      let targetName = null;
-      
-      // 如果访问根路径，根据角色跳转
-      if (to.path === "/") {
-        // 验证当前角色是否有权限访问根路径
-        if (role !== "admin" && role !== "administrator") {
-          // user 角色不能访问根路径，跳转到 siteInfo
-          targetName = "CustomerHome";
-        } else {
-          // admin 访问根路径，跳转到 admin 列表页
-          targetName = "AdminList";
-        }
-      } else if (to.path === "/siteInfo" || to.path === "/admin") {
-        // 如果访问 /siteInfo 或 /admin，根据角色跳转
-        if (role === "admin" || role === "administrator") {
-          // admin 访问 /siteInfo 或 /admin，重定向到 admin 列表页
-          targetName = "AdminList";
-        } else {
-          // user 访问 /siteInfo，使用路由名称跳转
-          targetName = "CustomerHome";
-        }
-      } else if (to.path.startsWith("/pages/")) {
-        // 如果访问 /pages/:id，根据角色跳转
-        if (role === "admin" || role === "administrator") {
-          // admin 访问 /pages/:id，重定向到 /admin/pages/:id
-          const pageId = to.path.replace("/pages/", "");
-          targetPath = `/admin/pages/${pageId}`;
-        } else {
-          // user 访问 /pages/:id，保持原路径
-          targetPath = to.path;
-        }
-      }
-      
-      // 路由已添加，优先使用路由名称跳转更安全
-      // 先验证路由是否可以解析，增加重试次数
-      if (targetName) {
-        let canResolve = false;
-        let retryCount = 0;
-        
-        while (retryCount < 10 && !canResolve) {
-          try {
-            const resolved = router.resolve({ name: targetName });
-            if (resolved.name && resolved.name !== "NotFound") {
-              canResolve = true;
-            }
-          } catch (err) {
-            // 解析失败，继续重试
-          }
-          
-          if (!canResolve) {
-            retryCount++;
-            if (retryCount < 10) {
-              await new Promise(resolve => setTimeout(resolve, 100));
-              await nextTick();
-            }
-          }
-        }
-        
-        if (canResolve) {
-          next({ name: targetName, replace: true });
-        } else {
-          // 如果无法解析，使用路径跳转
-          if (targetName === "AdminList") {
-            next({ path: "/admin/list", replace: true });
-          } else {
-            next({ path: "/siteInfo", replace: true });
-          }
-        }
-      } else {
-        next({ path: targetPath, replace: true });
-      }
+    if (role === "admin" || role === "administrator") {
+      next({ path: "/admin/list", replace: true });
       return;
-    } catch (err) {
-      console.error("添加路由失败:", err);
-      next("/login");
+    } else {
+      next({ path: "/siteInfo", replace: true });
       return;
     }
   }
@@ -286,7 +199,6 @@ router.beforeEach(async (to, from, next) => {
   if (access_token && to.path.startsWith("/pages/")) {
     const role = (user?.role ?? "user").toString().toLowerCase();
     if (role === "admin" || role === "administrator") {
-      // admin 访问 /pages/:id，重定向到 /admin/pages/:id
       const pageId = to.path.replace("/pages/", "");
       next({ path: `/admin/pages/${pageId}`, replace: true });
       return;

@@ -20,7 +20,7 @@
             v-model="searchValue"
             class="w-full max-w-md"
             size="large"
-            placeholder="搜索用户名、邮箱或角色..."
+            placeholder="搜索用户名、角色或站点名称..."
             clearable
           >
             <template #prefix>
@@ -75,6 +75,25 @@
               >
                 {{ scope.row.role === 'admin' ? '管理员' : '客户' }}
               </el-tag>
+            </template>
+          </el-table-column>
+          
+          <el-table-column prop="sites" label="站点" min-width="200" show-overflow-tooltip>
+            <template #default="scope">
+              <div v-if="scope.row.sites && scope.row.sites.length > 0" class="flex flex-wrap gap-1.5">
+                <el-tag
+                  v-for="site in scope.row.sites"
+                  :key="site.site_id"
+                  size="small"
+                  effect="plain"
+                  type="info"
+                  class="flex items-center gap-1"
+                >
+                  <el-icon class="text-xs"><Link /></el-icon>
+                  <span>{{ site.site_name || site.site_id }}</span>
+                </el-tag>
+              </div>
+              <span v-else class="text-gray-400 dark:text-gray-500">-</span>
             </template>
           </el-table-column>
           
@@ -316,7 +335,7 @@ import { getUserList, updateUser, createUser, getList } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import { 
   Search, Plus, Edit, Delete, Clock, 
-  User, UserFilled, CircleCheck, CircleClose, Check, Message, Lock
+  User, UserFilled, CircleCheck, CircleClose, Check, Message, Lock, Link
 } from '@element-plus/icons-vue';
 import { useGlobalStore } from "@/stores/global.js";
 
@@ -371,7 +390,11 @@ const filteredTableData = computed(() => {
   const keyword = searchValue.value.toLowerCase();
   return tableData.filter(item => 
     (item.username && item.username.toLowerCase().includes(keyword)) ||
-    (item.role && item.role.toLowerCase().includes(keyword))
+    (item.role && item.role.toLowerCase().includes(keyword)) ||
+    (item.sites && item.sites.some(site => 
+      (site.site_name && site.site_name.toLowerCase().includes(keyword)) ||
+      (site.site_id && site.site_id.toLowerCase().includes(keyword))
+    ))
   );
 });
 
