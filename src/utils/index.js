@@ -1,89 +1,11 @@
-import router from "@/router";
-import { adminRoutes, userRoutes, publicRoutes, notFoundRoute } from "@/router";
-import { nextTick } from "vue";
-
-// 根据角色动态添加对应的路由（最后再添加 404，保证 "/" 先被角色路由匹配）
-// 幂等：若该角色根路由已存在则不再添加，避免 main.js 与 beforeEach 重复添加导致重复菜单
+// 由于所有路由都已预先注册，不再需要动态添加路由
+// 保留此函数以保持向后兼容，但不再执行任何操作
 export function addProtectedRoutes(role) {
-  return new Promise(async (resolve) => {
-    let routesToAdd = [];
-    const r = (role || "user").toString().toLowerCase();
-
-    if (r === "admin" || r === "administrator") {
-      routesToAdd = adminRoutes;
-    } else {
-      // user、customer 及其他未知角色均使用用户端路由，保证总有可跳转的首页
-      routesToAdd = userRoutes;
-    }
-
-    const currentRoutes = router.getRoutes();
-    const rootPaths = r === "admin" || r === "administrator" ? ["/admin"] : ["/", ""];
-    const alreadyAdded = currentRoutes.some(
-      (route) =>
-        rootPaths.includes(route.path) &&
-        route.meta?.requiresAuth &&
-        route.children?.some((c) => (r === "admin" || r === "administrator" ? c.path === "list" : c.path === "siteInfo"))
-    );
-    if (alreadyAdded) {
-      resolve();
-      return;
-    }
-
-    routesToAdd.forEach((route) => {
-      router.addRoute(route);
-    });
-    router.addRoute(notFoundRoute);
-    
-    // 等待多个 tick，确保路由完全添加完成并可以被匹配
-    await nextTick();
-    await nextTick();
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // 验证路由是否添加成功，并确保路由可以被解析
-    const targetRouteName = (r === "admin" || r === "administrator") ? "AdminList" : "CustomerHome";
-    const targetPath = (r === "admin" || r === "administrator") ? "/admin/list" : "/siteInfo";
-    let retryCount = 0;
-    let routeReady = false;
-    
-    while (retryCount < 15 && !routeReady) {
-      try {
-        // 先尝试通过名称解析
-        const resolvedByName = router.resolve({ name: targetRouteName });
-        if (resolvedByName.name && resolvedByName.name !== "NotFound") {
-          routeReady = true;
-        } else {
-          // 如果名称解析失败，尝试通过路径解析
-          const resolvedByPath = router.resolve(targetPath);
-          if (resolvedByPath.name && resolvedByPath.name !== "NotFound") {
-            routeReady = true;
-          }
-        }
-      } catch (err) {
-        // 解析失败，继续重试
-      }
-      
-      if (!routeReady) {
-        retryCount++;
-        if (retryCount < 15) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          await nextTick();
-        }
-      }
-    }
-    
-    resolve();
-  });
+  return Promise.resolve();
 }
 
-// 重置路由（登出时移除所有动态路由，含 404，只保留 /login）
+// 重置路由（由于所有路由都已预先注册，此函数不再需要移除路由）
+// 保留此函数以保持向后兼容，但不再执行任何操作
 export function resetRoutes() {
-  return new Promise((resolve) => {
-    const allRoutes = router.getRoutes();
-    allRoutes.forEach((route) => {
-      if (route.name && route.name !== "Login") {
-        router.removeRoute(route.name);
-      }
-    });
-    resolve();
-  });
+  return Promise.resolve();
 }

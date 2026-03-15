@@ -1,16 +1,13 @@
 <template>
-    <div class="field-item" v-if="!(fields.__dynamic__ && fields.__dynamic__.title)">
+    <div class="field-item">
         <div class="field-group">
             <label class="field-label">
-                <el-icon><Promotion /></el-icon>
+                <el-icon>
+                    <Promotion />
+                </el-icon>
                 标题
             </label>
-            <el-input 
-                v-model="fields.title"
-                show-word-limit 
-                type="textarea"
-                :rows="2"
-                placeholder="请输入标题内容"
+            <el-input v-model="fields.title" show-word-limit :rows="2" placeholder="请输入标题内容"
                 @input="onUpdate('title', fields.title)" />
         </div>
     </div>

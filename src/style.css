@@ -120,3 +120,18 @@
   border-color: #dcdfe6;
   background: #fafbfc;
 }
+
+/* Element Plus MessageBox 弹窗居中修复 */
+.el-overlay.is-message-box {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.el-message-box {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+  margin: 0 auto !important;
+}

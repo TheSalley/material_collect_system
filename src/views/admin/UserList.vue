@@ -304,8 +304,8 @@
               placeholder="请选择角色"
               class="w-full"
             >
-              <el-option label="管理员" value="administrator" />
-              <el-option label="客户" value="customer" />
+              <el-option label="管理员" value="admin" />
+              <el-option label="用户" value="user" />
             </el-select>
           </el-form-item>
           <el-form-item label="状态">
@@ -331,7 +331,8 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed, nextTick } from "vue";
-import { getUserList, updateUser, createUser, getList } from "@/apis/index.js";
+import { getUserList, updateUser, createUser, getList, deleteUser } from "@/apis/index.js";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
 import { 
   Search, Plus, Edit, Delete, Clock, 
@@ -378,24 +379,13 @@ const form = reactive({
   username: "",
   email: "",
   nickname: "",
-  role: "customer",
+  role: "user",
   status: true,
 });
 
-// 过滤后的表格数据
+// 过滤后的表格数据（如果使用后端搜索，前端不需要过滤）
 const filteredTableData = computed(() => {
-  if (!searchValue.value) {
-    return tableData;
-  }
-  const keyword = searchValue.value.toLowerCase();
-  return tableData.filter(item => 
-    (item.username && item.username.toLowerCase().includes(keyword)) ||
-    (item.role && item.role.toLowerCase().includes(keyword)) ||
-    (item.sites && item.sites.some(site => 
-      (site.site_name && site.site_name.toLowerCase().includes(keyword)) ||
-      (site.site_id && site.site_id.toLowerCase().includes(keyword))
-    ))
-  );
+  return tableData;
 });
 
 // 格式化时间
@@ -480,7 +470,7 @@ function edit(data) {
   form.username = data.username || '';
   form.email = data.email || '';
   form.nickname = data.nickname || '';
-  form.role = data.role === 'admin' ? 'administrator' : 'customer';
+  form.role = data.role || 'user';
   form.status = data.is_deleted === 0 ? true : false;
   drawer.value = true;
 }
@@ -498,10 +488,17 @@ async function handleDelete(data) {
       }
     );
     
-    // TODO: 调用删除 API
-    ElMessage.success('删除功能待实现');
-  } catch {
-    // 用户取消删除
+    const res = await deleteUser(data.id);
+    if (res.code === 0) {
+      ElMessage.success(res.message || "删除成功");
+      await fetchUserList();
+    } else {
+      ElMessage.error(res.message || "删除失败");
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error("删除失败：" + (error.message || "网络错误"));
+    }
   }
 }
 
@@ -509,45 +506,29 @@ async function handleDelete(data) {
 async function onSubmit() {
   saving.value = true;
   try {
-    const res = await updateUser({
+    // 根据 API 文档，updateUser 接口只支持 id, username, password, role, site_ids
+    // 不支持 email, nickname, status 字段
+    const payload = {
       id: form.id,
-      username: form.username,
-      email: form.email,
-      nickname: form.nickname,
-      role: form.role === 'administrator' ? 'admin' : 'user',
-      status: form.status ? 0 : 1, // is_deleted: 0=启用, 1=禁用
-    });
+    };
+    
+    if (form.username) payload.username = form.username;
+    if (form.role) payload.role = form.role;
+    // 注意：email 和 nickname 不在 API 文档中，如果后端支持可以保留
+    // 但根据文档，应该只传支持的字段
+    
+    const res = await updateUser(payload);
     
     if (res.code === 0) {
-      ElMessage({
-        message: "保存成功",
-        type: "success",
-      });
-      
-      // 更新表格数据
-      const index = tableData.findIndex(item => item.id === form.id);
-      if (index !== -1) {
-        Object.assign(tableData[index], {
-          ...res.data,
-          role: res.data.role || (form.role === 'administrator' ? 'admin' : 'user'),
-          is_deleted: res.data.is_deleted !== undefined ? res.data.is_deleted : (form.status ? 0 : 1)
-        });
-      }
-      
+      ElMessage.success(res.message || "保存成功");
       drawer.value = false;
       // 刷新列表
       await fetchUserList();
     } else {
-      ElMessage({
-        message: res.message || "保存失败",
-        type: "error",
-      });
+      ElMessage.error(res.message || "保存失败");
     }
   } catch (error) {
-    ElMessage({
-      message: "保存失败：" + error.message,
-      type: "error",
-    });
+    ElMessage.error("保存失败：" + (error.message || "网络错误"));
   } finally {
     saving.value = false;
   }

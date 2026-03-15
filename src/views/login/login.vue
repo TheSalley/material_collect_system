@@ -95,7 +95,6 @@ import { ref, nextTick } from "vue";
 import { login, getPages } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
-import { addProtectedRoutes } from "@/utils";
 import { User, Lock, Right, Refresh } from '@element-plus/icons-vue';
 import "element-plus/theme-chalk/el-message.css";
 import "element-plus/theme-chalk/el-message-box.css";
@@ -148,7 +147,7 @@ const handleLogin = async () => {
 
         const role = (res.data.user?.role ?? "user").toString().toLowerCase();
         // 用户身份：拉取当前站点的页面列表，供侧栏「页面列表」展示
-        if ((role === "user" || role === "customer") && globalStore.websiteInfo?.site_id) {
+        if (role === "user" && globalStore.websiteInfo?.site_id) {
           try {
             const pageRes = await getPages(globalStore.websiteInfo.site_id);
             if (pageRes?.code === 0 && Array.isArray(pageRes.data)) {
@@ -166,11 +165,8 @@ const handleLogin = async () => {
 
         ElMessage.success("登录成功");
 
-        // 根据角色添加路由（addProtectedRoutes 内部已确保路由可解析）
-        await addProtectedRoutes(role);
-
-        // 根据角色跳转到对应页面（使用 path 跳转更可靠，避免动态路由未完全就绪时按 name 匹配失败）
-        const targetPath = role === "admin" || role === "administrator" ? "/admin/list" : "/siteInfo";
+        // 根据角色跳转到对应页面
+        const targetPath = role === "admin" ? "/admin/list" : "/siteInfo";
         router.replace(targetPath);
       } else {
         ElMessageBox.alert(res.message, "提示：", {

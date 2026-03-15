@@ -1,5 +1,11 @@
 # 素材同步系统
 
+
+const config = {
+  // baseUrl: "https://apitest.yhct.site",
+  baseUrl: "http://localhost:3501",
+};
+
 ## 已适配组件
 
 1. Basic

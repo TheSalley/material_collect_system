@@ -126,24 +126,72 @@ const { user, clearUser, websiteInfo, sitePageList } = useGlobalStore();
 const router = useRouter();
 const route = useRoute();
 
-// role 为 user 表示用户身份（customer 同）
+// role 为 user 表示用户身份
 const isUserRole = computed(() => {
   const r = (user?.role ?? "").toString().toLowerCase();
-  return r === "user" || r === "customer";
+  return r === "user";
 });
 
 const accessibleRoutes = computed(() => {
-  const isUser = (user?.role ?? "").toString().toLowerCase() === "user" || (user?.role ?? "").toString().toLowerCase() === "customer";
-  let arr = router.getRoutes().reverse().filter((item) => {
-    // 用户身份时保留根布局路由（path 为 '' 或 '/'），否则无法展示子菜单
-    if (item.meta?.hidden && !(isUser && (item.path === "/" || item.path === ""))) return false;
-    if (user.role === "administrator" && item.path === "/pages/:id") return false;
-    return true;
+  const role = (user?.role ?? "user").toString().toLowerCase();
+  const isAdmin = role === "admin";
+  const isUser = role === "user";
+  
+  // 根据用户角色过滤路由
+  let arr = router.getRoutes().filter((item) => {
+    // 检查路由的 role meta，确保用户有权限访问
+    const routeRole = item.meta?.role;
+    if (routeRole) {
+      if (routeRole === "admin" && !isAdmin) return false;
+      if (routeRole === "user" && !isUser && !isAdmin) return false;
+    }
+    
+    // 管理员：只显示 /admin 路由及其子路由
+    if (isAdmin) {
+      // 对于管理员，保留 /admin 路由（即使 hidden），因为需要显示其子路由
+      if (item.path === "/admin") return true;
+      // 其他隐藏的路由不显示
+      if (item.meta?.hidden) return false;
+      return item.path.startsWith("/admin/");
+    }
+    
+    // 用户：只显示 / 路由（根路由）及其子路由
+    if (isUser) {
+      // 对于用户，保留根路由 /（即使 hidden），因为需要显示其子路由
+      // getRoutes() 返回的路由中，子路由在父路由的 children 属性中，不会作为独立项
+      if (item.path === "/" || item.path === "") {
+        // 确保这是用户路由
+        if (routeRole && routeRole !== "user") return false;
+        return true;
+      }
+      // 其他路由都不显示（子路由会通过父路由的 children 属性访问）
+      return false;
+    }
+    
+    return false;
   });
 
-  // getRoutes() 为扁平列表：父/子都会出现在同一层。
-  // 用户身份下我们保留了根布局路由（/），因此需要剔除那些“同时也以顶层 route 出现”的子路由，避免菜单重复。
-  if (isUser) {
+  // 处理子路由的去重（避免父路由和子路由同时显示）
+  if (isAdmin) {
+    // 管理员：处理 /admin 路由的子路由去重
+    const adminRoot = arr.find((r) => r.path === "/admin");
+    if (adminRoot?.children?.length) {
+      const childFullPaths = new Set(
+        adminRoot.children
+          .map((c) => {
+            const full = `/admin/${c.path}`.replace(/\/+/g, "/");
+            return full;
+          })
+          .filter(Boolean)
+      );
+      arr = arr.filter((r) => {
+        // 保留 /admin 布局本身；剔除顶层的子路由记录（如 /admin/list、/admin/userList）
+        if (r.path === "/admin") return true;
+        return !childFullPaths.has(r.path);
+      });
+    }
+  } else if (isUser) {
+    // 用户：处理 / 路由的子路由去重
     const root = arr.find((r) => r.path === "/" || r.path === "");
     if (root?.children?.length) {
       const childFullPaths = new Set(
@@ -163,7 +211,7 @@ const accessibleRoutes = computed(() => {
     }
   }
 
-  // 按 path 去重（根路径 '' 与 '/' 视为同一项），避免重复菜单
+  // 按 path 去重
   const seen = new Set();
   arr = arr.filter((item) => {
     const key = item.path === "" ? "/" : item.path;
@@ -171,13 +219,16 @@ const accessibleRoutes = computed(() => {
     seen.add(key);
     return true;
   });
+  
+  // 处理用户页面列表
   if (user.page_list) {
     arr.forEach((item) => {
-      if (item.path === "/pages/:id") {
+      if (item.path === "/pages/:id" || (item.children && item.children.some(c => c.path === "pages/:id"))) {
         item.children = JSON.parse(user.page_list);
       }
     });
   }
+  
   return arr;
 });
 

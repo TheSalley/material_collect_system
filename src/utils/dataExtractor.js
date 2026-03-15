@@ -69,10 +69,75 @@ export function extractEditableData(elementorData) {
   const editableMap = new Map(); // 使用 Map 存储 ID -> 可编辑数据的映射
   
   /**
+   * 检查节点是否应该被跳过处理
+   * 1. 有 hide_desktop 属性的节点
+   * 2. 有 __dynamic__ 属性的节点
+   */
+  function shouldSkipNode(node) {
+    if (!node) return false;
+    
+    // 检查 settings 中的 hide_desktop
+    if (node.settings?.hide_desktop) {
+      return true;
+    }
+
+    // 检查 settings 中的 __dynamic__
+    if (node?.__dynamic__ || node.settings?.__dynamic__) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /**
+   * 清理字段值，移除带有 __dynamic__ 的数组项
+   * @param {any} value - 字段值
+   * @returns {any} 清理后的值
+   */
+  function cleanFieldValue(value) {
+    if (!value) return value;
+    
+    // 如果是数组，过滤掉带有 __dynamic__ 的项
+    if (Array.isArray(value)) {
+      return value.filter(item => {
+        // 如果项是对象，检查是否有 __dynamic__ 属性
+        if (typeof item === 'object' && item !== null) {
+          return !item.__dynamic__;
+        }
+        return true;
+      });
+    }
+    
+    // 如果是对象，递归清理嵌套的数组
+    if (typeof value === 'object' && value !== null) {
+      const cleaned = {};
+      for (const key in value) {
+        if (key === '__dynamic__') {
+          // 跳过 __dynamic__ 键本身
+          continue;
+        }
+        cleaned[key] = cleanFieldValue(value[key]);
+      }
+      return cleaned;
+    }
+    
+    return value;
+  }
+  
+  /**
    * 递归提取节点数据
    */
   function extractNode(node) {
     if (!node || !node.id) return;
+    
+    // 如果节点应该被跳过（有 hide_desktop 或 __dynamic__ 属性），跳过不处理
+    if (shouldSkipNode(node)) {
+      // 即使节点被跳过，仍然需要递归处理子元素（因为子元素可能没有被跳过）
+      if (node.elements && Array.isArray(node.elements)) {
+        node.elements.forEach(child => extractNode(child));
+      }
+      return;
+    }
     
     const widgetType = node.widgetType;
     const editableFields = EDITABLE_FIELDS_MAP[widgetType];
@@ -89,7 +154,8 @@ export function extractEditableData(elementorData) {
       // 提取可编辑字段
       editableFields.forEach(field => {
         if (node.settings[field] !== undefined) {
-          editableData.fields[field] = node.settings[field];
+          // 清理字段值，移除带有 __dynamic__ 的数组项
+          editableData.fields[field] = cleanFieldValue(node.settings[field]);
         }
       });
       

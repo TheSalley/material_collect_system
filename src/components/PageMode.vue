@@ -5,7 +5,7 @@
       <div class="preview-card">
         <div class="preview-header">
           <h3>页面预览</h3>
-          <el-button type="primary" @click="dialogVisible = true" size="small">
+          <el-button v-if="isAdmin" type="primary" @click="dialogVisible = true" size="small">
             <el-icon><Upload /></el-icon>
             上传截图
           </el-button>
@@ -23,7 +23,6 @@
         <div v-for="(part, index) in state.originData" :key="index" class="section-block">
           <el-collapse accordion>
             <el-collapse-item 
-              v-if="!part.settings?.hide_desktop" 
               :name="`part-${index}`">
               <template #title>
                 <div class="collapse-title">
@@ -35,7 +34,6 @@
               <div class="collapse-content">
                 <div v-for="topNode in part.elements" :key="topNode.id">
                   <DataExtractor 
-                    v-if="!topNode.settings?.hide_desktop" 
                     :original-node="topNode"
                     :editable-map="state.editableMap"
                     @update:field="handleFieldUpdate" />
@@ -71,7 +69,7 @@
   </el-dialog>
 </template>
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch, toRaw } from "vue";
+import { ref, reactive, onMounted, nextTick, watch, toRaw, computed } from "vue";
 import { Upload, Grid } from '@element-plus/icons-vue';
 import {
   getPageById,
@@ -102,7 +100,13 @@ const state = reactive({
   ImageList: [],
 });
 
-const { websiteInfo } = useGlobalStore();
+const { websiteInfo, user } = useGlobalStore();
+
+// 检查是否为管理员
+const isAdmin = computed(() => {
+  const role = (user?.role ?? "user").toString().toLowerCase();
+  return role === "admin";
+});
 
 onMounted(async () => {});
 

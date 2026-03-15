@@ -22,9 +22,14 @@
             size="large"
             placeholder="搜索站点名称、网址或 demo 名称..."
             clearable
+            @clear="fetchList"
+            @keyup.enter="fetchList"
           >
             <template #prefix>
               <el-icon><Search /></el-icon>
+            </template>
+            <template #append>
+              <el-button :icon="Search" @click="fetchList" />
             </template>
           </el-input>
         </div>
@@ -105,19 +110,32 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="status" label="状态" width="100" align="center">
+          <!-- 隐藏站点状态字段 -->
+          <!-- <el-table-column prop="site_status" label="状态" width="100" align="center">
             <template #default="scope">
               <el-tag 
-                :type="scope.row.status === 1 ? 'success' : 'danger'"
+                :type="scope.row.site_status === 0 ? 'success' : 'warning'"
                 size="small"
                 effect="dark"
                 round
               >
                 <el-icon class="mr-1">
-                  <CircleCheck v-if="scope.row.status === 1" />
+                  <CircleCheck v-if="scope.row.site_status === 0" />
                   <CircleClose v-else />
                 </el-icon>
-                {{ scope.row.status === 1 ? "启用" : "禁用" }}
+                {{ scope.row.site_status === 0 ? "可上线" : "建站中" }}
+              </el-tag>
+            </template>
+          </el-table-column> -->
+          
+          <el-table-column prop="is_deleted" label="删除状态" width="100" align="center" v-if="false">
+            <template #default="scope">
+              <el-tag 
+                :type="scope.row.is_deleted === 0 ? 'success' : 'danger'"
+                size="small"
+                effect="plain"
+              >
+                {{ scope.row.is_deleted === 0 ? "正常" : "已删除" }}
               </el-tag>
             </template>
           </el-table-column>
@@ -131,18 +149,9 @@
             </template>
           </el-table-column>
           
-          <el-table-column fixed="right" label="操作" width="160" align="center">
+          <el-table-column fixed="right" label="操作" width="200" align="center">
             <template #default="scope">
               <div class="flex gap-2 justify-center">
-                <el-button
-                  type="primary"
-                  size="small"
-                  :icon="Edit"
-                  link
-                  @click="edit(scope.row)"
-                >
-                  编辑
-                </el-button>
                 <el-button
                   type="success"
                   size="small"
@@ -151,6 +160,15 @@
                   @click="config(scope.row)"
                 >
                   配置
+                </el-button>
+                <el-button
+                  type="danger"
+                  size="small"
+                  :icon="Delete"
+                  link
+                  @click="handleDelete(scope.row)"
+                >
+                  删除
                 </el-button>
               </div>
             </template>
@@ -220,88 +238,16 @@
     </template>
   </el-drawer>
 
-  <el-drawer 
-    v-model="drawer" 
-    title="客户配置"
-    size="500px"
-    :close-on-click-modal="false"
-  >
-    <template #header>
-      <div class="flex items-center gap-3">
-        <el-icon class="text-blue-500 text-xl"><Setting /></el-icon>
-        <span class="text-lg font-semibold text-gray-900 dark:text-white">编辑客户信息</span>
-      </div>
-    </template>
-    <template #default>
-      <el-form 
-        :model="form" 
-        label-width="100px" 
-        class="py-5"
-        label-position="left"
-      >
-        <el-form-item label="客户名称">
-          <el-input 
-            v-model="form.username" 
-            placeholder="请输入客户名称"
-            clearable
-          />
-        </el-form-item>
-        <el-form-item label="Demo 名称">
-          <el-input 
-            v-model="form.demo" 
-            placeholder="请输入 demo 名称"
-            clearable
-          />
-        </el-form-item>
-        <el-form-item label="网址">
-          <el-input 
-            v-model="form.url" 
-            placeholder="https://example.com"
-            clearable
-          >
-            <template #prefix>
-              <el-icon><Link /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-        <el-form-item label="模式">
-          <el-radio-group v-model="form.mode">
-            <el-radio :value="1">
-              <el-icon><Grid /></el-icon>
-              组件
-            </el-radio>
-            <el-radio :value="2">
-              <el-icon><Document /></el-icon>
-              页面
-            </el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-switch 
-            v-model="form.status"
-            active-text="启用"
-            inactive-text="禁用"
-          />
-        </el-form-item>
-      </el-form>
-    </template>
-    <template #footer>
-      <div class="flex justify-end gap-3 pt-5 border-t border-gray-200 dark:border-gray-600">
-        <el-button @click="drawer = false" size="large">取消</el-button>
-        <el-button type="primary" @click="onSubmit" size="large" :icon="Check">
-          保存
-        </el-button>
-      </div>
-    </template>
-  </el-drawer>
 </template>
 <script setup>
 import { ref, reactive, onMounted, computed, nextTick } from "vue";
-import { getList, updateUser, createSite } from "@/apis/index.js";
+import { getList, createSite, deleteSite } from "@/apis/index.js";
+import { ElMessage, ElMessageBox } from "element-plus";
+import "element-plus/theme-chalk/el-message-box.css";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global.js";
 import { 
-  Search, Plus, Edit, Setting, Link, Clock, 
+  Search, Plus, Setting, Link, Clock, Delete,
   UserFilled, CircleCheck, CircleClose, Check, Grid, Document
 } from '@element-plus/icons-vue';
 
@@ -309,22 +255,15 @@ const tableData = reactive([]);
 const searchValue = ref("");
 const loading = ref(false);
 
-// 过滤后的表格数据
+// 过滤后的表格数据（前端过滤，如果使用后端搜索则不需要）
 const filteredTableData = computed(() => {
-  if (!searchValue.value) {
-    return tableData;
-  }
-  const keyword = searchValue.value.toLowerCase();
-  return tableData.filter(item => 
-    (item.site_name && item.site_name.toLowerCase().includes(keyword)) ||
-    (item.wp_base_url && item.wp_base_url.toLowerCase().includes(keyword)) ||
-    (item.demo_site && item.demo_site.toLowerCase().includes(keyword))
-  );
+  // 如果使用后端搜索，直接返回 tableData
+  // 如果需要前端过滤，可以保留此逻辑
+  return tableData;
 });
 
 let pageList = reactive([]);
 
-const drawer = ref(false);
 const addDrawer = ref(false);
 const addFormRef = ref(null);
 const addSaving = ref(false);
@@ -347,17 +286,6 @@ const addFormRules = {
 
 const router = useRouter();
 
-const { setUser } = useGlobalStore();
-
-const form = reactive({
-  id: "",
-  username: "",
-  demo: "",
-  url: "",
-  mode: 2,
-  status: true,
-});
-
 // 格式化时间
 const formatDate = (dateString) => {
   if (!dateString) return '-';
@@ -373,46 +301,48 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
-async function onSubmit() {
-  if(form.url.endsWith('/')) {
-    return ElMessage.error("网址不能以斜杠结尾");
-  }
-  const res = await updateUser({
-    id: form.id,
-    username: form.username,
-    demo: form.demo,
-    url: form.url,
-    mode: form.mode,
-    status: form.status ? 1 : 2,
-  });
-  if (res.code === 0) {
-    ElMessage({
-      message: "保存成功",
-      type: "success",
-    });
-    tableData.forEach((item, index) => {
-      if (item.id == res.data.id) {
-        tableData[index] = res.data;
+// 删除站点
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除站点 "${row.site_name || row.site_id}" 吗？此操作不可恢复。`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+        center: false,
+        distinguishCancelAndClose: true,
+        lockScroll: true,
+        closeOnClickModal: false,
+        closeOnPressEscape: true,
       }
-    });
-    setUser(res.data);
-    drawer.value = false;
-  } else {
-    ElMessage({
-      message: "保存失败",
-      type: "error",
-    });
+    );
+    
+    const res = await deleteSite(row.site_id);
+    if (res.code === 0) {
+      ElMessage.success(res.message || "删除成功");
+      await fetchList();
+    } else {
+      ElMessage.error(res.message || "删除失败");
+    }
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error("删除失败：" + (error.message || "网络错误"));
+    }
   }
 }
 
 async function fetchList() {
   loading.value = true;
   try {
-    const res = await getList();
+    // 根据 API 文档，可以使用 keyword 参数进行搜索
+    const params = searchValue.value ? { keyword: searchValue.value } : {};
+    const res = await getList(params);
     if (res.code === 0) {
       tableData.length = 0;
       const list = res.data || [];
-      list.forEach(i => (i.mode = 2)); // 临时修改
+      // 根据 API 文档，站点列表返回的字段是 site_id, site_name, site_status, wp_base_url 等
       tableData.push(...list);
     }
     return res;
@@ -462,20 +392,10 @@ onMounted(() => {
   fetchList();
 });
 
-function edit(data) {
-  form.id = data.id;
-  form.username = data.username;
-  form.demo = data.demo;
-  form.url = data.url;
-  form.mode = data.mode;
-  form.status = data.status === 1 ? true : false;
-  drawer.value = true;
-}
-
 function config(data) {
   const { setWebsiteInfo } = useGlobalStore();
   setWebsiteInfo(data);
-  router.push({ name: "AdminDetail", query: { id: data.id } });
+  router.push({ name: "AdminDetail", query: { id: data.site_id } });
 }
 </script>
 

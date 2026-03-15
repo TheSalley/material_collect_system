@@ -234,7 +234,7 @@ const transform_page_list = computed(() => {
 function edit(row) {
   // 根据用户角色决定跳转路径
   const role = (user?.role ?? "user").toString().toLowerCase();
-  if (role === "admin" || role === "administrator") {
+  if (role === "admin") {
     // admin 用户跳转到 /admin/pages/:id
     router.push({ path: `/admin/pages/${row.ID}` });
   } else {

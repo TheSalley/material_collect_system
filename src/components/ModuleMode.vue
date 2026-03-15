@@ -1,7 +1,7 @@
 <template>
   <div v-for="(module, moduleIndex) in state.originData" :key="module.id" class="flex justify-between gap-4 px-10 py-10 border-b border-gray-200">
     <div class="w-1/2 __border-shadow sticky top-0 h-fit">
-      <el-button class="absolute right-0 top-0" type="primary" @click="() => openUploadDialog(moduleIndex)">上传截图</el-button>
+      <el-button v-if="isAdmin" class="absolute right-0 top-0" type="primary" @click="() => openUploadDialog(moduleIndex)">上传截图</el-button>
       <img :src="moduleImages[moduleIndex]?.file_url" alt="module picture" v-if="moduleImages[moduleIndex]" />
       <el-empty v-else description="未上传截图" />
     </div>
@@ -46,7 +46,7 @@
   </el-dialog>
 </template>
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch } from "vue";
+import { ref, reactive, onMounted, nextTick, watch, computed } from "vue";
 import {
   getPageById,
   upload_bind_img,
@@ -59,6 +59,14 @@ import { useGlobalStore } from "@/stores/global";
 const dialogVisible = ref(false);
 const moduleImages = ref({}); // 存储每个模块的图片
 let currentModuleIndex = null; // 当前上传图片的模块索引
+
+const { user } = useGlobalStore();
+
+// 检查是否为管理员
+const isAdmin = computed(() => {
+  const role = (user?.role ?? "user").toString().toLowerCase();
+  return role === "admin";
+});
 
 const props = defineProps({
   pageId: {

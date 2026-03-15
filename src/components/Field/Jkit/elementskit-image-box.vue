@@ -45,19 +45,15 @@
                 <el-icon><Picture /></el-icon>
                 图片
             </label>
-            <div v-if="imageUrl" class="image-preview mb-2">
+            <div v-if="imageUrl" class="image-preview mb-3">
                 <img :src="imageUrl" alt="预览图" />
-                <div class="image-overlay">
-                    <span class="image-url">{{ imageUrl }}</span>
-                </div>
             </div>
             <el-upload 
                 action="#" 
                 :before-upload="handleBeforeUpload"
-                :show-file-list="false">
-                <el-button type="primary" :icon="Upload">
-                    {{ imageUrl ? '更换图片' : '上传图片' }}
-                </el-button>
+                :show-file-list="false"
+                class="upload-wrapper">
+                <el-button type="primary" :icon="Upload">上传图片</el-button>
                 <template #tip>
                     <div class="el-upload__tip">
                         支持 jpg/png 格式，大小不超过 10MB
@@ -72,6 +68,7 @@
 import { computed } from "vue";
 import { Upload as UploadIcon, Promotion, Document, Link, Picture } from '@element-plus/icons-vue';
 import { handleImageUpload } from "@/utils/imageUpload";
+import { getFileFullUrl } from "@/apis";
 
 const Upload = UploadIcon;
 
@@ -92,7 +89,10 @@ const props = defineProps({
 
 // 获取图片URL用于预览
 const imageUrl = computed(() => {
-    return props.fields.ekit_image_box_image?.url || '';
+    const url = props.fields.ekit_image_box_image?.url;
+    if (!url) return '';
+    // 如果已经是完整URL，直接返回；否则使用 getFileFullUrl 转换
+    return url.startsWith('http') ? url : getFileFullUrl(url);
 });
 
 const handleBeforeUpload = (file) => {
@@ -125,44 +125,36 @@ const handleBeforeUpload = (file) => {
 }
 
 .image-preview {
-    position: relative;
     width: 100%;
-    max-width: 300px;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.image-preview:hover .image-overlay {
-    opacity: 1;
+    max-width: 400px;
 }
 
 .image-preview img {
     width: 100%;
     height: auto;
     display: block;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 4px;
 }
 
-.image-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-    padding: 0.75rem;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+.upload-wrapper {
+    width: 100%;
 }
 
-.image-url {
-    color: white;
+.upload-wrapper :deep(.el-upload) {
+    width: 100%;
+}
+
+.upload-wrapper :deep(.el-button) {
+    width: 100%;
+}
+
+.el-upload__tip {
+    margin-top: 0.5rem;
     font-size: 0.75rem;
-    word-break: break-all;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    color: #909399;
+    line-height: 1.4;
 }
 </style>
 

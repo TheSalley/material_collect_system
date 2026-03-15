@@ -15,26 +15,10 @@
     <div class="flex-1 flex flex-col m-6 bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden min-h-0">
       <div class="flex-1 p-6 md:p-10 overflow-auto" v-loading="loading">
         <div class="space-y-6">
-          <!-- 左截图 + 右表单 -->
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- 左侧：站点截图 -->
-            <div class="lg:col-span-5 flex flex-col">
-              <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4 flex-1 flex flex-col min-h-[280px]">
-                <div class="flex items-center gap-2 mb-3">
-                  <el-icon class="text-blue-500"><Picture /></el-icon>
-                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">站点截图</h3>
-                </div>
-                <div class="flex-1 rounded-lg overflow-hidden min-h-[220px]">
-                  <img :src="siteTitleImg" alt="站点截图" class="w-full h-full object-contain" />
-                </div>
-                <div class="flex-1 rounded-lg overflow-hidden min-h-[180px] mt-3">
-                  <img :src="siteFaviconImg" alt="站点 Favicon" class="w-full h-full object-contain" />
-                </div>
-              </div>
-            </div>
-
-            <!-- 右侧：站点标题、Favicon 等输入 -->
-            <div class="lg:col-span-7 flex flex-col gap-6">
+          <!-- 表单区域（用户身份不显示截图） -->
+          <div class="flex flex-col gap-6">
+            <!-- 站点标题、Favicon 等输入 -->
+            <div class="flex flex-col gap-6">
               <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
                 <div class="flex items-center gap-2">
                   <el-icon class="text-blue-500"><InfoFilled /></el-icon>
@@ -53,14 +37,17 @@
                 </div>
                 <div class="mt-4 flex items-center gap-4">
                   <div class="w-14 h-14 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0">
-                    <img :src="siteIconUrl || siteFaviconImg" alt="favicon" class="w-full h-full object-contain" />
+                    <img v-if="siteIconUrl" :src="siteIconUrl" alt="favicon" class="w-full h-full object-contain" />
+                    <el-icon v-else class="text-gray-400 text-2xl"><Upload /></el-icon>
                   </div>
                   <el-upload
                     action="#"
                     :before-upload="(file) => handleIconUpload(file)"
                     :show-file-list="false"
                   >
-                    <el-button type="primary" :loading="savingIcon" :icon="Upload">更换图标</el-button>
+                    <el-button type="primary" :loading="savingIcon" :icon="Upload">
+                      {{ siteIconUrl ? '更换图标' : '上传图标' }}
+                    </el-button>
                     <template #tip>
                       <div class="el-upload__tip text-xs text-gray-500 mt-1">支持 jpg/png，不超过 1MB，建议尺寸 512x512 的正方形图片</div>
                     </template>
@@ -88,8 +75,6 @@ import { computed, ref, watch, onMounted } from "vue";
 import { useGlobalStore } from "@/stores/global";
 import { getSiteTitle, getSiteIcon, updateSiteTitle, updateSiteIcon } from "@/apis/index.js";
 import { InfoFilled, Tools, Sunny, Upload, Picture } from "@element-plus/icons-vue";
-import siteTitleImg from "@/assets/images/site_title.png";
-import siteFaviconImg from "@/assets/images/site_favicon.png";
 
 const { websiteInfo } = useGlobalStore();
 

@@ -19,10 +19,10 @@ export function validateImageFile(file, options = {}) {
   const isImage = file.type === "image/jpeg" || file.type === "image/png";
   const isLtMaxSize = file.size / 1024 / 1024 < maxSizeMB;
 
-  if (!isImage) {
-    ElMessage.error("仅支持上传 jpg/png 格式的图片！");
-    return false;
-  }
+  // if (!isImage) {
+  //   ElMessage.error("仅支持上传 jpg/png 格式的图片！");
+  //   return false;
+  // }
   
   if (!isLtMaxSize) {
     ElMessage.error(`图片大小不能超过 ${maxSizeMB}MB!`);
