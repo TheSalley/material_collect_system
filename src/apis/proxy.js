@@ -196,6 +196,65 @@ export const createContent = async (payload) => {
   });
 };
 
+/**
+ * 6.17 获取内容列表
+ * GET /api/proxy/content_list
+ */
+export const getContentList = async (params) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('site_id', params.site_id);
+  queryParams.append('post_type', params.post_type); // 'product' 或 'post'
+  if (params.page) queryParams.append('page', params.page);
+  if (params.page_size) queryParams.append('page_size', params.page_size);
+  if (params.search) queryParams.append('search', params.search);
+  
+  const url = config.baseUrl + "/api/proxy/content_list?" + queryParams.toString();
+  
+  return await fetchWithAuth(url, {
+    headers: getAuthHeaders(false),
+  });
+};
+
+/**
+ * 6.17.1 获取新闻列表（post/news）
+ * GET /api/proxy/news_list
+ */
+export const getNewsList = async (params) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append('site_id', params.site_id);
+  if (params.page) queryParams.append('page', params.page);
+  if (params.page_size) queryParams.append('page_size', params.page_size);
+  if (params.search) queryParams.append('status', 'publish');
+
+  const url = config.baseUrl + "/api/proxy/news_list?" + queryParams.toString();
+
+  return await fetchWithAuth(url, {
+    headers: getAuthHeaders(false),
+  });
+};
+
+/**
+ * 6.18 删除内容
+ * POST /api/proxy/content_delete
+ */
+export const deleteContent = async (payload) => {
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/content_delete", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
+ * 6.19 获取新闻分类列表
+ * GET /api/proxy/news_categories
+ */
+export const getNewsCategories = async (site_id) => {
+  return await fetchWithAuth(config.baseUrl + `/api/proxy/news_categories?site_id=${site_id}`, {
+    headers: getAuthHeaders(false),
+  });
+};
+
 // 向后兼容的别名
 export const getPageById = getElementorData;
 export const updatePageById = updateElementorData;

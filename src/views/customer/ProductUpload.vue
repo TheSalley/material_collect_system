@@ -16,11 +16,36 @@
       </div>
     </div>
 
+    <!-- 主内容卡片：左截图 + 右表单 -->
     <div class="flex-1 flex flex-col m-6 bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden min-h-0">
       <div class="flex-1 p-6 md:p-10 overflow-auto">
         <div class="space-y-6">
-          <!-- 输入区（表单 + 主图/图库上传，用户身份不显示截图） -->
-          <div class="flex flex-col gap-6">
+          <!-- 左截图 + 右表单 -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- 左侧：产品主图预览 -->
+            <div class="lg:col-span-5 flex flex-col">
+              <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4 flex-1 flex flex-col min-h-[400px]">
+                <div class="flex items-center gap-2 mb-3">
+                  <el-icon class="text-blue-500"><Picture /></el-icon>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">产品主图预览</h3>
+                </div>
+                <div class="flex-1 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800 flex items-center justify-center min-h-[360px]">
+                  <img 
+                    v-if="uploaded.url" 
+                    :src="uploaded.url" 
+                    alt="产品主图预览" 
+                    class="w-full h-full object-contain max-h-[360px]"
+                  />
+                  <div v-else class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+                    <el-icon class="text-6xl mb-2"><Picture /></el-icon>
+                    <span class="text-sm">暂无主图</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右侧：编辑表单 -->
+            <div class="lg:col-span-7 flex flex-col gap-6">
               <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
                 <div class="flex items-center gap-2">
                   <el-icon class="text-blue-500"><Edit /></el-icon>
@@ -48,7 +73,7 @@
               <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
                 <div class="flex items-center gap-2">
                   <el-icon class="text-blue-500"><Picture /></el-icon>
-                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">产品主图</h3>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">上传主图</h3>
                 </div>
                 <div class="mt-4 flex items-center gap-3">
                   <el-upload action="#" :before-upload="beforeUpload" :show-file-list="false">
@@ -103,6 +128,7 @@
                 </div>
                 <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">图库作为 gallery_ids 提交，顺序即展示顺序</div>
               </div>
+            </div>
           </div>
 
           <el-alert v-if="tip" :title="tip" type="info" show-icon :closable="false" />

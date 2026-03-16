@@ -66,16 +66,28 @@ const userRoutes = [
         meta: { title: "页面列表", role: "user" },
       },
       {
+        path: "productList",
+        name: "ProductList",
+        component: () => import("@/views/customer/ProductList.vue"),
+        meta: { title: "产品列表", role: "user" },
+      },
+      {
+        path: "newsList",
+        name: "NewsList",
+        component: () => import("@/views/customer/NewsList.vue"),
+        meta: { title: "新闻列表", role: "user" },
+      },
+      {
         path: "productUpload",
         name: "ProductUpload",
         component: () => import("@/views/customer/ProductUpload.vue"),
-        meta: { title: "产品上传", role: "user" },
+        meta: { title: "产品上传", role: "user", hidden: true },
       },
       {
         path: "newsUpload",
         name: "NewsUpload",
         component: () => import("@/views/customer/NewsUpload.vue"),
-        meta: { title: "新闻上传", role: "user" },
+        meta: { title: "新闻上传", role: "user", hidden: true },
       },
     ],
   },
@@ -150,7 +162,7 @@ router.beforeEach((to, from, next) => {
         next({ path: "/admin/list", replace: true });
         return;
       } else {
-        next({ path: "/siteInfo", replace: true });
+        next({ path: "/productList", replace: true });
         return;
       }
     }

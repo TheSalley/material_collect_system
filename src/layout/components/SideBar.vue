@@ -229,6 +229,20 @@ const accessibleRoutes = computed(() => {
     });
   }
   
+  // 用户身份：显示站点信息、页面列表、产品列表、新闻列表
+  if (isUser) {
+    const root = arr.find((r) => r.path === "/" || r.path === "");
+    if (root?.children?.length) {
+      root.children = root.children.filter((child) => {
+        // 显示站点信息、页面列表、产品列表、新闻列表，隐藏其他菜单项（如上传页面）
+        return child.path === "siteInfo" || 
+               child.path === "pages/:id" || 
+               child.path === "productList" || 
+               child.path === "newsList";
+      });
+    }
+  }
+  
   return arr;
 });
 
