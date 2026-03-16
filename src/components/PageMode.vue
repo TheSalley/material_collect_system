@@ -20,7 +20,7 @@
     <!-- 右侧：编辑区域 -->
     <div class="editor-section">
       <div v-if="state?.pageId && state?.editableMap" class="editor-content">
-        <div v-for="(part, index) in state.originData" :key="index" class="section-block">
+        <div v-for="(part, index) in visibleParts" :key="index" class="section-block">
           <el-collapse accordion>
             <el-collapse-item 
               :name="`part-${index}`">
@@ -62,7 +62,7 @@
       <div class="el-upload__text">拖动文件或<em>点击上传</em></div>
       <template #tip>
         <div class="el-upload__tip">
-          jpg/png files with a size less than 10M
+          jpg/png/webp 图片，大小不超过 5MB
         </div>
       </template>
     </el-upload>
@@ -98,6 +98,25 @@ const state = reactive({
   pageId: null,
   meta_id: null,
   ImageList: [],
+});
+
+function hasEditableInTree(node, editableMap) {
+  if (!node || !editableMap) return false;
+  if (node.id && editableMap.has(node.id)) return true;
+  const children = node.elements;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (hasEditableInTree(child, editableMap)) return true;
+    }
+  }
+  return false;
+}
+
+const visibleParts = computed(() => {
+  const parts = state.originData;
+  const editableMap = state.editableMap;
+  if (!Array.isArray(parts) || !editableMap) return [];
+  return parts.filter((part) => hasEditableInTree(part, editableMap));
 });
 
 const { websiteInfo, user } = useGlobalStore();
@@ -172,15 +191,18 @@ function getFinalData() {
 }
 
 const handleBeforeUpload = (file) => {
-  const isImage = file.type === "image/jpeg" || file.type === "image/png";
-  const isLt10M = file.size / 1024 / 1024 < 10;
+  const isImage =
+    file.type === "image/jpeg" ||
+    file.type === "image/png" ||
+    file.type === "image/webp";
+  const isLt5M = file.size / 1024 / 1024 < 5;
 
   if (!isImage) {
-    ElMessage.error("仅支持上传 jpg/png 格式的图片！");
+    ElMessage.error("仅支持上传 jpg/png/webp 格式的图片！");
     return false;
   }
-  if (!isLt10M) {
-    ElMessage.error("图片大小不能超过 10MB!");
+  if (!isLt5M) {
+    ElMessage.error("图片大小不能超过 5MB!");
     return false;
   }
   customUpload(file);

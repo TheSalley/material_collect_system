@@ -59,7 +59,7 @@
   </div>
 </template>
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, nextTick } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { updatePageById } from "@/apis/index";
 import ModuleMode from "@/components/ModuleMode.vue";
@@ -98,10 +98,6 @@ async function handleSave() {
       id: Number(PageModeNode.value.state.pageId),
       site_id: websiteInfo.site_id,
     });
-    
-    nextTick(() => {
-      loadingInstance.close();
-    });
     if (res.code === 0) {
       ElMessage({
         message: "保存成功",
@@ -119,6 +115,7 @@ async function handleSave() {
       message: "保存失败",
       type: "error",
     });
+  } finally {
     nextTick(() => {
       loadingInstance.close();
     });

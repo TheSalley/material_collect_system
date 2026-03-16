@@ -111,7 +111,7 @@
 
 /* 富文本编辑器优化 */
 .field-item .ql-container {
-  border-radius: 6px;
+  border-radius: 0 0 6px 6px;
   border-color: #dcdfe6;
 }
 

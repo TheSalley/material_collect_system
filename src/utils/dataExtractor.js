@@ -46,6 +46,8 @@ const EDITABLE_FIELDS_MAP = {
   'testimonial': ['testimonial_content', 'testimonial_name', 'testimonial_job'],
   'tabs': ['tabs'],
   'slides': ['slides'],
+  // Pro 组件
+  'flip-box': ['title_text_a', 'description_text_a', 'title_text_b', 'description_text_b', 'button_text'],
   'timeline-widget-addon': ['twae_list'],
   'social-icons': ['social_icon_list'],
   'alert': ['alert_title', 'alert_description'],
@@ -69,6 +71,27 @@ export function extractEditableData(elementorData) {
   const editableMap = new Map(); // 使用 Map 存储 ID -> 可编辑数据的映射
   
   /**
+   * 判断 __dynamic__ 是否包含实际动态配置
+   * - 空数组 / 空对象视为「没有动态配置」
+   */
+  function hasRealDynamic(dynamicValue) {
+    if (!dynamicValue) return false;
+
+    // 空数组
+    if (Array.isArray(dynamicValue)) {
+      return dynamicValue.length > 0;
+    }
+
+    // 空对象
+    if (typeof dynamicValue === 'object') {
+      return Object.keys(dynamicValue).length > 0;
+    }
+
+    // 其他类型（字符串等）只要有值就认为有动态配置
+    return true;
+  }
+  
+  /**
    * 检查节点是否应该被跳过处理
    * 1. 有 hide_desktop 属性的节点
    * 2. 有 __dynamic__ 属性的节点
@@ -77,12 +100,15 @@ export function extractEditableData(elementorData) {
     if (!node) return false;
     
     // 检查 settings 中的 hide_desktop
-    if (node.settings?.hide_desktop) {
+    // 只要存在该属性（无论值为何），都视为「不参与编辑」
+    if (node.settings && Object.prototype.hasOwnProperty.call(node.settings, 'hide_desktop')) {
       return true;
     }
 
-    // 检查 settings 中的 __dynamic__
-    if (node?.__dynamic__ || node.settings?.__dynamic__) {
+    // 检查节点或 settings 中的 __dynamic__，仅当存在「实际动态配置」时才跳过
+    const nodeDynamic = node?.__dynamic__;
+    const settingsDynamic = node.settings?.__dynamic__;
+    if (hasRealDynamic(nodeDynamic) || hasRealDynamic(settingsDynamic)) {
       return true;
     }
     
@@ -102,7 +128,8 @@ export function extractEditableData(elementorData) {
       return value.filter(item => {
         // 如果项是对象，检查是否有 __dynamic__ 属性
         if (typeof item === 'object' && item !== null) {
-          return !item.__dynamic__;
+          // 仅当存在「非空」动态配置时才过滤掉
+          return !hasRealDynamic(item.__dynamic__);
         }
         return true;
       });
@@ -130,12 +157,8 @@ export function extractEditableData(elementorData) {
   function extractNode(node) {
     if (!node || !node.id) return;
     
-    // 如果节点应该被跳过（有 hide_desktop 或 __dynamic__ 属性），跳过不处理
+    // 如果节点应该被跳过（有 hide_desktop 或 __dynamic__ 属性），跳过整个子树
     if (shouldSkipNode(node)) {
-      // 即使节点被跳过，仍然需要递归处理子元素（因为子元素可能没有被跳过）
-      if (node.elements && Array.isArray(node.elements)) {
-        node.elements.forEach(child => extractNode(child));
-      }
       return;
     }
     
@@ -164,6 +187,28 @@ export function extractEditableData(elementorData) {
         editableMap.set(node.id, editableData);
       }
     }
+
+    // 特殊处理：列（column）/ 区块（section）的背景图，复用 image 编辑组件
+    if (
+      !widgetType &&                      // 非 widget 组件（section/column）
+      (node.elType === 'column' || node.elType === 'section') &&
+      node.settings &&
+      !node.settings.hide_desktop &&      // 如果有 hide_desktop，则整体不展示
+      node.settings.background_background === 'classic' &&
+      node.settings.background_image
+    ) {
+      // 避免覆盖前面已提取的数据
+      if (!editableMap.has(node.id)) {
+        editableMap.set(node.id, {
+          id: node.id,
+          widgetType: 'image',           // 让 DataExtractor 复用 image 编辑组件
+          elType: node.elType,
+          fields: {
+            image: cleanFieldValue(node.settings.background_image),
+          },
+        });
+      }
+    }
     
     // 递归处理子元素
     if (node.elements && Array.isArray(node.elements)) {
@@ -175,9 +220,6 @@ export function extractEditableData(elementorData) {
   if (Array.isArray(elementorData)) {
     elementorData.forEach(part => {
       extractNode(part);
-      if (part.elements) {
-        part.elements.forEach(element => extractNode(element));
-      }
     });
   }
   
@@ -203,16 +245,27 @@ export function syncDataToOriginal(originalData, editableMap) {
     // 如果这个节点有编辑数据
     if (editableMap.has(node.id)) {
       const editableData = editableMap.get(node.id);
-      
-      // 更新节点的 settings
-      if (!node.settings) {
-        node.settings = {};
+
+      // 特殊处理：列（column）/ 区块（section）的背景图，使用 image 编辑组件写回 background_image
+      if (
+        !node.widgetType &&
+        (node.elType === 'column' || node.elType === 'section') &&
+        editableData.widgetType === 'image' &&
+        editableData.fields?.image
+      ) {
+        if (!node.settings) {
+          node.settings = {};
+        }
+        node.settings.background_image = editableData.fields.image;
+      } else {
+        // 通用路径：直接按字段名写回 settings
+        if (!node.settings) {
+          node.settings = {};
+        }
+        Object.keys(editableData.fields).forEach(field => {
+          node.settings[field] = editableData.fields[field];
+        });
       }
-      
-      // 将编辑的字段同步回原数据
-      Object.keys(editableData.fields).forEach(field => {
-        node.settings[field] = editableData.fields[field];
-      });
     }
     
     // 递归处理子元素
@@ -225,9 +278,6 @@ export function syncDataToOriginal(originalData, editableMap) {
   if (Array.isArray(clonedData)) {
     clonedData.forEach(part => {
       updateNode(part);
-      if (part.elements) {
-        part.elements.forEach(element => updateNode(element));
-      }
     });
   }
   

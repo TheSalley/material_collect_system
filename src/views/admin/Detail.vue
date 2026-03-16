@@ -102,22 +102,77 @@
           </div>
         </div>
 
-        <!-- 页面设置区域 -->
+        <!-- 页面 / 站点 / 内容 Tab 区域 -->
         <div class="flex flex-col">
           <div class="border-b border-gray-200 dark:border-gray-600 mb-6">
             <nav class="flex space-x-8">
-              <div class="flex items-center gap-2 border-b-2 border-blue-500 px-1 pb-4">
-                <el-icon class="text-blue-500"><Document /></el-icon>
-                <span class="text-base font-semibold text-blue-500">页面设置</span>
-              </div>
+              <!-- 站点信息 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2"
+                :class="activeSubTab === 'site' 
+                  ? 'border-blue-500 text-blue-500 font-semibold' 
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:border-blue-400 transition-colors'"
+                @click="activeSubTab = 'site'"
+              >
+                <el-icon :class="activeSubTab === 'site' ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'">
+                  <InfoFilled />
+                </el-icon>
+                <span class="text-base">站点信息</span>
+              </button>
+              <!-- 页面设置 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2"
+                :class="activeSubTab === 'pages' 
+                  ? 'border-blue-500 text-blue-500 font-semibold' 
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:border-blue-400 transition-colors'"
+                @click="activeSubTab = 'pages'"
+              >
+                <el-icon :class="activeSubTab === 'pages' ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'">
+                  <Document />
+                </el-icon>
+                <span class="text-base">页面设置</span>
+              </button>
+              <!-- 新闻 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2"
+                :class="activeSubTab === 'news' 
+                  ? 'border-blue-500 text-blue-500 font-semibold' 
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:border-blue-400 transition-colors'"
+                @click="activeSubTab = 'news'"
+              >
+                <el-icon :class="activeSubTab === 'news' ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'">
+                  <Document />
+                </el-icon>
+                <span class="text-base">新闻</span>
+              </button>
+              <!-- 产品 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2"
+                :class="activeSubTab === 'product' 
+                  ? 'border-blue-500 text-blue-500 font-semibold' 
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:border-blue-400 transition-colors'"
+                @click="activeSubTab = 'product'"
+              >
+                <el-icon :class="activeSubTab === 'product' ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'">
+                  <Box />
+                </el-icon>
+                <span class="text-base">产品</span>
+              </button>
             </nav>
           </div>
 
-          <!-- 页面列表表格 -->
-          <div class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden">
+          <!-- 页面设置：页面列表表格 -->
+          <div
+            v-if="activeSubTab === 'pages'"
+            class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden"
+          >
             <div class="overflow-x-auto">
-              <el-table 
-                :data="pageList" 
+              <el-table
+                :data="pageList"
                 :stripe="true"
                 :highlight-current-row="true"
                 class="w-full"
@@ -177,6 +232,27 @@
               </el-table>
             </div>
           </div>
+
+          <!-- 站点信息：复用 SiteInfoPanel -->
+          <div v-else-if="activeSubTab === 'site'">
+            <SiteInfoPanel />
+          </div>
+
+          <!-- 新闻：占位内容 -->
+          <div
+            v-else-if="activeSubTab === 'news'"
+            class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-6 text-sm text-gray-600 dark:text-gray-300"
+          >
+            <p>这里用于管理或上传新闻内容（可后续接入新闻相关组件）。</p>
+          </div>
+
+          <!-- 产品：占位内容 -->
+          <div
+            v-else-if="activeSubTab === 'product'"
+            class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-6 text-sm text-gray-600 dark:text-gray-300"
+          >
+            <p>这里用于管理或上传产品内容（可后续接入产品相关组件）。</p>
+          </div>
         </div>
       </div>
     </div>
@@ -187,17 +263,20 @@ import { ref, reactive, onMounted, computed } from "vue";
 import { getPages, updateUserPageList } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import ModuleMode from "@/components/ModuleMode.vue";
+import SiteInfoPanel from "@/components/SiteInfoPanel.vue";
 import { useGlobalStore } from "@/stores/global.js";
 import {
   UserFilled, ArrowLeft, ArrowRight, Check, House,
   InfoFilled, User, Key, CircleCheck, CircleClose,
-  Calendar, Document, Edit
+  Calendar, Document, Edit, Box
 } from '@element-plus/icons-vue';
 
 const { user, setUser } = useGlobalStore();
 
+// 二级 Tab：site / pages / news / product
+const activeSubTab = ref("pages");
+
 let pageList = reactive([]);
-const activePage = ref("test");
 const router = useRouter();
 
 const { websiteInfo, setWebsiteInfo } = useGlobalStore();
