@@ -238,20 +238,14 @@
             <SiteInfoPanel />
           </div>
 
-          <!-- 新闻：占位内容 -->
-          <div
-            v-else-if="activeSubTab === 'news'"
-            class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-6 text-sm text-gray-600 dark:text-gray-300"
-          >
-            <p>这里用于管理或上传新闻内容（可后续接入新闻相关组件）。</p>
+          <!-- 新闻：新闻列表 -->
+          <div v-else-if="activeSubTab === 'news'" class="min-h-0">
+            <NewsListPanel embedded />
           </div>
 
-          <!-- 产品：占位内容 -->
-          <div
-            v-else-if="activeSubTab === 'product'"
-            class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-6 text-sm text-gray-600 dark:text-gray-300"
-          >
-            <p>这里用于管理或上传产品内容（可后续接入产品相关组件）。</p>
+          <!-- 产品：产品列表 -->
+          <div v-else-if="activeSubTab === 'product'" class="min-h-0">
+            <ProductListPanel embedded />
           </div>
         </div>
       </div>
@@ -264,6 +258,8 @@ import { getPages, updateUserPageList } from "@/apis/index.js";
 import { useRouter } from "vue-router";
 import ModuleMode from "@/components/ModuleMode.vue";
 import SiteInfoPanel from "@/components/SiteInfoPanel.vue";
+import NewsListPanel from "@/components/NewsListPanel.vue";
+import ProductListPanel from "@/components/ProductListPanel.vue";
 import { useGlobalStore } from "@/stores/global.js";
 import {
   UserFilled, ArrowLeft, ArrowRight, Check, House,

@@ -5,7 +5,7 @@
         <div class="flex flex-col gap-2">
           <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
             <el-icon class="text-blue-500 text-4xl"><Box /></el-icon>
-            产品上传
+            {{ isViewMode ? "产品查看" : "产品上传" }}
           </h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">上传产品主图并填写基础信息</p>
         </div>
@@ -53,6 +53,16 @@
                 </div>
                 <div class="mt-4">
                   <el-input v-model="form.name" placeholder="请输入产品名称" clearable />
+                </div>
+              </div>
+
+              <div v-if="isViewMode && shortDescription" class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
+                <div class="flex items-center gap-2">
+                  <el-icon class="text-blue-500"><Edit /></el-icon>
+                  <h3 class="text-base font-semibold text-gray-900 dark:text-white">简短描述</h3>
+                </div>
+                <div class="mt-4 whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-200">
+                  {{ shortDescription }}
                 </div>
               </div>
 
@@ -139,14 +149,19 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import { uploadImage, contentCreate } from "@/apis/index.js";
+import { uploadImage, contentCreate, getProduct } from "@/apis/index.js";
 import { Box, Edit, Picture, Upload, Close, Plus } from "@element-plus/icons-vue";
 import { useGlobalStore } from "@/stores/global.js";
 import QuillEditor from "@/components/QuillEditor.vue";
+import { useRoute } from "vue-router";
 
 const { websiteInfo } = useGlobalStore();
+const route = useRoute();
+
+const productId = computed(() => (route.query?.id ? String(route.query.id) : ""));
+const isViewMode = computed(() => route.query?.mode === "view" && Boolean(productId.value));
 
 const form = reactive({
   name: "",
@@ -170,6 +185,38 @@ const galleryInputRef = ref(null);
 const canSubmit = computed(() => {
   return Boolean(form.name?.trim()) && Boolean(uploaded.url);
 });
+
+const shortDescription = ref("");
+
+async function fetchProductDetail() {
+  const site_id = websiteInfo?.site_id;
+  if (!site_id || !productId.value) return;
+
+  try {
+    const res = await getProduct({ site_id, id: productId.value });
+    if (res?.code === 0 && res?.data) {
+      form.name = res.data.title || "";
+      shortDescription.value = res.data.short_description || "";
+      form.content = res.data.content || "";
+      tip.value = "";
+    } else {
+      ElMessage.error(res?.message || "获取产品详情失败");
+    }
+  } catch (e) {
+    ElMessage.error("获取产品详情失败：" + (e?.message || "网络错误"));
+  }
+}
+
+onMounted(() => {
+  if (isViewMode.value) fetchProductDetail();
+});
+
+watch(
+  () => [productId.value, isViewMode.value, websiteInfo?.site_id],
+  () => {
+    if (isViewMode.value) fetchProductDetail();
+  }
+);
 
 function beforeUpload(file) {
   const okType = ["image/jpeg", "image/png"].includes(file.type);
@@ -270,6 +317,7 @@ async function onGalleryFilesChange(e) {
 function reset() {
   form.name = "";
   form.content = "";
+  shortDescription.value = "";
   uploaded.url = "";
   uploaded.attachment_id = null;
   galleryList.value = [];

@@ -234,6 +234,56 @@ export const getNewsList = async (params) => {
 };
 
 /**
+ * 6.17.1.1 获取单个新闻内容
+ * GET /api/proxy/news
+ */
+export const getNews = async (params) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append("site_id", params.site_id);
+  queryParams.append("id", params.id);
+
+  const url = config.baseUrl + "/api/proxy/news?" + queryParams.toString();
+
+  return await fetchWithAuth(url, {
+    headers: getAuthHeaders(false),
+  });
+};
+
+/**
+ * 6.17.2 获取产品列表（product）
+ * GET /api/proxy/product_list
+ */
+export const getProductList = async (params) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append("site_id", params.site_id);
+  if (params.page) queryParams.append("page", params.page);
+  if (params.page_size) queryParams.append("page_size", params.page_size);
+  if (params.status) queryParams.append("status", params.status);
+
+  const url = config.baseUrl + "/api/proxy/product_list?" + queryParams.toString();
+
+  return await fetchWithAuth(url, {
+    headers: getAuthHeaders(false),
+  });
+};
+
+/**
+ * 6.17.3 获取单个产品内容
+ * GET /api/proxy/product
+ */
+export const getProduct = async (params) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append("site_id", params.site_id);
+  queryParams.append("id", params.id);
+
+  const url = config.baseUrl + "/api/proxy/product?" + queryParams.toString();
+
+  return await fetchWithAuth(url, {
+    headers: getAuthHeaders(false),
+  });
+};
+
+/**
  * 6.18 删除内容
  * POST /api/proxy/content_delete
  */

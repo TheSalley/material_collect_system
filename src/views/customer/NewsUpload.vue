@@ -6,7 +6,7 @@
         <div class="flex flex-col gap-2">
           <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
             <el-icon class="text-blue-500 text-4xl"><Document /></el-icon>
-            新闻上传
+            {{ isViewMode ? "新闻查看" : "新闻上传" }}
           </h1>
           <p class="text-sm text-gray-500 dark:text-gray-400">上传封面并创建新闻（post）</p>
         </div>
@@ -122,14 +122,19 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, onMounted } from "vue";
+import { computed, reactive, ref, onMounted, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { contentCreate, uploadImage, getNewsCategories } from "@/apis/index.js";
+import { contentCreate, uploadImage, getNewsCategories, getNews } from "@/apis/index.js";
 import { Document, Edit, Picture, Upload } from "@element-plus/icons-vue";
 import { useGlobalStore } from "@/stores/global.js";
 import QuillEditor from "@/components/QuillEditor.vue";
+import { useRoute } from "vue-router";
 
 const { websiteInfo } = useGlobalStore();
+const route = useRoute();
+
+const newsId = computed(() => (route.query?.id ? String(route.query.id) : ""));
+const isViewMode = computed(() => route.query?.mode === "view" && Boolean(newsId.value));
 
 const form = reactive({
   title: "",
@@ -156,6 +161,24 @@ const canSubmit = computed(() => {
     Boolean(uploaded.attachment_id)
   );
 });
+
+async function fetchNewsDetail() {
+  const site_id = websiteInfo?.site_id;
+  if (!site_id || !newsId.value) return;
+
+  try {
+    const res = await getNews({ site_id, id: newsId.value });
+    if (res?.code === 0 && res?.data) {
+      form.title = res.data.title || "";
+      form.content = res.data.content || "";
+      tip.value = "";
+    } else {
+      ElMessage.error(res?.message || "获取新闻详情失败");
+    }
+  } catch (e) {
+    ElMessage.error("获取新闻详情失败：" + (e?.message || "网络错误"));
+  }
+}
 
 function beforeUpload(file) {
   // 后端媒体库通常仅接受 jpg/png（favicon 上传页也是如此）
@@ -268,7 +291,15 @@ async function submit() {
 
 onMounted(() => {
   fetchCategories();
+  if (isViewMode.value) fetchNewsDetail();
 });
+
+watch(
+  () => [newsId.value, isViewMode.value, websiteInfo?.site_id],
+  () => {
+    if (isViewMode.value) fetchNewsDetail();
+  }
+);
 </script>
 
 <style scoped>
