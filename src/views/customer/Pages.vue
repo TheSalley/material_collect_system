@@ -24,6 +24,58 @@
         
         <!-- 工具栏 -->
         <div class="flex items-center gap-3 flex-wrap">
+          <!-- 翻译工具（仅 admin 可见） -->
+          <div
+            v-if="isAdmin"
+            class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-600"
+          >
+            <div class="flex items-center gap-2">
+              <el-icon class="text-gray-500 dark:text-gray-400"><Sort /></el-icon>
+              <span class="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">从:</span>
+              <el-select
+                v-model="translateConfig.sourceLanguage"
+                placeholder="源语言"
+                size="default"
+                style="width: 120px"
+              >
+                <el-option label="中文" value="zh" />
+                <el-option label="俄语" value="ru" />
+                <el-option label="法语" value="fr" />
+                <el-option label="英语" value="en" />
+                <el-option label="日语" value="ja" />
+                <el-option label="韩语" value="ko" />
+                <el-option label="阿拉伯语" value="ar" />
+              </el-select>
+            </div>
+            <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">到:</span>
+              <el-select
+                v-model="translateConfig.targetLanguage"
+                placeholder="目标语言"
+                size="default"
+                style="width: 120px"
+              >
+                <el-option label="中文" value="zh" />
+                <el-option label="俄语" value="ru" />
+                <el-option label="法语" value="fr" />
+                <el-option label="英语" value="en" />
+                <el-option label="日语" value="ja" />
+                <el-option label="韩语" value="ko" />
+                <el-option label="阿拉伯语" value="ar" />
+              </el-select>
+            </div>
+            <el-button
+              type="success"
+              :icon="Sort"
+              :loading="translating"
+              @click="toggleTranslate"
+              size="default"
+            >
+              一键翻译
+            </el-button>
+          </div>
+
           <!-- 保存按钮 -->
           <el-button 
             type="primary" 
@@ -59,14 +111,14 @@
   </div>
 </template>
 <script setup>
-import { ref, watch, nextTick } from "vue";
+import { computed, reactive, ref, watch, nextTick, provide } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
-import { updatePageById } from "@/apis/index";
+import { updatePageById, translate } from "@/apis/index";
 import ModuleMode from "@/components/ModuleMode.vue";
 import PageMode from "@/components/PageMode.vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  Document, House, ArrowRight, Check
+  Document, House, ArrowRight, Check, Sort
 } from '@element-plus/icons-vue';
 
 const router = useRouter();
@@ -75,6 +127,198 @@ let pageData = ref(null);
 const PageModeNode = ref(null);
 const { user, websiteInfo } = useGlobalStore();
 const route = useRoute();
+
+const isAdmin = computed(() => (user?.role ?? "").toString().toLowerCase() === "admin");
+
+// 翻译配置（旧版：通过 provide 给子组件/字段用）
+const translateConfig = reactive({
+  sourceLanguage: "en",
+  targetLanguage: "fr",
+});
+const isTranslating = ref(false);
+provide("translateConfig", translateConfig);
+provide("isTranslate", isTranslating);
+
+function sameLang() {
+  return translateConfig.sourceLanguage && translateConfig.sourceLanguage === translateConfig.targetLanguage;
+}
+
+// 切换翻译状态（旧版：扫描 DOM 的 field-item 输入框/文本域/Quill）
+async function toggleTranslate() {
+  if (sameLang()) {
+    ElMessage({
+      message: "源语言和目标语言不能相同",
+      type: "warning",
+    });
+    return;
+  }
+
+  // 等待 DOM 更新完成
+  await nextTick();
+
+  const elementsToTranslate = [];
+  const translationMap = new Map(); // 原始文本/HTML -> 翻译文本
+
+  // 获取所有 input 元素
+  const inputs = document.querySelectorAll('.field-item input[type="text"]');
+  inputs.forEach((input, index) => {
+    if (input.value && input.value.trim()) {
+      elementsToTranslate.push({
+        element: input,
+        text: input.value.trim(),
+        originalText: input.value.trim(),
+        type: 'input',
+        index,
+      });
+    }
+  });
+
+  // 获取所有 textarea 元素
+  const textareas = document.querySelectorAll('.field-item textarea');
+  textareas.forEach((textarea, index) => {
+    if (textarea.value && textarea.value.trim()) {
+      elementsToTranslate.push({
+        element: textarea,
+        text: textarea.value.trim(),
+        originalText: textarea.value.trim(),
+        type: 'textarea',
+        index,
+      });
+    }
+  });
+
+  // 获取所有 class 为 ql-editor 的元素
+  const qlEditors = document.querySelectorAll('.field-item .ql-editor');
+  qlEditors.forEach((editor, index) => {
+    const htmlContent = editor.innerHTML || '';
+    const textContent = editor.innerText || editor.textContent || '';
+    if (textContent.trim()) {
+      elementsToTranslate.push({
+        element: editor,
+        text: textContent.trim(),         // 用纯文本去翻译
+        originalText: htmlContent,        // 用原 HTML 做映射 key
+        type: 'ql-editor',
+        index,
+      });
+    }
+  });
+
+  if (elementsToTranslate.length === 0) {
+    ElMessage({
+      message: "未找到需要翻译的内容",
+      type: "warning",
+    });
+    return;
+  }
+
+  const loadingInstance = ElLoading.service({
+    fullscreen: true,
+    text: `正在翻译 0/${elementsToTranslate.length} 个元素...`,
+  });
+
+  let successCount = 0;
+  let failCount = 0;
+
+  try {
+    for (let i = 0; i < elementsToTranslate.length; i++) {
+      const item = elementsToTranslate[i];
+      loadingInstance.setText(`正在翻译 ${i + 1}/${elementsToTranslate.length} 个元素...`);
+
+      try {
+        const payload = {
+          text: item.text,
+          target_language: translateConfig.targetLanguage,
+          source_language: translateConfig.sourceLanguage,
+          format_type: item.type === "ql-editor" ? "text" : "text",
+        };
+        const translateRes = await translate(payload);
+
+        if (translateRes?.code === 0 && translateRes?.data?.translated_text) {
+          const translatedText = translateRes.data.translated_text;
+          translationMap.set(item.originalText, translatedText);
+
+          // 写回 DOM 并触发 Vue 更新
+          if (item.type === 'input' || item.type === 'textarea') {
+            item.element.value = translatedText;
+            item.element.dispatchEvent(new InputEvent('input', {
+              bubbles: true,
+              cancelable: true,
+              composed: true,
+            }));
+            item.element.dispatchEvent(new Event('change', { bubbles: true }));
+          } else if (item.type === 'ql-editor') {
+            const htmlText = translatedText.replace(/\n/g, '<br>');
+            item.element.innerHTML = htmlText;
+            item.element.dispatchEvent(new Event('input', { bubbles: true }));
+            item.element.dispatchEvent(new Event('blur', { bubbles: true }));
+          }
+
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`翻译错误 (元素 ${i + 1}):`, error);
+        failCount++;
+      }
+
+      if (i < elementsToTranslate.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    // 翻译完成后，强制同步映射到 pageData（确保保存生效）
+    await syncDomToVueData(translationMap);
+
+    if (successCount > 0) {
+      ElMessage({
+        message: `成功翻译 ${successCount} 个元素${failCount > 0 ? `，失败 ${failCount} 个` : ''}`,
+        type: failCount > 0 ? "warning" : "success",
+      });
+    } else {
+      ElMessage({
+        message: "翻译失败，请稍后重试",
+        type: "error",
+      });
+    }
+  } catch (error) {
+    console.error('翻译过程发生错误:', error);
+    ElMessage({
+      message: "翻译过程中发生错误",
+      type: "error",
+    });
+  } finally {
+    loadingInstance.close();
+  }
+}
+
+// 同步 DOM 翻译结果到 Vue 的 pageData（旧版：用 translationMap 精确替换）
+async function syncDomToVueData(translationMap) {
+  if (!PageModeNode.value || !PageModeNode.value.state?.pageData) return;
+  await nextTick();
+  updateDataWithTranslation(PageModeNode.value.state.pageData, translationMap);
+}
+
+function updateDataWithTranslation(data, translationMap) {
+  if (!Array.isArray(data)) return;
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    if (item.settings) {
+      if (item.settings.title && translationMap.has(item.settings.title)) {
+        item.settings.title = translationMap.get(item.settings.title);
+      }
+      if (item.settings.editor && translationMap.has(item.settings.editor)) {
+        item.settings.editor = translationMap.get(item.settings.editor);
+      }
+      if (item.settings.content && translationMap.has(item.settings.content)) {
+        item.settings.content = translationMap.get(item.settings.content);
+      }
+    }
+    if (item.elements && item.elements.length > 0) {
+      updateDataWithTranslation(item.elements, translationMap);
+    }
+  }
+}
 
 async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });

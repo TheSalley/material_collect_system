@@ -178,6 +178,32 @@ function handleFieldUpdate(payload) {
 }
 
 /**
+ * 供外部（Pages.vue 顶部工具栏）批量更新字段
+ * - 同步更新 editableMap（用于右侧编辑器显示）
+ * - 同步写回 pageData（用于保存）
+ */
+function applyBulkFieldUpdates(updates = []) {
+  if (!Array.isArray(updates) || updates.length === 0) return;
+  if (!state.editableMap || !state.pageData) return;
+
+  for (const item of updates) {
+    const nodeId = item?.nodeId;
+    const fieldName = item?.fieldName;
+    const value = item?.value;
+    if (!nodeId || !fieldName) continue;
+
+    try {
+      // 1) 更新 editableMap（右侧面板即时显示）
+      updateField(state.editableMap, nodeId, fieldName, value);
+      // 2) 写回 pageData（用于保存）
+      updateNodeInOriginalData(state.pageData, nodeId, fieldName, value);
+    } catch (e) {
+      console.error("applyBulkFieldUpdates error:", e);
+    }
+  }
+}
+
+/**
  * 获取最终要保存的数据（已经实时同步，直接返回）
  * @returns {Array} 完整的 Elementor 数据
  */
@@ -297,6 +323,7 @@ watch(
 defineExpose({
   state,
   getFinalData,  // 导出获取最终数据的方法
+  applyBulkFieldUpdates,
 });
 </script>
 

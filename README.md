@@ -36,8 +36,8 @@ const config = {
 
 用户列表没有分页
 
-- [x] 1. 站点标题获取和更新;
-- [x] 2. 站点Favicon 获取和更新;
+站点基础设置:
+  站点icon、title 获取/修改 ok
 
 
 
