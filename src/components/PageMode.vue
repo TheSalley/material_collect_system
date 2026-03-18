@@ -32,12 +32,12 @@
                 </div>
               </template>
               <div class="collapse-content">
-                <div v-for="topNode in part.elements" :key="topNode.id">
-                  <DataExtractor 
-                    :original-node="topNode"
-                    :editable-map="state.editableMap"
-                    @update:field="handleFieldUpdate" />
-                </div>
+                <DataExtractor
+                  v-if="part?.id"
+                  :original-node="part"
+                  :editable-map="state.editableMap"
+                  @update:field="handleFieldUpdate"
+                />
               </div>
             </el-collapse-item>
           </el-collapse>
@@ -112,11 +112,48 @@ function hasEditableInTree(node, editableMap) {
   return false;
 }
 
+// 判断某个 widgetType 是否有对应的 Field 组件可渲染
+const fieldModules = import.meta.glob("/src/components/Field/**/*.vue", { eager: true });
+function hasFieldComponent(widgetType) {
+  if (!widgetType) return false;
+  const possiblePaths = [
+    `/src/components/Field/${widgetType}.vue`,
+    `/src/components/Field/Basic/${widgetType}.vue`,
+    `/src/components/Field/General/${widgetType}.vue`,
+    `/src/components/Field/Jkit/${widgetType}.vue`,
+    `/src/components/Field/Pro/${widgetType}.vue`,
+    `/src/components/Field/Other/${widgetType}.vue`,
+  ];
+  return possiblePaths.some((p) => Boolean(fieldModules[p]));
+}
+
+function hasRenderableEditableInTree(node, editableMap) {
+  if (!node || !editableMap) return false;
+
+  if (node.id && editableMap.has(node.id)) {
+    const editableNode = editableMap.get(node.id);
+    if (hasFieldComponent(editableNode?.widgetType)) return true;
+  }
+
+  const children = node.elements;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (hasRenderableEditableInTree(child, editableMap)) return true;
+    }
+  }
+  return false;
+}
+
 const visibleParts = computed(() => {
   const parts = state.originData;
   const editableMap = state.editableMap;
   if (!Array.isArray(parts) || !editableMap) return [];
-  return parts.filter((part) => hasEditableInTree(part, editableMap));
+  return parts.filter((part) => {
+    // 板块本身没有任何元素时直接隐藏
+    if (!part?.elements || part.elements.length === 0) return false;
+    // 板块下必须至少存在一个“可渲染”的可编辑组件，否则隐藏（避免出现空白板块）
+    return hasRenderableEditableInTree(part, editableMap);
+  });
 });
 
 const { websiteInfo, user } = useGlobalStore();
@@ -139,7 +176,7 @@ function updateNodeInOriginalData(data, nodeId, fieldName, value) {
     const node = data[i];
     
     // 找到目标节点
-    if (node.id === nodeId) {
+    if (String(node.id) === String(nodeId)) {
       if (!node.settings) {
         node.settings = {};
       }
@@ -170,8 +207,6 @@ function handleFieldUpdate(payload) {
   try {
     // editableMap 已在 DataExtractor 中更新，这里只需同步到原始数据
     updateNodeInOriginalData(state.pageData, nodeId, fieldName, value);
-    
-    console.log('实时字段更新:', { nodeId, fieldName, value });
   } catch (error) {
     console.error('更新字段时出错:', error);
   }

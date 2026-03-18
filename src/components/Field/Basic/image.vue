@@ -48,23 +48,23 @@ const props = defineProps({
   }
 });
 
-// 获取图片URL用于预览
+// 普通 image 控件：仅使用 settings.image 的标准 { url, id } 结构
 const imageUrl = computed(() => {
   const url = props.fields.image?.url;
-  if (!url) return '';
-  // 如果已经是完整URL，直接返回；否则使用 getFileFullUrl 转换
-  return url.startsWith('http') ? url : getFileFullUrl(url);
+  if (!url || typeof url !== "string") return "";
+  const t = url.trim();
+  if (!t) return "";
+  return t.startsWith("http") ? t : getFileFullUrl(t);
 });
 
 const handleBeforeUpload = (file) => {
   return handleImageUpload(file, (url, id) => {
-    // 直接修改原对象，避免创建新对象破坏数据结构
     if (!props.fields.image) {
       props.fields.image = {};
     }
     props.fields.image.url = url;
     props.fields.image.id = id;
-    props.onUpdate('image', props.fields.image);
+    props.onUpdate("image", props.fields.image);
   });
 };
 </script>

@@ -32,6 +32,7 @@ const EDITABLE_FIELDS_MAP = {
     'ekit_image_box_btn_text',
     'ekit_image_box_image'
   ],
+  'elementskit-accordion': ['ekit_accordion_items'],
   
   // 更多 Elementor 基础组件
   'divider': ['style', 'gap'],
@@ -69,6 +70,9 @@ const EDITABLE_FIELDS_MAP = {
  */
 export function extractEditableData(elementorData) {
   const editableMap = new Map(); // 使用 Map 存储 ID -> 可编辑数据的映射
+
+  const DEFAULT_TEXT_EDITOR_HTML =
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo.";
   
   /**
    * 判断 __dynamic__ 是否包含实际动态配置
@@ -164,6 +168,15 @@ export function extractEditableData(elementorData) {
     
     const widgetType = node.widgetType;
     const editableFields = EDITABLE_FIELDS_MAP[widgetType];
+
+    // text-editor：settings.editor 不存在时填充默认文案，确保编辑器有内容可编辑/保存
+    if (
+      widgetType === "text-editor" &&
+      node.settings &&
+      !Object.prototype.hasOwnProperty.call(node.settings, "editor")
+    ) {
+      node.settings.editor = DEFAULT_TEXT_EDITOR_HTML;
+    }
     
     // 如果这个组件类型有可编辑字段
     if (editableFields && node.settings) {
@@ -188,23 +201,73 @@ export function extractEditableData(elementorData) {
       }
     }
 
-    // 特殊处理：列（column）/ 区块（section）的背景图，复用 image 编辑组件
+    // 列 / 区块 / 容器：经典背景图 → 独立 Field
+    const isLayoutBgNode =
+      !widgetType &&
+      (node.elType === "column" ||
+        node.elType === "section" ||
+        node.elType === "container");
     if (
-      !widgetType &&                      // 非 widget 组件（section/column）
-      (node.elType === 'column' || node.elType === 'section') &&
+      isLayoutBgNode &&
       node.settings &&
-      !node.settings.hide_desktop &&      // 如果有 hide_desktop，则整体不展示
-      node.settings.background_background === 'classic' &&
-      node.settings.background_image
+      !node.settings.hide_desktop &&
+      // 有些导出里 background_background 可能缺失，但 background_image / background_overlay_image 仍存在
+      (node.settings.background_background === "classic" ||
+        node.settings.background_image !== undefined ||
+        node.settings.background_overlay_image !== undefined)
     ) {
-      // 避免覆盖前面已提取的数据
       if (!editableMap.has(node.id)) {
+        const normalizeMaybeImage = (key) => {
+          let val = node.settings[key];
+          // 允许为字符串 URL：不能当作“无效值”覆盖掉
+          if (typeof val === "string") return;
+          if (val && typeof val === "object" && !Array.isArray(val)) {
+            val = cleanFieldValue(val);
+            node.settings[key] = val;
+            return;
+          }
+          if (val === undefined) {
+            // 完全不存在才补默认结构，便于编辑
+            node.settings[key] = {
+              url: "",
+              id: "",
+              source: "library",
+              size: "",
+            };
+            return;
+          }
+          // null / '' / 数组等：保留原值，不强行覆盖
+        };
+
+        normalizeMaybeImage("background_image");
+        normalizeMaybeImage("background_overlay_image");
+
+        // 用户只编辑 background_image：如果 background_image 为空而 overlay 有有效值，则回填到 background_image
+        const bg = node.settings.background_image;
+        const ov = node.settings.background_overlay_image;
+        const bgUrl =
+          typeof bg === "string"
+            ? bg.trim()
+            : bg && typeof bg === "object"
+              ? String(bg.url || "").trim()
+              : "";
+        const ovUrl =
+          typeof ov === "string"
+            ? ov.trim()
+            : ov && typeof ov === "object"
+              ? String(ov.url || "").trim()
+              : "";
+        if (!bgUrl && ovUrl) {
+          node.settings.background_image =
+            typeof ov === "object" && ov && !Array.isArray(ov) ? { ...ov } : ov;
+        }
+
         editableMap.set(node.id, {
           id: node.id,
-          widgetType: 'image',           // 让 DataExtractor 复用 image 编辑组件
+          widgetType: "section-background-image",
           elType: node.elType,
           fields: {
-            image: cleanFieldValue(node.settings.background_image),
+            background_image: node.settings.background_image,
           },
         });
       }
@@ -246,26 +309,12 @@ export function syncDataToOriginal(originalData, editableMap) {
     if (editableMap.has(node.id)) {
       const editableData = editableMap.get(node.id);
 
-      // 特殊处理：列（column）/ 区块（section）的背景图，使用 image 编辑组件写回 background_image
-      if (
-        !node.widgetType &&
-        (node.elType === 'column' || node.elType === 'section') &&
-        editableData.widgetType === 'image' &&
-        editableData.fields?.image
-      ) {
-        if (!node.settings) {
-          node.settings = {};
-        }
-        node.settings.background_image = editableData.fields.image;
-      } else {
-        // 通用路径：直接按字段名写回 settings
-        if (!node.settings) {
-          node.settings = {};
-        }
-        Object.keys(editableData.fields).forEach(field => {
-          node.settings[field] = editableData.fields[field];
-        });
+      if (!node.settings) {
+        node.settings = {};
       }
+      Object.keys(editableData.fields).forEach((field) => {
+        node.settings[field] = editableData.fields[field];
+      });
     }
     
     // 递归处理子元素

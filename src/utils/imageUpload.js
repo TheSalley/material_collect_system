@@ -6,6 +6,26 @@
 import { uploadImage } from "@/apis";
 import { useGlobalStore } from "@/stores/global";
 
+/** 兼容多种 upload_image 返回结构 */
+function parseWpUploadResult(res) {
+  if (!res || res.code !== 0 || res.data == null) return null;
+  const row = Array.isArray(res.data) ? res.data[0] : res.data;
+  if (!row || typeof row !== "object") return null;
+  if (row.success && row.data) {
+    const u = row.data.url || row.data.file_url || "";
+    const id = row.data.attachment_id ?? row.data.id;
+    if (u || id != null) return { url: u || "", id };
+    return null;
+  }
+  if (row.url || row.id != null) {
+    return {
+      url: row.url || row.file_url || "",
+      id: row.id ?? row.attachment_id,
+    };
+  }
+  return null;
+}
+
 /**
  * 验证图片文件
  * @param {File} file - 要验证的文件
@@ -47,16 +67,15 @@ export async function uploadImageFile(file) {
 
     const res = await uploadImage(formData);
 
-    if (res.code === 0 && res.data[0].success) {
+    const parsed = parseWpUploadResult(res);
+    if (parsed) {
       ElMessage.success("图片上传成功！");
-      return {
-        url: res.data[0].data.url,
-        id: res.data[0].data.attachment_id
-      };
-    } else {
-      ElMessage.error("上传失败：" + res.message);
-      return null;
+      return parsed;
     }
+    const msg =
+      res?.data?.[0]?.message || res?.message || "上传失败";
+    ElMessage.error("上传失败：" + msg);
+    return null;
   } catch (err) {
     ElMessage.error("上传失败：" + err.message);
     return null;

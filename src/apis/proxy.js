@@ -84,6 +84,9 @@ export const getMediaList = async (params) => {
   queryParams.append('site_id', params.site_id);
   if (params.page) queryParams.append('page', params.page);
   if (params.page_size) queryParams.append('page_size', params.page_size);
+  if (params.attachment_id != null && params.attachment_id !== "") {
+    queryParams.append("attachment_id", String(params.attachment_id));
+  }
   
   const url = config.baseUrl + "/api/proxy/media_list?" + queryParams.toString();
   
