@@ -170,28 +170,30 @@ onMounted(async () => {});
  * 递归查找并更新原始数据中的节点
  */
 function updateNodeInOriginalData(data, nodeId, fieldName, value) {
-  if (!data || !Array.isArray(data)) return false;
-  
-  for (let i = 0; i < data.length; i++) {
-    const node = data[i];
-    
-    // 找到目标节点
-    if (String(node.id) === String(nodeId)) {
-      if (!node.settings) {
-        node.settings = {};
-      }
-      node.settings[fieldName] = value;
-      return true;
-    }
-    
-    // 递归查找子元素
-    if (node.elements && Array.isArray(node.elements)) {
-      if (updateNodeInOriginalData(node.elements, nodeId, fieldName, value)) {
+  if (!data) return false;
+
+  // 兼容：根是数组（常见）或根是单个对象（部分接口/导出）
+  if (Array.isArray(data)) {
+    for (let i = 0; i < data.length; i++) {
+      const node = data[i];
+      if (updateNodeInOriginalData(node, nodeId, fieldName, value)) {
         return true;
       }
     }
+    return false;
   }
-  
+
+  const node = data;
+  if (String(node?.id) === String(nodeId)) {
+    if (!node.settings || Array.isArray(node.settings)) node.settings = {};
+    node.settings[fieldName] = value;
+    return true;
+  }
+
+  if (node?.elements && Array.isArray(node.elements)) {
+    return updateNodeInOriginalData(node.elements, nodeId, fieldName, value);
+  }
+
   return false;
 }
 
@@ -205,8 +207,9 @@ function handleFieldUpdate(payload) {
   if (!nodeId || !fieldName) return;
   
   try {
-    // editableMap 已在 DataExtractor 中更新，这里只需同步到原始数据
+    // editableMap 已在 DataExtractor 中更新，这里同步写回两份数据
     updateNodeInOriginalData(state.pageData, nodeId, fieldName, value);
+    updateNodeInOriginalData(state.originData, nodeId, fieldName, value);
   } catch (error) {
     console.error('更新字段时出错:', error);
   }
@@ -230,8 +233,9 @@ function applyBulkFieldUpdates(updates = []) {
     try {
       // 1) 更新 editableMap（右侧面板即时显示）
       updateField(state.editableMap, nodeId, fieldName, value);
-      // 2) 写回 pageData（用于保存）
+      // 2) 写回 pageData / originData（用于保存 + UI树一致）
       updateNodeInOriginalData(state.pageData, nodeId, fieldName, value);
+      updateNodeInOriginalData(state.originData, nodeId, fieldName, value);
     } catch (e) {
       console.error("applyBulkFieldUpdates error:", e);
     }

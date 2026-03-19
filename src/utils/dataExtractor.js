@@ -165,6 +165,11 @@ export function extractEditableData(elementorData) {
     if (shouldSkipNode(node)) {
       return;
     }
+
+    // 兼容异常数据：有些节点 settings 竟然是 []，必须转为对象，否则写入不会被 JSON 序列化
+    if (node.settings && Array.isArray(node.settings)) {
+      node.settings = {};
+    }
     
     const widgetType = node.widgetType;
     const editableFields = EDITABLE_FIELDS_MAP[widgetType];

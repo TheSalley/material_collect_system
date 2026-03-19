@@ -6,7 +6,7 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from "vue";
+import { onMounted, onBeforeUnmount, computed, watch } from "vue";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -29,6 +29,7 @@ const props = defineProps({
 const content = computed(() => props.fields.editor || "");
 
 let quill = null;
+let applyingFromOutside = false;
 
 onMounted(() => {
   quill = new Quill(`#editor_${props.nodeId}`, {
@@ -47,7 +48,31 @@ onMounted(() => {
   
   quill.root.innerHTML = content.value;
   quill.on("text-change", () => {
-    props.onUpdate("editor", quill.root.innerHTML);
+    if (applyingFromOutside) return;
+    const html = quill.root.innerHTML;
+    // 与其它 Field 组件一致：同步写回 fields，再向上通知写回数据源
+    props.fields.editor = html;
+    props.onUpdate("editor", html);
   });
+});
+
+watch(
+  () => content.value,
+  (next) => {
+    if (!quill) return;
+    const current = quill.root?.innerHTML ?? "";
+    const desired = next ?? "";
+    if (current === desired) return;
+    applyingFromOutside = true;
+    try {
+      quill.clipboard.dangerouslyPasteHTML(desired);
+    } finally {
+      applyingFromOutside = false;
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  quill = null;
 });
 </script>
