@@ -31,12 +31,6 @@ const adminRoutes = [
         meta: { title: "用户管理", role: "admin" },
       },
       {
-        path: "translate",
-        name: "AdminTranslate",
-        component: () => import("@/views/admin/Translate.vue"),
-        meta: { title: "翻译", role: "admin" },
-      },
-      {
         path: "detail",
         name: "AdminDetail",
         component: () => import("@/views/admin/Detail.vue"),
