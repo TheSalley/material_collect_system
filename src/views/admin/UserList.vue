@@ -20,7 +20,7 @@
             v-model="searchValue"
             class="w-full max-w-md"
             size="large"
-            placeholder="搜索用户名、角色或站点名称..."
+            placeholder="按用户名搜索（调用 /api/user/list?username=）"
             clearable
           >
             <template #prefix>
@@ -43,7 +43,7 @@
       <!-- 表格区域 -->
       <div class="flex-1 overflow-auto min-h-0 overflow-x-hidden">
         <el-table 
-          :data="filteredTableData" 
+          :data="tableData" 
           :stripe="true"
           :highlight-current-row="true"
           class="w-full"
@@ -156,7 +156,7 @@
           :page-size="20"
           :pager-count="11"
           layout="total, prev, pager, next, jumper"
-          :total="filteredTableData.length"
+          :total="tableData.length"
           background
         />
       </div>
@@ -219,12 +219,12 @@
               <el-option label="用户" value="user" />
             </el-select>
           </el-form-item>
-          <el-form-item label="站点" prop="site_id">
+          <el-form-item label="站点" prop="site_id" required>
             <el-select
               v-model="addForm.site_id"
               filterable
               clearable
-              placeholder="请选择站点（单选）"
+              placeholder="请选择站点（必填）"
               class="w-full"
               :loading="siteListLoading"
             >
@@ -236,7 +236,7 @@
               />
             </el-select>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              从站点列表中选择一个站点；不选则不为该用户绑定站点
+              新增用户必须选择一个站点。
             </div>
           </el-form-item>
         </el-form>
@@ -266,41 +266,43 @@
         </div>
       </template>
       <template #default>
-        <el-form 
-          :model="form" 
-          label-width="100px" 
+        <el-form
+          ref="editFormRef"
+          :model="form"
+          :rules="editFormRules"
+          label-width="100px"
           class="py-5"
           label-position="left"
         >
-          <el-form-item label="用户名">
-            <el-input 
-              v-model="form.username" 
+          <el-form-item label="用户名" prop="username">
+            <el-input
+              v-model="form.username"
               placeholder="请输入用户名"
               clearable
-              :disabled="true"
-            />
-          </el-form-item>
-          <el-form-item label="邮箱">
-            <el-input 
-              v-model="form.email" 
-              placeholder="请输入邮箱"
-              clearable
+              autocomplete="username"
             >
               <template #prefix>
-                <el-icon><Message /></el-icon>
+                <el-icon><User /></el-icon>
               </template>
             </el-input>
           </el-form-item>
-          <el-form-item label="昵称">
-            <el-input 
-              v-model="form.nickname" 
-              placeholder="请输入昵称"
+          <el-form-item label="新密码">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="留空则不修改密码"
+              show-password
               clearable
-            />
+              autocomplete="new-password"
+            >
+              <template #prefix>
+                <el-icon><Lock /></el-icon>
+              </template>
+            </el-input>
           </el-form-item>
           <el-form-item label="角色">
-            <el-select 
-              v-model="form.role" 
+            <el-select
+              v-model="form.role"
               placeholder="请选择角色"
               class="w-full"
             >
@@ -308,12 +310,27 @@
               <el-option label="用户" value="user" />
             </el-select>
           </el-form-item>
-          <el-form-item label="状态">
-            <el-switch 
-              v-model="form.status"
-              active-text="启用"
-              inactive-text="禁用"
-            />
+          <el-form-item label="站点" prop="site_ids" required>
+            <el-select
+              v-model="form.site_ids"
+              multiple
+              filterable
+              collapse-tags
+              collapse-tags-tooltip
+              placeholder="请选择站点（可多选）"
+              class="w-full"
+              :loading="siteListLoading"
+            >
+              <el-option
+                v-for="site in siteList"
+                :key="site.site_id"
+                :label="`${site.site_name || site.site_id}${site.demo_site ? ' (' + site.demo_site + ')' : ''}`"
+                :value="site.site_id"
+              />
+            </el-select>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              至少选择一个站点；与列表接口返回的站点一致，可多选。
+            </div>
           </el-form-item>
         </el-form>
       </template>
@@ -326,17 +343,49 @@
         </div>
       </template>
     </el-drawer>
+
+    <!-- 删除确认：使用 Element Plus Dialog -->
+    <el-dialog
+      v-model="deleteDialogVisible"
+      title="确认删除"
+      width="440px"
+      align-center
+      append-to-body
+      destroy-on-close
+      :close-on-click-modal="false"
+      @closed="onDeleteDialogClosed"
+    >
+      <div class="flex gap-3 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+        <el-icon class="text-xl flex-shrink-0 text-amber-500 mt-0.5"><WarningFilled /></el-icon>
+        <div>
+          <p>
+            确定要删除用户
+            <strong class="text-gray-900 dark:text-white mx-1">{{ deleteTarget?.username || "—" }}</strong>
+            吗？
+          </p>
+          <p class="mt-2 text-gray-500 dark:text-gray-400">删除后数据将按服务端规则处理，请谨慎操作。</p>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <el-button @click="closeDeleteDialog">取消</el-button>
+          <el-button type="danger" :loading="deleteDeleting" @click="confirmDelete">
+            确定删除
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick } from "vue";
+import { ref, reactive, onMounted, nextTick, watch } from "vue";
 import { getUserList, updateUser, createUser, getList, deleteUser } from "@/apis/index.js";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import { 
-  Search, Plus, Edit, Delete, Clock, 
-  User, UserFilled, CircleCheck, CircleClose, Check, Message, Lock, Link
+  Search, Plus, Edit, Delete, Clock,
+  User, UserFilled, CircleCheck, CircleClose, Check, Lock, Link, WarningFilled
 } from '@element-plus/icons-vue';
 import { useGlobalStore } from "@/stores/global.js";
 
@@ -350,7 +399,13 @@ const globalStore = useGlobalStore();
 
 const drawer = ref(false);
 const addDrawer = ref(false);
+
+/** 删除确认弹窗（el-dialog） */
+const deleteDialogVisible = ref(false);
+const deleteTarget = ref(null);
+const deleteDeleting = ref(false);
 const addFormRef = ref(null);
+const editFormRef = ref(null);
 const addSaving = ref(false);
 const siteList = ref([]);
 const siteListLoading = ref(false);
@@ -372,20 +427,45 @@ const addFormRules = {
     { min: 6, message: "密码至少 6 位", trigger: "blur" },
   ],
   role: [{ required: true, message: "请选择角色", trigger: "change" }],
+  site_id: [{ required: true, message: "请选择站点", trigger: "change" }],
 };
 
+/** 编辑用户：对齐 POST /api/user/update（id、username、password?、role、site_ids） */
 const form = reactive({
   id: "",
   username: "",
-  email: "",
-  nickname: "",
+  password: "",
   role: "user",
-  status: true,
+  site_ids: [],
 });
 
-// 过滤后的表格数据（如果使用后端搜索，前端不需要过滤）
-const filteredTableData = computed(() => {
-  return tableData;
+const editFormRules = {
+  username: [
+    { required: true, message: "请输入用户名", trigger: "blur" },
+    { min: 2, message: "用户名至少 2 个字符", trigger: "blur" },
+  ],
+  site_ids: [
+    {
+      required: true,
+      validator: (_rule, value, callback) => {
+        if (!Array.isArray(value) || value.length === 0) {
+          callback(new Error("请至少选择一个站点"));
+        } else {
+          callback();
+        }
+      },
+      trigger: ["change", "blur"],
+    },
+  ],
+};
+
+// 搜索框防抖后调用 fetchUserList（GET /api/user/list?username=）
+let searchDebounceTimer = null;
+watch(searchValue, () => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    fetchUserList();
+  }, 400);
 });
 
 // 格式化时间
@@ -444,10 +524,8 @@ async function onAddSubmit() {
         username: addForm.username,
         password: addForm.password,
         role: addForm.role,
+        site_ids: [String(addForm.site_id)],
       };
-      if (addForm.site_id) {
-        payload.site_ids = [String(addForm.site_id)];
-      }
       const res = await createUser(payload);
       if (res.code === 0) {
         ElMessage.success("添加成功");
@@ -464,63 +542,87 @@ async function onAddSubmit() {
   });
 }
 
-// 编辑用户
-function edit(data) {
+// 编辑用户（拉取站点列表并回填 site_ids）
+async function edit(data) {
   form.id = data.id;
-  form.username = data.username || '';
-  form.email = data.email || '';
-  form.nickname = data.nickname || '';
-  form.role = data.role || 'user';
-  form.status = data.is_deleted === 0 ? true : false;
+  form.username = data.username || "";
+  form.password = "";
+  form.role = data.role || "user";
+  form.site_ids = Array.isArray(data.site_ids)
+    ? data.site_ids.map((id) => String(id))
+    : [];
   drawer.value = true;
+  await fetchSiteList();
+  nextTick(() => {
+    editFormRef.value?.clearValidate();
+  });
 }
 
-// 删除用户
-async function handleDelete(data) {
+// 打开删除确认弹窗
+function handleDelete(data) {
+  deleteTarget.value = data;
+  deleteDialogVisible.value = true;
+}
+
+function closeDeleteDialog() {
+  deleteDialogVisible.value = false;
+}
+
+function onDeleteDialogClosed() {
+  deleteTarget.value = null;
+  deleteDeleting.value = false;
+}
+
+// 在弹窗内确认删除
+async function confirmDelete() {
+  const id = deleteTarget.value?.id;
+  if (id == null) {
+    closeDeleteDialog();
+    return;
+  }
+  deleteDeleting.value = true;
   try {
-    await ElMessageBox.confirm(
-      `确定要删除用户 "${data.username}" 吗？此操作不可恢复。`,
-      '确认删除',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    );
-    
-    const res = await deleteUser(data.id);
+    const res = await deleteUser(id);
     if (res.code === 0) {
       ElMessage.success(res.message || "删除成功");
+      closeDeleteDialog();
       await fetchUserList();
     } else {
       ElMessage.error(res.message || "删除失败");
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error("删除失败：" + (error.message || "网络错误"));
-    }
+    ElMessage.error("删除失败：" + (error?.message || "网络错误"));
+  } finally {
+    deleteDeleting.value = false;
   }
 }
 
-// 保存用户信息
+// 保存用户信息（POST /api/user/update）
 async function onSubmit() {
+  if (!editFormRef.value) return;
+  try {
+    await editFormRef.value.validate();
+  } catch {
+    return;
+  }
   saving.value = true;
   try {
-    // 根据 API 文档，updateUser 接口只支持 id, username, password, role, site_ids
-    // 不支持 email, nickname, status 字段
     const payload = {
-      id: form.id,
+      id: form.id != null && form.id !== "" ? String(form.id) : form.id,
+      username: form.username,
+      role: form.role,
+      site_ids: (form.site_ids || []).map((id) => String(id)),
     };
-    
-    if (form.username) payload.username = form.username;
-    if (form.role) payload.role = form.role;
-    // 注意：email 和 nickname 不在 API 文档中，如果后端支持可以保留
-    // 但根据文档，应该只传支持的字段
-    
+    const pwd = form.password?.trim();
+    if (pwd) {
+      payload.password = pwd;
+    }
+
     const res = await updateUser(payload);
     
     if (res.code === 0) {
       ElMessage.success(res.message || "保存成功");
+      form.password = "";
       drawer.value = false;
       // 刷新列表
       await fetchUserList();
@@ -534,11 +636,13 @@ async function onSubmit() {
   }
 }
 
-// 获取用户列表
+// 获取用户列表（有输入时带 username 查询参数，与接口文档一致）
 async function fetchUserList() {
   loading.value = true;
   try {
-    const res = await getUserList();
+    const username = searchValue.value?.trim();
+    const params = username ? { username } : {};
+    const res = await getUserList(params);
     if (res.code === 0) {
       tableData.length = 0;
       tableData.push(...(res.data || []));

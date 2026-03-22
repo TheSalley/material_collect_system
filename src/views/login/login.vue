@@ -87,17 +87,23 @@
         </div>
       </div>
     </div>
+
+    <div class="absolute bottom-6 left-0 right-0 z-10 text-center text-xs text-gray-200/70 dark:text-gray-300/70">
+      版本号：{{ appVersion }}
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, nextTick } from "vue";
-import { login, getPages } from "@/apis/index.js";
+import { login } from "@/apis/index.js";
+import { refreshUserSitePageListWithPermissions } from "@/utils/userSitePages.js";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
 import { User, Lock, Right, Refresh } from '@element-plus/icons-vue';
 import "element-plus/theme-chalk/el-message.css";
 import "element-plus/theme-chalk/el-message-box.css";
+import appVersion from "@/config/appVersion.js";
 
 const router = useRouter();
 const globalStore = useGlobalStore();
@@ -146,21 +152,9 @@ const handleLogin = async () => {
         }
 
         const role = (res.data.user?.role ?? "user").toString().toLowerCase();
-        // 用户身份：拉取当前站点的页面列表，供侧栏「页面列表」展示
+        // 用户身份：拉取页面列表 + 页面授权（与刷新时一致）
         if (role === "user" && globalStore.websiteInfo?.site_id) {
-          try {
-            const pageRes = await getPages(globalStore.websiteInfo.site_id);
-            if (pageRes?.code === 0 && Array.isArray(pageRes.data)) {
-              globalStore.sitePageList = pageRes.data.map((p) => ({
-                id: p.ID ?? p.id,
-                post_name: p.post_name ?? p.post_title ?? "",
-              }));
-            } else {
-              globalStore.sitePageList = [];
-            }
-          } catch {
-            globalStore.sitePageList = [];
-          }
+          await refreshUserSitePageListWithPermissions(globalStore);
         }
 
         ElMessage.success("登录成功");

@@ -1,11 +1,10 @@
 <template>
-  <div class="field-item section-bg-field">
+  <!-- 无有效 url / id 时不渲染整块（不展示空状态与上传入口） -->
+  <div v-if="shouldShowSection" class="field-item section-bg-field">
     <label class="field-label">
       <el-icon><PictureFilled /></el-icon>
       背景图
     </label>
-    <p class="field-hint">Section / Column / Container 经典背景（background_image），与普通图片组件无关</p>
-
     <div class="bg-block">
       <div v-if="bgImageUrl" class="image-preview mb-3">
         <img :src="bgImageUrl" alt="背景预览" @error="onBgImgError" />
@@ -14,9 +13,6 @@
       <p v-else-if="bgResolveFailed" class="resolve-failed">
         仅有媒体 ID、无法在媒体库中解析出地址时无法预览，请重新上传。
       </p>
-      <div v-else class="bg-empty-wrap">
-        <el-empty description="暂无背景图：当前 JSON 里 url / id 为空" :image-size="72" />
-      </div>
       <el-upload
         action="#"
         :before-upload="handleBeforeUpload"
@@ -162,6 +158,23 @@ const {
   onImgError: onBgImgError,
 } = useMaybeResolveImage("background_image");
 
+/** JSON 中已有可解析的 url，或非 0 的媒体 id 时才展示本区块 */
+function hasBackgroundData(fields) {
+  const v = fields?.background_image;
+  if (v == null || v === "") return false;
+  if (typeof v === "string") return v.trim().length > 0;
+  if (typeof v === "object" && !Array.isArray(v)) {
+    if (pickRawImageUrl(v)) return true;
+    const id = v.id;
+    if (id == null || id === "") return false;
+    const s = String(id).trim();
+    return s.length > 0 && s !== "0";
+  }
+  return false;
+}
+
+const shouldShowSection = computed(() => hasBackgroundData(props.fields));
+
 const handleBeforeUpload = (file) => {
   return handleImageUpload(file, (url, id) => {
     const fieldKey = "background_image";
@@ -276,14 +289,4 @@ const handleBeforeUpload = (file) => {
   color: var(--el-color-warning);
 }
 
-.bg-empty-wrap {
-  padding: 0.5rem 0;
-}
-
-.bg-empty-wrap :deep(.el-empty__description) {
-  max-width: 280px;
-  margin: 0 auto;
-  line-height: 1.45;
-  font-size: 0.8rem;
-}
 </style>

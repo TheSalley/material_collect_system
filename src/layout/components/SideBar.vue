@@ -229,16 +229,15 @@ const accessibleRoutes = computed(() => {
     });
   }
   
-  // 用户身份：显示站点信息、页面列表、产品列表、新闻列表
+  // 用户身份：侧栏显示站点信息、页面列表；产品列表/新闻列表暂时隐藏（路由仍保留，可直链访问）
   if (isUser) {
     const root = arr.find((r) => r.path === "/" || r.path === "");
     if (root?.children?.length) {
       root.children = root.children.filter((child) => {
-        // 显示站点信息、页面列表、产品列表、新闻列表，隐藏其他菜单项（如上传页面）
-        return child.path === "siteInfo" || 
-               child.path === "pages/:id" || 
-               child.path === "productList" || 
-               child.path === "newsList";
+        return (
+          child.path === "siteInfo" ||
+          child.path === "pages/:id"
+        );
       });
     }
   }

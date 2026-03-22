@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full min-h-screen bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+  <div class="w-full h-full min-h-screen bg-gray-50 dark:bg-gray-800 flex items-center justify-center relative">
     <div class="text-center px-6">
       <div class="mb-8">
         <el-icon class="text-9xl text-gray-300 dark:text-gray-600 mb-4">
@@ -29,6 +29,10 @@
         </el-button>
       </div>
     </div>
+
+    <div class="absolute bottom-6 left-0 right-0 text-center text-xs text-gray-500 dark:text-gray-400">
+      版本号：{{ appVersion }}
+    </div>
   </div>
 </template>
 
@@ -36,6 +40,7 @@
 import { useRouter } from 'vue-router';
 import { useGlobalStore } from '@/stores/global';
 import { ArrowLeft, Refresh, DocumentDelete } from '@element-plus/icons-vue';
+import appVersion from '@/config/appVersion.js';
 
 const router = useRouter();
 const globalStore = useGlobalStore();

@@ -18,7 +18,7 @@
               站点管理
             </a>
             <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
-            <span class="text-gray-700 dark:text-gray-300 font-medium">{{ websiteInfo.nickname || '客户详情' }}</span>
+            <span class="text-gray-700 dark:text-gray-300 font-medium">{{ displayCustomerTitle }}</span>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -28,7 +28,8 @@
           >
             返回
           </el-button>
-          <el-button 
+          <el-button
+            v-if="activeSubTab !== 'pages'"
             type="primary"
             :icon="Check"
             @click="handleSave"
@@ -36,6 +37,15 @@
           >
             保存更改
           </el-button>
+          <el-tooltip
+            v-else
+            content="页面权限通过右侧开关即时保存，无需点击保存"
+            placement="bottom"
+          >
+            <el-button type="primary" :icon="Check" size="large" disabled>
+              页面权限已即时保存
+            </el-button>
+          </el-tooltip>
         </div>
       </div>
     </header>
@@ -56,7 +66,7 @@
                 <span>客户名称</span>
               </div>
               <p class="text-gray-900 dark:text-white text-base font-medium">
-                {{ websiteInfo.nickname || '-' }}
+                {{ displayCustomerName }}
               </p>
             </div>
             <div class="flex flex-col gap-2">
@@ -65,7 +75,7 @@
                 <span>客户ID</span>
               </div>
               <p class="text-gray-900 dark:text-white text-base font-medium font-mono">
-                {{ websiteInfo.id || '-' }}
+                {{ displayCustomerUserId }}
               </p>
             </div>
             <div class="flex flex-col gap-2">
@@ -74,19 +84,30 @@
                 <span>账户状态</span>
               </div>
               <div class="flex items-center gap-2">
-                <span 
+                <span
+                  v-if="customerAccountStatus !== 'unbound'"
                   :class="[
                     'w-2.5 h-2.5 rounded-full',
-                    websiteInfo.status === 1 ? 'bg-green-500' : 'bg-red-500'
+                    customerAccountStatus === 'active' ? 'bg-green-500' : 'bg-red-500',
                   ]"
                 ></span>
-                <el-tag 
-                  :type="websiteInfo.status === 1 ? 'success' : 'danger'"
+                <el-tag
+                  v-if="customerAccountStatus === 'unbound'"
+                  type="info"
+                  size="small"
+                  effect="plain"
+                  round
+                >
+                  未绑定客户账号
+                </el-tag>
+                <el-tag
+                  v-else
+                  :type="customerAccountStatus === 'active' ? 'success' : 'danger'"
                   size="small"
                   effect="dark"
                   round
                 >
-                  {{ websiteInfo.status === 1 ? '正常' : '禁用' }}
+                  {{ customerAccountStatus === 'active' ? '正常' : '禁用' }}
                 </el-tag>
               </div>
             </div>
@@ -96,7 +117,7 @@
                 <span>到期时间</span>
               </div>
               <p class="text-gray-900 dark:text-white text-base font-medium">
-                2025-12-31
+                {{ displayExpireAt }}
               </p>
             </div>
           </div>
@@ -165,13 +186,23 @@
             </nav>
           </div>
 
-          <!-- 页面设置：页面列表表格 -->
+          <!-- 页面设置：页面列表表格（页面授权 POST /api/user/set_page_permission） -->
           <div
             v-if="activeSubTab === 'pages'"
             class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden"
           >
-            <div class="overflow-x-auto">
+            <el-alert
+              v-if="!pagesPermissionBootstrapping && customerUserId == null"
+              type="warning"
+              class="m-4 mb-0"
+              show-icon
+              :closable="false"
+              title="未找到绑定当前站点的客户账号"
+              description="请先在「用户管理」中为该客户绑定本站点后，再在此处设置页面访问权限。"
+            />
+            <div class="overflow-x-auto p-4 pt-4">
               <el-table
+                v-loading="pagesPermissionBootstrapping"
                 :data="pageList"
                 :stripe="true"
                 :highlight-current-row="true"
@@ -193,19 +224,19 @@
                   </template>
                 </el-table-column>
                 
-                <el-table-column label="状态" width="120" align="center">
+                <el-table-column label="授权状态" width="120" align="center">
                   <template #default="scope">
-                    <el-tag 
-                      :type="scope.row.status ? 'success' : 'danger'"
+                    <el-tag
+                      :type="scope.row.allow ? 'success' : 'danger'"
                       size="small"
                       effect="dark"
                       round
                     >
                       <el-icon class="mr-1">
-                        <CircleCheck v-if="scope.row.status" />
+                        <CircleCheck v-if="scope.row.allow" />
                         <CircleClose v-else />
                       </el-icon>
-                      {{ scope.row.status ? "启用" : "禁用" }}
+                      {{ scope.row.allow ? "启用" : "禁用" }}
                     </el-tag>
                   </template>
                 </el-table-column>
@@ -213,10 +244,13 @@
                 <el-table-column fixed="right" label="操作" width="200" align="center">
                   <template #default="scope">
                     <div class="flex items-center justify-center gap-3">
-                      <el-switch 
-                        v-model="scope.row.status"
+                      <el-switch
+                        :model-value="scope.row.allow"
+                        :loading="!!permissionRowLoading[scope.row.pageId]"
+                        :disabled="customerUserId == null || pagesPermissionBootstrapping"
                         :active-color="'#13ce66'"
                         :inactive-color="'#ff4949'"
+                        @change="(val) => onPagePermissionChange(scope.row, val)"
                       />
                       <el-button 
                         type="primary" 
@@ -254,9 +288,9 @@
 </template>
 <script setup>
 import { ref, reactive, onMounted, computed } from "vue";
-import { getPages, updateUserPageList } from "@/apis/index.js";
+import { getPages, getUserList, getPagePermissions, setPagePermission } from "@/apis/index.js";
+import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
-import ModuleMode from "@/components/ModuleMode.vue";
 import SiteInfoPanel from "@/components/SiteInfoPanel.vue";
 import NewsListPanel from "@/components/NewsListPanel.vue";
 import ProductListPanel from "@/components/ProductListPanel.vue";
@@ -267,7 +301,7 @@ import {
   Calendar, Document, Edit, Box
 } from '@element-plus/icons-vue';
 
-const { user, setUser } = useGlobalStore();
+const { user } = useGlobalStore();
 
 // 二级 Tab：site / pages / news / product
 const activeSubTab = ref("pages");
@@ -275,35 +309,199 @@ const activeSubTab = ref("pages");
 let pageList = reactive([]);
 const router = useRouter();
 
-const { websiteInfo, setWebsiteInfo } = useGlobalStore();
+const { websiteInfo } = useGlobalStore();
 
-onMounted(async () => {
-  const res = await getPages(websiteInfo.site_id);
-  if (res.code === 0) {
-    pageList.push(...res.data);
+/** 绑定当前站点的客户用户（来自用户列表，用于展示名称/ID/状态） */
+const customerProfile = ref(null);
+
+/** 绑定当前站点的客户用户 id（用于 set_page_permission 的 id） */
+const customerUserId = ref(null);
+const pagesPermissionBootstrapping = ref(true);
+/** 每页开关 loading：key 为 pageId */
+const permissionRowLoading = reactive({});
+
+/** 展示名：优先绑定客户用户名/昵称，其次站点名称 */
+const displayCustomerName = computed(() => {
+  const u = customerProfile.value;
+  if (u) {
+    const name = u.nickname || u.username;
+    if (name) return name;
+  }
+  return websiteInfo?.site_name || "—";
+});
+
+/** 面包屑标题：有客户用客户名，否则站点名 */
+const displayCustomerTitle = computed(() => {
+  const u = customerProfile.value;
+  if (u?.nickname || u?.username) return u.nickname || u.username;
+  return websiteInfo?.site_name || "客户详情";
+});
+
+/** 客户用户 ID（数字 id），无绑定时为 — */
+const displayCustomerUserId = computed(() => {
+  const id = customerProfile.value?.id ?? websiteInfo?.user_id ?? websiteInfo?.customer_user_id;
+  return id != null && id !== "" ? String(id) : "—";
+});
+
+/**
+ * 账户状态：用户接口 is_deleted === 0 为正常；无绑定客户为 unbound
+ */
+const customerAccountStatus = computed(() => {
+  if (!customerProfile.value) return "unbound";
+  const deleted = customerProfile.value.is_deleted;
+  return deleted === 0 ? "active" : "disabled";
+});
+
+/** 到期时间：若站点/用户对象有字段则展示，否则 — */
+const displayExpireAt = computed(() => {
+  const w = websiteInfo;
+  if (!w) return "—";
+  const t =
+    w.expire_at ??
+    w.expires_at ??
+    w.expired_at ??
+    w.end_at ??
+    customerProfile.value?.expire_at ??
+    customerProfile.value?.expires_at;
+  if (t == null || t === "") return "—";
+  if (typeof t === "string") return t;
+  try {
+    return new Date(t).toLocaleString("zh-CN", { hour12: false });
+  } catch {
+    return String(t);
   }
 });
 
-const transform_page_list = computed(() => {
-  let arr = [];
-  // let user_page_list = JSON.parse(websiteInfo.page_list);
-  // pageList.forEach((item) => {
-  //   if (user_page_list.find(i => i.id === item.id)) {
-  //     arr.unshift({
-  //       id: item.id,
-  //       post_name: item.post_name,
-  //       status: true,
-  //     });
-  //   } else {
-  //     arr.push({
-  //       id: item.id,
-  //       post_name: item.post_name,
-  //       status: false,
-  //     });
-  //   }
-  // });
-  return arr;
+/**
+ * GET /api/user/page_permissions 返回的列表转为 Map<pageId, allow>
+ */
+function buildAllowMapFromPermissionList(list) {
+  const map = new Map();
+  if (!Array.isArray(list)) return map;
+  for (const item of list) {
+    if (item == null || item.page_id == null) continue;
+    map.set(Number(item.page_id), !!item.allow);
+  }
+  return map;
+}
+
+/**
+ * 从用户列表中解析绑定当前站点的客户用户（用于 id）
+ */
+function pickBoundUserForSite(users, siteId) {
+  if (!Array.isArray(users) || !siteId) return null;
+  const direct =
+    websiteInfo?.user_id ??
+    websiteInfo?.customer_user_id ??
+    websiteInfo?.bind_user_id;
+  if (direct != null && direct !== "") {
+    const u = users.find((x) => Number(x.id) === Number(direct));
+    if (u) return u;
+  }
+  return (
+    users.find(
+      (u) =>
+        Array.isArray(u.site_ids) &&
+        u.site_ids.some((sid) => String(sid) === String(siteId))
+    ) || null
+  );
+}
+
+async function loadPagesAndPermissions() {
+  pagesPermissionBootstrapping.value = true;
+  pageList.splice(0, pageList.length);
+  customerUserId.value = null;
+  customerProfile.value = null;
+
+  const siteId = websiteInfo?.site_id;
+  if (!siteId) {
+    pagesPermissionBootstrapping.value = false;
+    return;
+  }
+
+  try {
+    const [pagesRes, listRes] = await Promise.all([
+      getPages(siteId),
+      getUserList(),
+    ]);
+
+    const users = listRes.code === 0 && Array.isArray(listRes.data) ? listRes.data : [];
+    const boundUser = pickBoundUserForSite(users, siteId);
+    customerProfile.value = boundUser || null;
+    if (boundUser?.id != null) {
+      customerUserId.value = Number(boundUser.id);
+    }
+
+    let allowMap = new Map();
+    if (customerUserId.value != null) {
+      try {
+        const permRes = await getPagePermissions({
+          id: customerUserId.value,
+          site_id: siteId,
+        });
+        if (permRes.code === 0 && Array.isArray(permRes.data)) {
+          allowMap = buildAllowMapFromPermissionList(permRes.data);
+        } else {
+          ElMessage.warning(permRes.message || "获取页面授权失败，开关将按未授权显示");
+        }
+      } catch (e) {
+        ElMessage.warning(
+          "获取页面授权失败：" + (e?.message || "网络错误") + "，已按未授权显示"
+        );
+      }
+    }
+
+    if (pagesRes.code === 0 && Array.isArray(pagesRes.data)) {
+      for (const p of pagesRes.data) {
+        const pageId = Number(p.ID ?? p.id);
+        pageList.push({
+          ...p,
+          pageId,
+          allow: allowMap.has(pageId) ? allowMap.get(pageId) : false,
+        });
+      }
+    }
+  } catch (e) {
+    ElMessage.error("加载页面或权限失败：" + (e?.message || "未知错误"));
+  } finally {
+    pagesPermissionBootstrapping.value = false;
+  }
+}
+
+onMounted(() => {
+  loadPagesAndPermissions();
 });
+
+/** 切换页面授权：即时调用 POST /api/user/set_page_permission */
+async function onPagePermissionChange(row, allow) {
+  const siteId = websiteInfo?.site_id;
+  const uid = customerUserId.value;
+  const pageId = row.pageId;
+  if (siteId == null || uid == null || pageId == null) {
+    ElMessage.warning("无法设置：缺少站点或客户信息");
+    return;
+  }
+
+  permissionRowLoading[pageId] = true;
+  try {
+    const res = await setPagePermission({
+      id: uid,
+      site_id: String(siteId),
+      page_id: Number(pageId),
+      allow: !!allow,
+    });
+    if (res.code === 0) {
+      row.allow = res.data?.allow ?? !!allow;
+      ElMessage.success(res.message || "设置成功");
+    } else {
+      ElMessage.error(res.message || "设置失败");
+    }
+  } catch (e) {
+    ElMessage.error("设置失败：" + (e?.message || "网络错误"));
+  } finally {
+    permissionRowLoading[pageId] = false;
+  }
+}
 
 
 function edit(row) {
@@ -319,19 +517,11 @@ function edit(row) {
 }
 
 async function handleSave() {
-  const res = await updateUserPageList({
-    id: websiteInfo.id,
-    page_list: JSON.stringify(transform_page_list.value.filter(item => item.status).map(item => { return { id: item.id, post_name: item.post_name } })),
-  });
-  if (res.code === 0) {
-    setWebsiteInfo({
-      ...websiteInfo,
-      page_list: res.data.page_list,
-    })
-    ElMessage.success("更新成功");
-  } else {
-    ElMessage.error("更新失败");
+  if (activeSubTab.value === "pages") {
+    ElMessage.info("页面权限已通过开关保存，无需再点保存");
+    return;
   }
+  ElMessage.info("当前页签暂无批量保存项");
 }
 </script>
 

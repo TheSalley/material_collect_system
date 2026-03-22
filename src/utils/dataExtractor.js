@@ -48,6 +48,7 @@ const EDITABLE_FIELDS_MAP = {
   'tabs': ['tabs'],
   'slides': ['slides'],
   // Pro 组件
+  'call-to-action': ['title', 'description', 'button', 'bg_image'],
   'flip-box': ['title_text_a', 'description_text_a', 'title_text_b', 'description_text_b', 'button_text'],
   'timeline-widget-addon': ['twae_list'],
   'social-icons': ['social_icon_list'],
@@ -181,6 +182,36 @@ export function extractEditableData(elementorData) {
       !Object.prototype.hasOwnProperty.call(node.settings, "editor")
     ) {
       node.settings.editor = DEFAULT_TEXT_EDITOR_HTML;
+    }
+
+    // call-to-action（Elementor Pro）：补全文案与 bg_image（媒体库结构）
+    if (
+      widgetType === "call-to-action" &&
+      node.settings &&
+      typeof node.settings === "object" &&
+      !Array.isArray(node.settings)
+    ) {
+      for (const key of ["title", "description", "button"]) {
+        if (node.settings[key] === undefined) {
+          node.settings[key] = "";
+        }
+      }
+      const bg = node.settings.bg_image;
+      if (!bg || typeof bg !== "object" || Array.isArray(bg)) {
+        node.settings.bg_image = {
+          url: "",
+          id: "",
+          size: "",
+          alt: "",
+          source: "library",
+        };
+      } else {
+        if (bg.url === undefined) bg.url = "";
+        if (bg.id === undefined) bg.id = "";
+        if (bg.size === undefined) bg.size = "";
+        if (bg.alt === undefined) bg.alt = "";
+        if (bg.source === undefined) bg.source = "library";
+      }
     }
     
     // 如果这个组件类型有可编辑字段
