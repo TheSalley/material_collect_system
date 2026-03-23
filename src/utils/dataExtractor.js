@@ -50,6 +50,7 @@ const EDITABLE_FIELDS_MAP = {
   // Pro 组件
   'call-to-action': ['title', 'description', 'button', 'bg_image'],
   'flip-box': ['title_text_a', 'description_text_a', 'title_text_b', 'description_text_b', 'button_text'],
+  'gallery': ['gallery'],
   'timeline-widget-addon': ['twae_list'],
   'social-icons': ['social_icon_list'],
   'alert': ['alert_title', 'alert_description'],
