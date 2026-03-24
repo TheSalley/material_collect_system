@@ -48,7 +48,7 @@ export async function refreshUserSitePageListWithPermissions(globalStore) {
 
     globalStore.sitePageList = rows.map((p) => ({
       id: p.ID ?? p.id,
-      post_name: p.post_name ?? p.post_title ?? "",
+      post_name: decodeURIComponent(p.post_name ?? p.post_title ?? ""),
     }));
   } catch (e) {
     console.error("[refreshUserSitePageListWithPermissions]", e);
@@ -57,7 +57,7 @@ export async function refreshUserSitePageListWithPermissions(globalStore) {
       if (pagesRes?.code === 0 && Array.isArray(pagesRes.data)) {
         globalStore.sitePageList = pagesRes.data.map((p) => ({
           id: p.ID ?? p.id,
-          post_name: p.post_name ?? p.post_title ?? "",
+          post_name: decodeURIComponent(p.post_name ?? p.post_title ?? ""),
         }));
       } else {
         globalStore.sitePageList = [];

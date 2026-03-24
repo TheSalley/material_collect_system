@@ -4,6 +4,7 @@ import { ElMessage } from "element-plus";
 
 export const config = {
   baseUrl: "https://apitest.yhct.site",
+  // baseUrl: "http://127.0.0.1:3501",
 };
 
 /**

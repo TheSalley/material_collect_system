@@ -529,7 +529,6 @@ async function onAddSubmit() {
       const res = await createUser(payload);
       if (res.code === 0) {
         ElMessage.success("添加成功");
-        addDrawer.value = false;
         fetchUserList();
       } else {
         ElMessage.error(res.message || "添加失败");
@@ -538,6 +537,7 @@ async function onAddSubmit() {
       ElMessage.error("添加失败：" + (error.message || "网络错误"));
     } finally {
       addSaving.value = false;
+      addDrawer.value = false;
     }
   });
 }

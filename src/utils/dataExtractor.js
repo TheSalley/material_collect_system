@@ -276,24 +276,31 @@ export function extractEditableData(elementorData) {
           // null / '' / 数组等：保留原值，不强行覆盖
         };
 
-        normalizeMaybeImage("background_image");
-        normalizeMaybeImage("background_overlay_image");
+        if (node.settings.background_background === "classic") {
+          normalizeMaybeImage("background_image");
+        }
+        if (node.settings.background_overlay_background === "classic") {
+          normalizeMaybeImage("background_overlay_image");
+        }
 
         // 用户只编辑 background_image：如果 background_image 为空而 overlay 有有效值，则回填到 background_image
+        // bgUrl 和 ovUrl 的获取需要同时考虑 background_background / background_overlay_background 是否为 'classic'
         const bg = node.settings.background_image;
         const ov = node.settings.background_overlay_image;
         const bgUrl =
-          typeof bg === "string"
+          node.settings.background_background === "classic" &&
+          (typeof bg === "string"
             ? bg.trim()
             : bg && typeof bg === "object"
               ? String(bg.url || "").trim()
-              : "";
+              : "");
         const ovUrl =
-          typeof ov === "string"
+          node.settings.background_overlay_background === "classic" &&
+          (typeof ov === "string"
             ? ov.trim()
             : ov && typeof ov === "object"
               ? String(ov.url || "").trim()
-              : "";
+              : "");
         if (!bgUrl && ovUrl) {
           node.settings.background_image =
             typeof ov === "object" && ov && !Array.isArray(ov) ? { ...ov } : ov;
