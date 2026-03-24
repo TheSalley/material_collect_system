@@ -13,7 +13,14 @@
           class="gallery-item"
         >
           <div class="gallery-item-inner">
-            <img :src="item.displayUrl" :alt="`图片 ${index + 1}`" />
+            <img
+              :src="item.displayUrl"
+              :alt="`图片 ${index + 1}`"
+              @load="onThumbLoad($event, thumbKey(item, index))"
+            />
+            <div v-if="thumbDims[thumbKey(item, index)]" class="thumb-dim">
+              {{ thumbDims[thumbKey(item, index)] }}
+            </div>
             <div class="gallery-item-actions">
               <el-button
                 type="primary"
@@ -37,16 +44,42 @@
         >
           <el-button type="primary" :icon="Plus" plain>添加图片</el-button>
         </el-upload>
-        <div class="el-upload__tip">支持 jpg/png/webp 等，单张建议不超过 10MB</div>
+        <div class="field-upload-hints">
+          <p class="hint-line">{{ uploadTip }}</p>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Plus, Delete } from "@element-plus/icons-vue";
-import { validateImageFile, uploadImageFile } from "@/utils/imageUpload";
+import {
+  validateImageFileWithDimensions,
+  uploadImageFile,
+  IMAGE_UPLOAD_DEFAULTS,
+  buildImageUploadTip,
+} from "@/utils/imageUpload";
+import { getFileFullUrl } from "@/apis";
+
+const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
+const uploadTip = buildImageUploadTip(uploadRuleOptions);
+const thumbDims = ref({});
+
+function thumbKey(item, index) {
+  return `${item?.id ?? "noid"}-${index}`;
+}
+
+function onThumbLoad(e, key) {
+  const img = e.target;
+  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+    thumbDims.value = {
+      ...thumbDims.value,
+      [key]: `${img.naturalWidth}×${img.naturalHeight}px`,
+    };
+  }
+}
 
 const props = defineProps({
   nodeId: {
@@ -80,7 +113,7 @@ const displayImages = computed(() => {
             ? trimmed.startsWith("//")
               ? `https:${trimmed}`
               : trimmed
-            : `${import.meta.env.VITE_API_BASE_URL || ""}${trimmed}`;
+            : getFileFullUrl(trimmed);
       }
     }
     return {
@@ -91,6 +124,14 @@ const displayImages = computed(() => {
   }).filter(Boolean);
 });
 
+watch(
+  displayImages,
+  () => {
+    thumbDims.value = {};
+  },
+  { deep: true }
+);
+
 function patchGallery(newItems) {
   const cur = props.fields.gallery;
   const base = Array.isArray(cur) ? [...cur] : [];
@@ -98,7 +139,8 @@ function patchGallery(newItems) {
 }
 
 async function handleImageUpload(file) {
-  if (!validateImageFile(file)) return false;
+  const ok = await validateImageFileWithDimensions(file, uploadRuleOptions);
+  if (!ok) return false;
   uploading.value = true;
   try {
     const result = await uploadImageFile(file);
@@ -200,6 +242,20 @@ function removeImage(index) {
   opacity: 1;
 }
 
+.thumb-dim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px 4px;
+  font-size: 10px;
+  line-height: 1.2;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
+  text-align: center;
+  pointer-events: none;
+}
+
 .gallery-upload {
   padding-top: 8px;
 }
@@ -208,9 +264,14 @@ function removeImage(index) {
   width: 100%;
 }
 
-.gallery-upload .el-upload__tip {
+.field-upload-hints {
   margin-top: 0.35rem;
+}
+
+.field-upload-hints .hint-line {
+  margin: 0;
   font-size: 0.75rem;
   color: #909399;
+  line-height: 1.45;
 }
 </style>

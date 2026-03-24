@@ -9,8 +9,6 @@
     <div v-if="imageUrl" class="image-preview mb-3">
       <img :src="imageUrl" alt="预览图" />
     </div>
-    
-    <!-- 上传按钮 -->
     <el-upload 
       action="#" 
       :before-upload="handleBeforeUpload"
@@ -18,20 +16,29 @@
       class="upload-wrapper"
     >
       <el-button type="primary" :icon="Upload">上传图片</el-button>
-      <template #tip>
-        <div class="el-upload__tip">
-          支持 jpg/png 格式，大小不超过 10MB
-        </div>
-      </template>
     </el-upload>
+    <div class="field-upload-hints">
+      <p v-if="naturalSizeInfo.label" class="hint-line">{{ naturalSizeInfo.label }}</p>
+      <p class="hint-line">{{ uploadTip }}</p>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { Picture, Upload } from '@element-plus/icons-vue';
-import { handleImageUpload } from "@/utils/imageUpload";
+import {
+  handleImageUpload,
+  IMAGE_UPLOAD_DEFAULTS,
+  buildImageUploadTip,
+  getImageNaturalSizeFromUrl,
+  formatNaturalSizeLabel,
+} from "@/utils/imageUpload";
 import { getFileFullUrl } from "@/apis";
+
+const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
+const uploadTip = buildImageUploadTip(uploadRuleOptions);
+const naturalSizeInfo = ref({ label: "", dims: null });
 
 const props = defineProps({
   nodeId: {
@@ -57,7 +64,24 @@ const imageUrl = computed(() => {
   return t.startsWith("http") ? t : getFileFullUrl(t);
 });
 
+watch(
+  () => imageUrl.value,
+  async (url) => {
+    naturalSizeInfo.value = { label: "", dims: null };
+    if (!url) return;
+    const dim = await getImageNaturalSizeFromUrl(url);
+    naturalSizeInfo.value = {
+      label: formatNaturalSizeLabel(dim),
+      dims: dim,
+    };
+  },
+  { immediate: true }
+);
+
 const handleBeforeUpload = (file) => {
+  const opts = naturalSizeInfo.value.dims
+    ? { strictMatch: true, refDimensions: naturalSizeInfo.value.dims }
+    : {};
   return handleImageUpload(file, (url, id) => {
     if (!props.fields.image) {
       props.fields.image = {};
@@ -65,7 +89,7 @@ const handleBeforeUpload = (file) => {
     props.fields.image.url = url;
     props.fields.image.id = id;
     props.onUpdate("image", props.fields.image);
-  });
+  }, opts);
 };
 </script>
 
@@ -117,10 +141,18 @@ const handleBeforeUpload = (file) => {
   width: 100%;
 }
 
-.el-upload__tip {
+.field-upload-hints {
   margin-top: 0.5rem;
+}
+
+.field-upload-hints .hint-line {
+  margin: 0 0 0.35rem;
   font-size: 0.75rem;
   color: #909399;
-  line-height: 1.4;
+  line-height: 1.45;
+}
+
+.field-upload-hints .hint-line:last-child {
+  margin-bottom: 0;
 }
 </style>

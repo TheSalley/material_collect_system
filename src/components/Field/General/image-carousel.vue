@@ -1,8 +1,26 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { Picture, Upload, Delete, ArrowUp, ArrowDown } from "@element-plus/icons-vue";
-import { handleImageUpload } from "@/utils/imageUpload";
+import {
+  handleImageUpload,
+  IMAGE_UPLOAD_DEFAULTS,
+  buildImageUploadTip,
+} from "@/utils/imageUpload";
 import { getFileFullUrl } from "@/apis";
+
+const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
+const uploadTip = `每次上传追加 1 张。${buildImageUploadTip(uploadRuleOptions)}`;
+const thumbDims = ref({});
+
+function onThumbLoad(e, idx) {
+  const img = e.target;
+  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+    thumbDims.value = {
+      ...thumbDims.value,
+      [idx]: `${img.naturalWidth}×${img.naturalHeight}px`,
+    };
+  }
+}
 
 const props = defineProps({
   nodeId: {
@@ -23,6 +41,10 @@ const carousel = computed(() => {
   const v = props.fields?.carousel;
   return Array.isArray(v) ? v : [];
 });
+
+watch(carousel, () => {
+  thumbDims.value = {};
+}, { deep: true });
 
 function toDisplayUrl(raw) {
   if (!raw || typeof raw !== "string") return "";
@@ -79,7 +101,7 @@ const handleBeforeUpload = (file) => {
       url: url || "",
     });
     emitCarousel(next);
-  });
+  }, uploadRuleOptions);
 };
 </script>
 
@@ -93,8 +115,14 @@ const handleBeforeUpload = (file) => {
     <div v-if="carousel.length" class="carousel-list">
       <div v-for="(item, idx) in carousel" :key="`${item?.id ?? ''}-${idx}`" class="carousel-row">
         <div class="thumb">
-          <img v-if="toDisplayUrl(item?.url)" :src="toDisplayUrl(item?.url)" alt="carousel" />
+          <img
+            v-if="toDisplayUrl(item?.url)"
+            :src="toDisplayUrl(item?.url)"
+            alt="carousel"
+            @load="onThumbLoad($event, idx)"
+          />
           <div v-else class="thumb-empty">无URL</div>
+          <div v-if="thumbDims[idx]" class="thumb-dim">{{ thumbDims[idx] }}</div>
         </div>
 
         <div class="meta">
@@ -129,10 +157,10 @@ const handleBeforeUpload = (file) => {
       class="upload-wrapper"
     >
       <el-button type="primary" :icon="Upload">上传并追加</el-button>
-      <template #tip>
-        <div class="el-upload__tip">每次上传追加 1 张，支持 jpg/png 等，大小不超过 10MB</div>
-      </template>
     </el-upload>
+    <div class="field-upload-hints">
+      <p class="hint-line">{{ uploadTip }}</p>
+    </div>
   </div>
 </template>
 
@@ -176,6 +204,7 @@ const handleBeforeUpload = (file) => {
 }
 
 .thumb {
+  position: relative;
   width: 92px;
   height: 64px;
   border-radius: 6px;
@@ -185,6 +214,20 @@ const handleBeforeUpload = (file) => {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.thumb-dim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1px 2px;
+  font-size: 9px;
+  line-height: 1.15;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  text-align: center;
+  pointer-events: none;
 }
 
 .thumb img {
@@ -233,11 +276,15 @@ const handleBeforeUpload = (file) => {
   width: 100%;
 }
 
-.el-upload__tip {
+.field-upload-hints {
   margin-top: 0.5rem;
+}
+
+.field-upload-hints .hint-line {
+  margin: 0;
   font-size: 0.75rem;
   color: #909399;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .empty {

@@ -20,10 +20,11 @@
         class="upload-wrapper"
       >
         <el-button type="primary" :icon="Upload">上传背景图</el-button>
-        <template #tip>
-          <div class="el-upload__tip">支持 jpg/png 等格式，大小不超过 10MB</div>
-        </template>
       </el-upload>
+      <div class="field-upload-hints">
+        <p v-if="naturalSizeInfo.label" class="hint-line">{{ naturalSizeInfo.label }}</p>
+        <p class="hint-line">{{ uploadTip }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -31,7 +32,13 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { PictureFilled, Upload } from "@element-plus/icons-vue";
-import { handleImageUpload } from "@/utils/imageUpload";
+import {
+  handleImageUpload,
+  IMAGE_UPLOAD_DEFAULTS,
+  buildImageUploadTip,
+  getImageNaturalSizeFromUrl,
+  formatNaturalSizeLabel,
+} from "@/utils/imageUpload";
 import { getFileFullUrl } from "@/apis";
 import { useGlobalStore } from "@/stores/global";
 import { resolveAttachmentPreviewUrl } from "@/utils/mediaResolve";
@@ -175,7 +182,28 @@ function hasBackgroundData(fields) {
 
 const shouldShowSection = computed(() => hasBackgroundData(props.fields));
 
+const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
+const uploadTip = buildImageUploadTip(uploadRuleOptions);
+const naturalSizeInfo = ref({ label: "", dims: null });
+
+watch(
+  () => bgImageUrl.value,
+  async (url) => {
+    naturalSizeInfo.value = { label: "", dims: null };
+    if (!url) return;
+    const dim = await getImageNaturalSizeFromUrl(url);
+    naturalSizeInfo.value = {
+      label: formatNaturalSizeLabel(dim),
+      dims: dim,
+    };
+  },
+  { immediate: true }
+);
+
 const handleBeforeUpload = (file) => {
+  const opts = naturalSizeInfo.value.dims
+    ? { strictMatch: true, refDimensions: naturalSizeInfo.value.dims }
+    : {};
   return handleImageUpload(file, (url, id) => {
     const fieldKey = "background_image";
     const cur = props.fields?.[fieldKey];
@@ -186,7 +214,7 @@ const handleBeforeUpload = (file) => {
       url: url || base.url || "",
       id: id != null ? id : base.id,
     });
-  });
+  }, opts);
 };
 </script>
 
@@ -267,11 +295,19 @@ const handleBeforeUpload = (file) => {
   width: 100%;
 }
 
-.el-upload__tip {
+.field-upload-hints {
   margin-top: 0.5rem;
+}
+
+.field-upload-hints .hint-line {
+  margin: 0 0 0.35rem;
   font-size: 0.75rem;
   color: #909399;
-  line-height: 1.4;
+  line-height: 1.45;
+}
+
+.field-upload-hints .hint-line:last-child {
+  margin-bottom: 0;
 }
 
 .resolve-loading,

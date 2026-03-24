@@ -2,7 +2,7 @@
   <div class="app-wrapper flex h-screen overflow-hidden">
     <!-- <SideBar class="sidebar-container" /> -->
     <SideBar class="flex-shrink-0" />
-    <div class="flex-1 p-6 sm:p-8 md:p-10 h-full overflow-hidden flex flex-col">
+    <div class="flex-1 px-6 pt-6 h-full overflow-hidden flex flex-col">
       <!-- <div class="fixed-header layout-header">
         <NavigationBar />
       </div> -->

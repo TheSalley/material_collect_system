@@ -89,8 +89,16 @@
       </div>
     </header>
 
-    <!-- 页面数据 -->
-    <div class="flex-1 overflow-auto min-h-0" v-if="pageData?.id">
+    <!-- 页面数据：模块模式沿用整区滚动；页面编辑模式由 PageMode 内左右列各自滚动 -->
+    <div
+      class="flex-1 min-h-0"
+      :class="
+        websiteInfo.mode === 1
+          ? 'overflow-auto'
+          : 'overflow-hidden flex flex-col'
+      "
+      v-if="pageData?.id"
+    >
       <template v-if="websiteInfo.mode === 1">
         <ModuleMode :pageId="pageData.id" />
       </template>

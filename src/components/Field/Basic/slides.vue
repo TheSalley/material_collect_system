@@ -71,7 +71,11 @@
                             背景图片
                         </label>
                         <div v-if="getSlideImageUrl(slide)" class="image-preview mb-3">
-                            <img :src="getSlideImageUrl(slide)" alt="背景图" />
+                            <img
+                                :src="getSlideImageUrl(slide)"
+                                alt="背景图"
+                                @load="onSlideImgLoad($event, index)"
+                            />
                         </div>
                         <el-upload 
                             action="#" 
@@ -79,12 +83,11 @@
                             :show-file-list="false"
                             class="upload-wrapper">
                             <el-button type="primary" :icon="Upload">上传图片</el-button>
-                            <template #tip>
-                                <div class="el-upload__tip">
-                                    支持 jpg/png 格式，大小不超过 10MB
-                                </div>
-                            </template>
                         </el-upload>
+                        <div class="field-upload-hints">
+                            <p v-if="slideDims[index]" class="hint-line">{{ slideDims[index].label }}</p>
+                            <p class="hint-line">{{ uploadTip }}</p>
+                        </div>
                     </div>
                 </div>
             </el-collapse-item>
@@ -93,10 +96,19 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { Upload as UploadIcon, Promotion, Document, Link, Picture, PictureFilled } from '@element-plus/icons-vue';
-import { handleImageUpload } from "@/utils/imageUpload";
+import {
+    handleImageUpload,
+    IMAGE_UPLOAD_DEFAULTS,
+    buildImageUploadTip,
+    formatNaturalSizeLabel,
+} from "@/utils/imageUpload";
 import { getFileFullUrl } from "@/apis";
+
+const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
+const uploadTip = buildImageUploadTip(uploadRuleOptions);
+const slideDims = ref({}); // { [slideIndex]: { label: string, dims: { width, height } } }
 
 const Upload = UploadIcon;
 
@@ -118,6 +130,28 @@ const props = defineProps({
 // 当前展开的幻灯片
 const activeSlides = ref('slide-0');
 
+watch(
+    () => props.fields.slides,
+    () => {
+        slideDims.value = {};
+    },
+    { deep: true }
+);
+
+function onSlideImgLoad(e, slideIndex) {
+    const img = e.target;
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+        const dims = { width: img.naturalWidth, height: img.naturalHeight };
+        slideDims.value = {
+            ...slideDims.value,
+            [slideIndex]: {
+                label: formatNaturalSizeLabel(dims),
+                dims,
+            },
+        };
+    }
+}
+
 // 获取幻灯片图片URL用于预览
 const getSlideImageUrl = (slide) => {
     const url = slide.background_image?.url;
@@ -136,18 +170,19 @@ const handleUpdate = (slideIndex, fieldName, value) => {
 
 // 处理图片上传
 const handleSlideImageUpload = async (file, slideIndex) => {
+    const slideDim = slideDims.value[slideIndex];
+    const opts = slideDim?.dims
+        ? { strictMatch: true, refDimensions: slideDim.dims }
+        : {};
     return handleImageUpload(file, (url, id) => {
-        // 直接修改原对象，不创建新对象
         const currentSlide = props.fields.slides[slideIndex];
         if (!currentSlide.background_image) {
             currentSlide.background_image = {};
         }
         currentSlide.background_image.url = url;
         currentSlide.background_image.id = id;
-        
-        // 触发更新，传递原数组
         props.onUpdate('slides', props.fields.slides);
-    });
+    }, opts);
 };
 </script>
 
@@ -244,11 +279,19 @@ const handleSlideImageUpload = async (file, slideIndex) => {
     width: 100%;
 }
 
-.el-upload__tip {
+.field-upload-hints {
     margin-top: 0.5rem;
+}
+
+.field-upload-hints .hint-line {
+    margin: 0 0 0.35rem;
     font-size: 0.75rem;
     color: #909399;
-    line-height: 1.4;
+    line-height: 1.45;
+}
+
+.field-upload-hints .hint-line:last-child {
+    margin-bottom: 0;
 }
 
 /* 折叠面板样式 */

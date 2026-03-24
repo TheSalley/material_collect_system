@@ -24,10 +24,11 @@
             >
               <el-button type="primary" :icon="Upload" plain :loading="bgUploading" :disabled="bgUploading">上传背景图
               </el-button>
-              <template #tip>
-                <div class="el-upload__tip">支持 jpg/png/webp 等，建议不超过 10MB</div>
-              </template>
             </el-upload>
+            <div class="field-upload-hints">
+              <p v-if="naturalSizeInfo.label" class="hint-line">{{ naturalSizeInfo.label }}</p>
+              <p class="hint-line">{{ uploadTip }}</p>
+            </div>
           </div>
         </el-form-item>
 
@@ -63,10 +64,21 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Upload } from "@element-plus/icons-vue";
-import { validateImageFile, uploadImageFile } from "@/utils/imageUpload";
+import {
+  validateImageFileWithDimensions,
+  uploadImageFile,
+  IMAGE_UPLOAD_DEFAULTS,
+  buildImageUploadTip,
+  getImageNaturalSizeFromUrl,
+  formatNaturalSizeLabel,
+} from "@/utils/imageUpload";
 import { getFileFullUrl } from "@/apis";
+
+const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
+const uploadTip = buildImageUploadTip(uploadRuleOptions);
+const naturalSizeInfo = ref({ label: "", dims: null });
 
 const props = defineProps({
   nodeId: {
@@ -94,6 +106,20 @@ const bgImageDisplayUrl = computed(() => {
   return t.startsWith("http") || t.startsWith("//") ? (t.startsWith("//") ? `https:${t}` : t) : getFileFullUrl(t);
 });
 
+watch(
+  () => bgImageDisplayUrl.value,
+  async (url) => {
+    naturalSizeInfo.value = { label: "", dims: null };
+    if (!url) return;
+    const dim = await getImageNaturalSizeFromUrl(url);
+    naturalSizeInfo.value = {
+      label: formatNaturalSizeLabel(dim),
+      dims: dim,
+    };
+  },
+  { immediate: true }
+);
+
 function patchBgImage(partial) {
   const cur = props.fields.bg_image;
   const base =
@@ -110,7 +136,11 @@ function patchBgImage(partial) {
 }
 
 async function handleBgImageUpload(file) {
-  if (!validateImageFile(file)) return false;
+  const opts = naturalSizeInfo.value.dims
+    ? { strictMatch: true, refDimensions: naturalSizeInfo.value.dims }
+    : {};
+  const ok = await validateImageFileWithDimensions(file, opts);
+  if (!ok) return false;
   bgUploading.value = true;
   try {
     const result = await uploadImageFile(file);
@@ -198,9 +228,18 @@ async function handleBgImageUpload(file) {
   width: 100%;
 }
 
-.bg-image-block .el-upload__tip {
+.field-upload-hints {
   margin-top: 0.35rem;
+}
+
+.field-upload-hints .hint-line {
+  margin: 0 0 0.35rem;
   font-size: 0.75rem;
   color: #909399;
+  line-height: 1.45;
+}
+
+.field-upload-hints .hint-line:last-child {
+  margin-bottom: 0;
 }
 </style>

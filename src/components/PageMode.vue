@@ -10,41 +10,48 @@
             上传截图
           </el-button>
         </div>
-        <div class="preview-content">
+        <div class="preview-content pretty-scroll">
           <img :src="pagePic.file_url" alt="page picture" v-if="pagePic" class="preview-image" />
           <el-empty v-else description="未上传截图" />
         </div>
       </div>
     </div>
 
-    <!-- 右侧：编辑区域 -->
+    <!-- 右侧：编辑区域（独立滚动） -->
     <div class="editor-section">
-      <div v-if="state?.pageId && state?.editableMap" class="editor-content">
-        <div v-for="(part, index) in visibleParts" :key="index" class="section-block">
-          <el-collapse accordion>
-            <el-collapse-item 
-              :name="`part-${index}`">
-              <template #title>
-                <div class="collapse-title">
-                  <el-icon class="collapse-icon"><Grid /></el-icon>
-                  <span class="collapse-text">板块 {{ index + 1 }}</span>
-                  <el-tag size="small" type="info">{{ part.elType }}</el-tag>
+      <div
+        v-if="state?.pageId && state?.editableMap"
+        class="editor-scroll pretty-scroll"
+      >
+        <div class="editor-content">
+          <div v-for="(part, index) in visibleParts" :key="index" class="section-block">
+            <el-collapse accordion>
+              <el-collapse-item 
+                :name="`part-${index}`">
+                <template #title>
+                  <div class="collapse-title">
+                    <el-icon class="collapse-icon"><Grid /></el-icon>
+                    <span class="collapse-text">板块 {{ index + 1 }}</span>
+                    <el-tag size="small" type="info">{{ part.elType }}</el-tag>
+                  </div>
+                </template>
+                <div class="collapse-content">
+                  <DataExtractor
+                    v-if="part?.id"
+                    :original-node="part"
+                    :editable-map="state.editableMap"
+                    @update:field="handleFieldUpdate"
+                  />
                 </div>
-              </template>
-              <div class="collapse-content">
-                <DataExtractor
-                  v-if="part?.id"
-                  :original-node="part"
-                  :editable-map="state.editableMap"
-                  @update:field="handleFieldUpdate"
-                />
-              </div>
-            </el-collapse-item>
-          </el-collapse>
+              </el-collapse-item>
+            </el-collapse>
+          </div>
         </div>
       </div>
-      <div v-else class="empty-state">
-        <el-empty description="非Elementor页面" />
+      <div v-else class="editor-scroll pretty-scroll empty-state-wrap">
+        <div class="empty-state">
+          <el-empty description="非Elementor页面" />
+        </div>
       </div>
     </div>
   </div>
@@ -372,15 +379,18 @@ defineExpose({
   gap: 2rem;
   padding: 2.5rem;
   background: #f5f7fa;
-  min-height: calc(100vh - 6.25rem);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* 左侧预览区域 */
+/* 左侧预览区域（独立滚动） */
 .preview-section {
   flex: 0 0 45%;
-  position: sticky;
-  top: 2.5rem;
-  height: fit-content;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .preview-card {
@@ -388,9 +398,14 @@ defineExpose({
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .preview-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -408,10 +423,10 @@ defineExpose({
 
 .preview-content {
   padding: 1.5rem;
-  min-height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .preview-image {
@@ -424,6 +439,24 @@ defineExpose({
 /* 右侧编辑区域 */
 .editor-section {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.empty-state-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .editor-content {
@@ -472,6 +505,34 @@ defineExpose({
   border-radius: 12px;
   padding: 4rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  max-width: 100%;
+}
+
+/* 滚动条美化（WebKit + Firefox） */
+.pretty-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.pretty-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pretty-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+
+.pretty-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+
+.pretty-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #64748b 0%, #475569 100%);
 }
 
 /* 全局折叠面板样式优化 */
