@@ -4,7 +4,7 @@
     <div class="preview-section">
       <div class="preview-card">
         <div class="preview-header">
-          <h3>页面预览</h3>
+          <h3>页面示例</h3>
           <el-button v-if="isAdmin" type="primary" @click="dialogVisible = true" size="small">
             <el-icon><Upload /></el-icon>
             上传截图
@@ -58,21 +58,23 @@
 
   <!-- 上传图片弹窗 -->
   <el-dialog v-model="dialogVisible" title="图片上传" width="800">
-    <el-upload drag action="#" :before-upload="handleBeforeUpload">
-      <el-icon class="el-icon--upload">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-          <path fill="currentColor"
-            d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.87 239.87 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6z">
-          </path>
-        </svg>
-      </el-icon>
-      <div class="el-upload__text">拖动文件或<em>点击上传</em></div>
-      <template #tip>
-        <div class="el-upload__tip">
-          jpg/png/webp 图片，大小不超过 5MB
-        </div>
-      </template>
-    </el-upload>
+    <div v-loading="uploading" class="upload-dialog-content">
+      <el-upload drag action="#" :before-upload="handleBeforeUpload">
+        <el-icon class="el-icon--upload">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+            <path fill="currentColor"
+              d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.87 239.87 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6z">
+            </path>
+          </svg>
+        </el-icon>
+        <div class="el-upload__text">拖动文件或<em>点击上传</em></div>
+        <template #tip>
+          <div class="el-upload__tip">
+            jpg/png/webp 图片，大小不超过 20MB
+          </div>
+        </template>
+      </el-upload>
+    </div>
   </el-dialog>
 </template>
 <script setup>
@@ -89,6 +91,7 @@ import { useGlobalStore } from "@/stores/global";
 import { extractEditableData, syncDataToOriginal, updateField, mapToObject } from "@/utils/dataExtractor.js";
 
 const dialogVisible = ref(false);
+const uploading = ref(false);
 const pagePic = ref(null);
 
 const props = defineProps({
@@ -267,14 +270,14 @@ const handleBeforeUpload = (file) => {
     file.type === "image/jpeg" ||
     file.type === "image/png" ||
     file.type === "image/webp";
-  const isLt5M = file.size / 1024 / 1024 < 5;
+  const isLt20M = file.size / 1024 / 1024 < 20;
 
   if (!isImage) {
     ElMessage.error("仅支持上传 jpg/png/webp 格式的图片！");
     return false;
   }
-  if (!isLt5M) {
-    ElMessage.error("图片大小不能超过 5MB!");
+  if (!isLt20M) {
+    ElMessage.error("图片大小不能超过 20MB!");
     return false;
   }
   customUpload(file);
@@ -282,6 +285,7 @@ const handleBeforeUpload = (file) => {
 };
 
 const customUpload = async (file) => {
+  uploading.value = true;
   try {
     const { websiteInfo } = useGlobalStore();
     const site_id = websiteInfo?.site_id;
@@ -309,6 +313,8 @@ const customUpload = async (file) => {
     }
   } catch (err) {
     ElMessage.error("上传失败：" + (err?.message || "未知错误"));
+  } finally {
+    uploading.value = false;
   }
 };
 
@@ -556,5 +562,12 @@ defineExpose({
 
 :deep(.el-collapse-item__content) {
   padding: 0;
+}
+
+.upload-dialog-content {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

@@ -156,13 +156,13 @@ router.beforeEach((to, from, next) => {
       }
     }
 
-    // 已登录访问根路径 → 根据角色跳转
+      // 已登录访问根路径 → 根据角色跳转
     if (to.path === "/" || to.path === "") {
       if (role === "admin") {
         next({ path: "/admin/list", replace: true });
         return;
       } else {
-        next({ path: "/productList", replace: true });
+        next({ path: "/siteInfo", replace: true });
         return;
       }
     }

@@ -248,72 +248,40 @@ export function extractEditableData(elementorData) {
       isLayoutBgNode &&
       node.settings &&
       !node.settings.hide_desktop &&
-      // 有些导出里 background_background 可能缺失，但 background_image / background_overlay_image 仍存在
-      (node.settings.background_background === "classic" ||
-        node.settings.background_image !== undefined ||
-        node.settings.background_overlay_image !== undefined)
+      node.settings.background_background === "classic"
     ) {
       if (!editableMap.has(node.id)) {
-        const normalizeMaybeImage = (key) => {
-          let val = node.settings[key];
-          // 允许为字符串 URL：不能当作“无效值”覆盖掉
-          if (typeof val === "string") return;
-          if (val && typeof val === "object" && !Array.isArray(val)) {
-            val = cleanFieldValue(val);
-            node.settings[key] = val;
-            return;
-          }
-          if (val === undefined) {
-            // 完全不存在才补默认结构，便于编辑
-            node.settings[key] = {
-              url: "",
-              id: "",
-              source: "library",
-              size: "",
-            };
-            return;
-          }
-          // null / '' / 数组等：保留原值，不强行覆盖
-        };
-
-        if (node.settings.background_background === "classic") {
-          normalizeMaybeImage("background_image");
-        }
-        if (node.settings.background_overlay_background === "classic") {
-          normalizeMaybeImage("background_overlay_image");
-        }
-
-        // 用户只编辑 background_image：如果 background_image 为空而 overlay 有有效值，则回填到 background_image
-        // bgUrl 和 ovUrl 的获取需要同时考虑 background_background / background_overlay_background 是否为 'classic'
         const bg = node.settings.background_image;
-        const ov = node.settings.background_overlay_image;
         const bgUrl =
-          node.settings.background_background === "classic" &&
-          (typeof bg === "string"
+          typeof bg === "string"
             ? bg.trim()
             : bg && typeof bg === "object"
               ? String(bg.url || "").trim()
-              : "");
-        const ovUrl =
-          node.settings.background_overlay_background === "classic" &&
-          (typeof ov === "string"
-            ? ov.trim()
-            : ov && typeof ov === "object"
-              ? String(ov.url || "").trim()
-              : "");
-        if (!bgUrl && ovUrl) {
-          node.settings.background_image =
-            typeof ov === "object" && ov && !Array.isArray(ov) ? { ...ov } : ov;
-        }
+              : "";
+        const ov = node.settings.background_overlay_image;
+        const overlayIsClassic =
+          node.settings.background_overlay_background === "classic";
+        const ovUrl = overlayIsClassic
+          ? (typeof ov === "string"
+              ? ov.trim()
+              : ov && typeof ov === "object"
+                ? String(ov.url || "").trim()
+                : "")
+          : "";
 
-        editableMap.set(node.id, {
-          id: node.id,
-          widgetType: "section-background-image",
-          elType: node.elType,
-          fields: {
-            background_image: node.settings.background_image,
-          },
-        });
+        // 仅当有有效值时才记录该字段，透传原始值不做任何修改
+        const fields = {};
+        if (bgUrl) fields.background_image = bg;
+        if (overlayIsClassic && ovUrl) fields.background_overlay_image = ov;
+
+        if (Object.keys(fields).length > 0) {
+          editableMap.set(node.id, {
+            id: node.id,
+            widgetType: "section-background-image",
+            elType: node.elType,
+            fields,
+          });
+        }
       }
     }
     
@@ -373,7 +341,7 @@ export function syncDataToOriginal(originalData, editableMap) {
       updateNode(part);
     });
   }
-  
+
   return clonedData;
 }
 

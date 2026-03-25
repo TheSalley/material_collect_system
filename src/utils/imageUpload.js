@@ -6,7 +6,7 @@
 import { uploadImage } from "@/apis";
 import { ElMessage } from "element-plus";
 import { useGlobalStore } from "@/stores/global";
-import { STRICT_IMAGE_DIMENSION_ENABLED } from "@/config/uploadRules";
+import { STRICT_IMAGE_DIMENSION_ENABLED } from "@/config/index";
 
 /** 默认上传规则（文件大小 + 像素上限，可按组件传入 options 覆盖） */
 export const IMAGE_UPLOAD_DEFAULTS = {
@@ -136,7 +136,7 @@ export function buildImageUploadTip(options = {}) {
  */
 export function formatNaturalSizeLabel(dim) {
   if (!dim || !dim.width || !dim.height) return "";
-  return `限制尺寸：${dim.width}×${dim.height}px`;
+  return `当前图片尺寸：${dim.width}×${dim.height}px`;
 }
 
 /**

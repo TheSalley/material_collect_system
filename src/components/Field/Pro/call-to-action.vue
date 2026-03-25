@@ -2,7 +2,7 @@
   <div class="cta-field">
     <div class="cta-header">
       <span class="field-label">Call to Action</span>
-      <p class="field-desc">标题、描述、按钮文案；可选背景图 <code>bg_image</code>（媒体库）。</p>
+      <p class="field-desc">标题、描述、按钮文案；图片</p>
     </div>
 
     <div class="cta-body">

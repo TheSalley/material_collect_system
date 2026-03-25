@@ -8,7 +8,7 @@
       </div> -->
       <AppMain />
       <div class="app-footer mt-auto w-full text-center text-xs text-gray-500 dark:text-gray-400 py-2">
-        版本号：{{ appVersion }}
+        版本号：{{ APP_VERSION }}
       </div>
     </div>
   </div>
@@ -16,7 +16,7 @@
 <script setup>
 import SideBar from "./components/SideBar.vue";
 import AppMain from "./components/AppMain.vue";
-import appVersion from "@/config/appVersion.js";
+import { APP_VERSION } from "@/config/index";
 </script>
 <style>
 .app-wrapper {

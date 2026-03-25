@@ -89,7 +89,7 @@
     </div>
 
     <div class="absolute bottom-6 left-0 right-0 z-10 text-center text-xs text-gray-200/70 dark:text-gray-300/70">
-      版本号：{{ appVersion }}
+      版本号：{{ APP_VERSION }}
     </div>
   </div>
 </template>
@@ -103,14 +103,14 @@ import { useGlobalStore } from "@/stores/global";
 import { User, Lock, Right, Refresh } from '@element-plus/icons-vue';
 import "element-plus/theme-chalk/el-message.css";
 import "element-plus/theme-chalk/el-message-box.css";
-import appVersion from "@/config/appVersion.js";
+import { APP_VERSION } from "@/config/index";
 
 const router = useRouter();
 const globalStore = useGlobalStore();
 
 const form = ref({
-  username: "yeehai",
-  password: "yeehai2026",
+  username: "",
+  password: "",
 });
 
 const rules = {

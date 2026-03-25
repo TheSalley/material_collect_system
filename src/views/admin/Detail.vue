@@ -372,6 +372,18 @@ const displayExpireAt = computed(() => {
   }
 });
 
+/** 将接口返回的 URL 编码页面名（如 %e5%85%b3...）解码为可读文本 */
+function decodePageDisplayName(raw) {
+  if (raw == null || raw === "") return raw;
+  const s = String(raw);
+  if (!/%[0-9A-Fa-f]{2}/.test(s)) return s;
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
 /**
  * GET /api/user/page_permissions 返回的列表转为 Map<pageId, allow>
  */
@@ -456,6 +468,7 @@ async function loadPagesAndPermissions() {
         const pageId = Number(p.ID ?? p.id);
         pageList.push({
           ...p,
+          post_name: decodePageDisplayName(p.post_name),
           pageId,
           allow: allowMap.has(pageId) ? allowMap.get(pageId) : false,
         });

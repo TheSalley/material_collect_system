@@ -1,11 +1,18 @@
 <template>
-  <!-- 无有效 url / id 时不渲染整块（不展示空状态与上传入口） -->
   <div v-if="shouldShowSection" class="field-item section-bg-field">
     <label class="field-label">
       <el-icon><PictureFilled /></el-icon>
       背景图
     </label>
-    <div class="bg-block">
+
+    <!-- 主背景图：仅当数据里已有主背景时才渲染（与 WP 一致，不在此凭空补空块） -->
+    <div
+      v-if="hasMainBg"
+      class="bg-block"
+      v-loading="bgUploading"
+      element-loading-text="正在上传…"
+    >
+      <div class="bg-block__title">主背景图</div>
       <div v-if="bgImageUrl" class="image-preview mb-3">
         <img :src="bgImageUrl" alt="背景预览" @error="onBgImgError" />
       </div>
@@ -15,14 +22,57 @@
       </p>
       <el-upload
         action="#"
-        :before-upload="handleBeforeUpload"
+        :before-upload="(file) => handleBeforeUpload(file, 'background_image')"
         :show-file-list="false"
         class="upload-wrapper"
       >
-        <el-button type="primary" :icon="Upload">上传背景图</el-button>
+        <el-button
+          type="primary"
+          :icon="Upload"
+          :loading="bgUploading"
+          :disabled="bgUploading"
+        >
+          上传主背景图
+        </el-button>
       </el-upload>
       <div class="field-upload-hints">
-        <p v-if="naturalSizeInfo.label" class="hint-line">{{ naturalSizeInfo.label }}</p>
+        <p v-if="bgSizeInfo.label" class="hint-line">{{ bgSizeInfo.label }}</p>
+        <p class="hint-line">{{ uploadTip }}</p>
+      </div>
+    </div>
+
+    <!-- 叠加层图：仅当数据里已有叠加层图时才渲染 -->
+    <div
+      v-if="hasOverlayBg"
+      class="bg-block"
+      v-loading="overlayUploading"
+      element-loading-text="正在上传…"
+    >
+      <div class="bg-block__title">叠加层图</div>
+      <div v-if="overlayImageUrl" class="image-preview mb-3">
+        <img :src="overlayImageUrl" alt="叠加层预览" @error="onOverlayImgError" />
+      </div>
+      <p v-else-if="overlayResolveLoading" class="resolve-loading">正在解析图片地址…</p>
+      <p v-else-if="overlayResolveFailed" class="resolve-failed">
+        仅有媒体 ID、无法在媒体库中解析出地址时无法预览，请重新上传。
+      </p>
+      <el-upload
+        action="#"
+        :before-upload="(file) => handleBeforeUpload(file, 'background_overlay_image')"
+        :show-file-list="false"
+        class="upload-wrapper"
+      >
+        <el-button
+          type="primary"
+          :icon="Upload"
+          :loading="overlayUploading"
+          :disabled="overlayUploading"
+        >
+          上传叠加层图
+        </el-button>
+      </el-upload>
+      <div class="field-upload-hints">
+        <p v-if="overlaySizeInfo.label" class="hint-line">{{ overlaySizeInfo.label }}</p>
         <p class="hint-line">{{ uploadTip }}</p>
       </div>
     </div>
@@ -33,7 +83,8 @@
 import { computed, ref, watch } from "vue";
 import { PictureFilled, Upload } from "@element-plus/icons-vue";
 import {
-  handleImageUpload,
+  validateImageFileWithDimensions,
+  uploadImageFile,
   IMAGE_UPLOAD_DEFAULTS,
   buildImageUploadTip,
   getImageNaturalSizeFromUrl,
@@ -44,27 +95,14 @@ import { useGlobalStore } from "@/stores/global";
 import { resolveAttachmentPreviewUrl } from "@/utils/mediaResolve";
 
 const props = defineProps({
-  nodeId: {
-    type: String,
-    required: true,
-  },
-  fields: {
-    type: Object,
-    required: true,
-  },
-  onUpdate: {
-    type: Function,
-    required: true,
-  },
+  nodeId: { type: String, required: true },
+  fields: { type: Object, required: true },
+  onUpdate: { type: Function, required: true },
 });
 
-/** Elementor background_image：字符串 URL 或多种对象形态 */
 function pickRawImageUrl(val) {
   if (val == null) return "";
-  if (typeof val === "string") {
-    const s = val.trim();
-    return s;
-  }
+  if (typeof val === "string") return val.trim();
   if (typeof val !== "object") return "";
   const candidates = [
     val.url,
@@ -151,9 +189,7 @@ function useMaybeResolveImage(fieldKey) {
     { immediate: true, deep: true }
   );
 
-  const onImgError = () => {
-    resolvedUrl.value = "";
-  };
+  const onImgError = () => { resolvedUrl.value = ""; };
 
   return { imageUrl, resolveLoading, resolveFailed, onImgError };
 }
@@ -165,9 +201,14 @@ const {
   onImgError: onBgImgError,
 } = useMaybeResolveImage("background_image");
 
-/** JSON 中已有可解析的 url，或非 0 的媒体 id 时才展示本区块 */
-function hasBackgroundData(fields) {
-  const v = fields?.background_image;
+const {
+  imageUrl: overlayImageUrl,
+  resolveLoading: overlayResolveLoading,
+  resolveFailed: overlayResolveFailed,
+  onImgError: onOverlayImgError,
+} = useMaybeResolveImage("background_overlay_image");
+
+function hasData(v) {
   if (v == null || v === "") return false;
   if (typeof v === "string") return v.trim().length > 0;
   if (typeof v === "object" && !Array.isArray(v)) {
@@ -180,42 +221,65 @@ function hasBackgroundData(fields) {
   return false;
 }
 
-const shouldShowSection = computed(() => hasBackgroundData(props.fields));
+const hasMainBg = computed(() => hasData(props.fields?.background_image));
+const hasOverlayBg = computed(() => hasData(props.fields?.background_overlay_image));
+const shouldShowSection = computed(() => hasMainBg.value || hasOverlayBg.value);
 
-const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
-const uploadTip = buildImageUploadTip(uploadRuleOptions);
-const naturalSizeInfo = ref({ label: "", dims: null });
+const uploadTip = buildImageUploadTip(IMAGE_UPLOAD_DEFAULTS);
+const bgUploading = ref(false);
+const overlayUploading = ref(false);
+const bgSizeInfo = ref({ label: "", dims: null });
+const overlaySizeInfo = ref({ label: "", dims: null });
 
 watch(
   () => bgImageUrl.value,
   async (url) => {
-    naturalSizeInfo.value = { label: "", dims: null };
+    bgSizeInfo.value = { label: "", dims: null };
     if (!url) return;
     const dim = await getImageNaturalSizeFromUrl(url);
-    naturalSizeInfo.value = {
-      label: formatNaturalSizeLabel(dim),
-      dims: dim,
-    };
+    bgSizeInfo.value = { label: formatNaturalSizeLabel(dim), dims: dim };
   },
   { immediate: true }
 );
 
-const handleBeforeUpload = (file) => {
-  const opts = naturalSizeInfo.value.dims
-    ? { strictMatch: true, refDimensions: naturalSizeInfo.value.dims }
+watch(
+  () => overlayImageUrl.value,
+  async (url) => {
+    overlaySizeInfo.value = { label: "", dims: null };
+    if (!url) return;
+    const dim = await getImageNaturalSizeFromUrl(url);
+    overlaySizeInfo.value = { label: formatNaturalSizeLabel(dim), dims: dim };
+  },
+  { immediate: true }
+);
+
+async function handleBeforeUpload(file, fieldKey) {
+  const sizeInfo = fieldKey === "background_overlay_image" ? overlaySizeInfo : bgSizeInfo;
+  const opts = sizeInfo.value.dims
+    ? { strictMatch: true, refDimensions: sizeInfo.value.dims }
     : {};
-  return handleImageUpload(file, (url, id) => {
-    const fieldKey = "background_image";
-    const cur = props.fields?.[fieldKey];
-    const base =
-      cur != null && typeof cur === "object" && !Array.isArray(cur) ? { ...cur } : {};
-    props.onUpdate(fieldKey, {
-      ...base,
-      url: url || base.url || "",
-      id: id != null ? id : base.id,
-    });
-  }, opts);
-};
+  const ok = await validateImageFileWithDimensions(file, opts);
+  if (!ok) return false;
+
+  const uploadingRef = fieldKey === "background_overlay_image" ? overlayUploading : bgUploading;
+  uploadingRef.value = true;
+  try {
+    const result = await uploadImageFile(file);
+    if (result) {
+      const cur = props.fields?.[fieldKey];
+      const base =
+        cur != null && typeof cur === "object" && !Array.isArray(cur) ? { ...cur } : {};
+      props.onUpdate(fieldKey, {
+        ...base,
+        url: result.url || base.url || "",
+        id: result.id != null ? result.id : base.id,
+      });
+    }
+  } finally {
+    uploadingRef.value = false;
+  }
+  return false;
+}
 </script>
 
 <style scoped>
@@ -224,6 +288,9 @@ const handleBeforeUpload = (file) => {
   border-radius: 8px;
   padding: 12px;
   background: var(--el-fill-color-lighter);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .field-item {
@@ -247,18 +314,12 @@ const handleBeforeUpload = (file) => {
   font-size: 1.1rem;
 }
 
-.field-hint {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.75rem;
-  color: #909399;
-  line-height: 1.4;
-}
-
 .bg-block {
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   padding: 10px;
   background: #fff;
+  position: relative;
 }
 
 .bg-block__title {
@@ -277,7 +338,7 @@ const handleBeforeUpload = (file) => {
   width: 100%;
   height: auto;
   display: block;
-  max-height: 280px;
+  max-height: 200px;
   object-fit: contain;
   border-radius: 4px;
   border: 1px solid var(--el-border-color-lighter);
@@ -324,5 +385,4 @@ const handleBeforeUpload = (file) => {
 .resolve-failed {
   color: var(--el-color-warning);
 }
-
 </style>
