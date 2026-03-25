@@ -5,6 +5,10 @@ const config = {
   baseUrl: "http://localhost:3501",
 };
 
+1、背景图、背景问题
+2、icon-box 乱码问题
+3、文字不同步问题
+
 ## 已适配组件
 
 1. Basic
