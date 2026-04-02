@@ -91,20 +91,15 @@
 
     <!-- 页面数据：模块模式沿用整区滚动；页面编辑模式由 PageMode 内左右列各自滚动 -->
     <div
-      class="flex-1 min-h-0"
-      :class="
-        websiteInfo.mode === 1
-          ? 'overflow-auto'
-          : 'overflow-hidden flex flex-col'
-      "
+      class="flex-1 min-h-0 overflow-hidden flex flex-col"
       v-if="pageData?.id"
     >
-      <template v-if="websiteInfo.mode === 1">
-        <ModuleMode :pageId="pageData.id" />
-      </template>
-      <template v-else>
-        <PageMode ref="PageModeNode" :pageId="pageData.id" />
-      </template>
+      <!-- <template v-if="websiteInfo.mode === 1"> -->
+        <ModuleMode ref="ModuleModeNode" :pageId="pageData.id" />
+      <!-- </template> -->
+      <!-- <template v-else> -->
+        <!-- <PageMode ref="PageModeNode" :pageId="pageData.id" /> -->
+      <!-- </template> -->
     </div>
     
     <!-- 空状态 -->
@@ -132,6 +127,7 @@ import {
 const router = useRouter();
 
 let pageData = ref(null);
+const ModuleModeNode = ref(null);
 const PageModeNode = ref(null);
 const { user, websiteInfo } = useGlobalStore();
 const route = useRoute();
@@ -302,9 +298,12 @@ async function toggleTranslate() {
 
 // 同步 DOM 翻译结果到 Vue 的 pageData（旧版：用 translationMap 精确替换）
 async function syncDomToVueData(translationMap) {
-  if (!PageModeNode.value || !PageModeNode.value.state?.pageData) return;
+  const isModuleMode = websiteInfo.mode === 1;
+  const targetNode = isModuleMode ? ModuleModeNode.value : PageModeNode.value;
+  if (!targetNode?.state?.pageData && !targetNode?.state?.originData) return;
   await nextTick();
-  updateDataWithTranslation(PageModeNode.value.state.pageData, translationMap);
+  const data = targetNode.state.pageData ?? targetNode.state.originData;
+  updateDataWithTranslation(data, translationMap);
 }
 
 function updateDataWithTranslation(data, translationMap) {
@@ -331,46 +330,34 @@ function updateDataWithTranslation(data, translationMap) {
 async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
-    // 数据已实时同步，直接获取即可
-    const finalData = PageModeNode.value.state.pageData;
-    
+    // 根据当前模式取对应组件的数据
+    const isModuleMode = websiteInfo.mode === 1;
+    const targetNode = isModuleMode ? ModuleModeNode.value : PageModeNode.value;
+    const finalData = targetNode?.getFinalData?.();
+
     if (!finalData) {
-      ElMessage({
-        message: "没有数据可保存",
-        type: "warning",
-      });
+      ElMessage({ message: "没有数据可保存", type: "warning" });
       loadingInstance.close();
       return;
     }
-    
-    console.log('保存数据（已实时同步）:', finalData);
-    
+
+    console.log('保存数据:', finalData);
+
     const res = await updatePageById({
       data: JSON.stringify(finalData),
-      id: Number(PageModeNode.value.state.pageId),
+      id: Number(targetNode.state.pageId ?? targetNode.state.moduleId),
       site_id: websiteInfo.site_id,
     });
     if (res.code === 0) {
-      ElMessage({
-        message: "保存成功",
-        type: "success",
-      });
+      ElMessage({ message: "保存成功", type: "success" });
     } else {
-      ElMessage({
-        message: "保存失败",
-        type: "error",
-      });
+      ElMessage({ message: "保存失败", type: "error" });
     }
   } catch (error) {
     console.error('保存错误:', error);
-    ElMessage({
-      message: "保存失败",
-      type: "error",
-    });
+    ElMessage({ message: "保存失败", type: "error" });
   } finally {
-    nextTick(() => {
-      loadingInstance.close();
-    });
+    nextTick(() => { loadingInstance.close(); });
   }
 }
 

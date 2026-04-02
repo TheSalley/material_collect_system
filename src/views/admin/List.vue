@@ -98,18 +98,6 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="mode" label="模式" width="100" align="center">
-            <template #default="scope">
-              <el-tag 
-                :type="scope.row.mode === 1 ? 'warning' : 'info'"
-                size="small"
-                effect="dark"
-              >
-                {{ scope.row.mode === 1 ? "组件" : "页面" }}
-              </el-tag>
-            </template>
-          </el-table-column>
-          
           <!-- 隐藏站点状态字段 -->
           <!-- <el-table-column prop="site_status" label="状态" width="100" align="center">
             <template #default="scope">

@@ -31,6 +31,12 @@ const adminRoutes = [
         meta: { title: "用户管理", role: "admin" },
       },
       {
+        path: "mediaLibrary",
+        name: "AdminMediaLibrary",
+        component: () => import("@/views/admin/MediaLibrary.vue"),
+        meta: { title: "媒体库", role: "admin" },
+      },
+      {
         path: "detail",
         name: "AdminDetail",
         component: () => import("@/views/admin/Detail.vue"),

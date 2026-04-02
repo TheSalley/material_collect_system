@@ -5,6 +5,7 @@ export * from "./site";
 export * from "./file";
 export * from "./proxy";
 export * from "./translate";
+export * from "./media";
 
 // 导出配置和工具函数
 export { config, fetchWithAuth, getAuthHeaders } from "./config";
