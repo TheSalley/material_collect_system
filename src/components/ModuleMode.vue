@@ -1,42 +1,40 @@
 <template>
   <div class="page-mode-container">
-    <!-- 左侧：多模块截图预览（每个模块一行） -->
+    <!-- 左侧：与右侧同结构的独立卡片列表，标题/标签/间距一致 -->
     <div class="preview-section">
-      <div class="preview-card">
-        <div class="preview-header">
-          <h3>页面示例</h3>
-          <el-button v-if="isAdmin" type="primary" size="small" @click="openUploadDialogFromHeader">
-            <el-icon><Upload /></el-icon>
-            上传截图
-          </el-button>
-        </div>
-        <div class="preview-content pretty-scroll">
-          <!-- 与右侧 visibleParts 同一列表，序号与「板块 N」一一对应 -->
+      <div class="editor-scroll pretty-scroll">
+        <div class="editor-content">
           <div
             v-for="(part, index) in visibleParts"
             :key="part.id"
-            class="module-preview-item"
+            class="section-block section-preview-block"
           >
-            <div class="module-preview-label">
-              <span>模块 {{ index + 1 }}</span>
+            <div class="preview-block-header">
+              <div class="collapse-title">
+                <el-icon class="collapse-icon"><Grid /></el-icon>
+                <span class="collapse-text">板块 {{ index + 1 }}</span>
+                <el-tag size="small" type="info">{{ part.elType || "section" }}</el-tag>
+              </div>
               <el-button
                 v-if="isAdmin"
-                link
                 type="primary"
                 size="small"
-                @click="openUploadDialog(part.id)"
+                plain
+                @click="openUploadDialog(part.id, index)"
               >
                 <el-icon><Upload /></el-icon>
                 上传
               </el-button>
             </div>
-            <img
-              v-if="getModuleImage(part.id)"
-              :src="getModuleImage(part.id).file_url"
-              alt="module picture"
-              class="preview-image"
-            />
-            <el-empty v-else description="未上传截图" image-size="80" />
+            <div class="preview-block-body">
+              <img
+                v-if="getModuleImage(part.id)"
+                :src="getModuleImage(part.id).file_url"
+                alt="截图预览"
+                class="preview-image"
+              />
+              <el-empty v-else description="未上传截图" :image-size="80" />
+            </div>
           </div>
         </div>
       </div>
@@ -85,46 +83,132 @@
   </div>
 
   <!-- 上传图片弹窗 -->
-  <el-dialog v-model="dialogVisible" title="图片上传" width="800">
-    <div v-loading="uploading" class="upload-dialog-content">
-      <el-upload drag action="#" :before-upload="handleBeforeUpload">
-        <el-icon class="el-icon--upload">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-            <path fill="currentColor"
-              d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.87 239.87 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6z">
-            </path>
-          </svg>
-        </el-icon>
-        <div class="el-upload__text">拖动文件或<em>点击上传</em></div>
-        <template #tip>
-          <div class="el-upload__tip">jpg/png/webp 图片，大小不超过 20MB</div>
-        </template>
-      </el-upload>
+  <el-dialog v-model="dialogVisible" title="图片上传" width="900">
+    <div v-loading="uploading || mediaLoading" class="upload-dialog-content">
+      <el-tabs v-model="uploadTab" class="upload-tabs">
+        <!-- 本地上传 -->
+        <el-tab-pane label="本地上传" name="upload">
+          <el-upload drag action="#" :before-upload="handleBeforeUpload">
+            <el-icon class="el-icon--upload">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+                <path fill="currentColor"
+                  d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.87 239.87 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6z">
+                </path>
+              </svg>
+            </el-icon>
+            <div class="el-upload__text">拖动文件或<em>点击上传</em></div>
+            <template #tip>
+              <div class="el-upload__tip">jpg/png/webp 图片，大小不超过 20MB</div>
+            </template>
+          </el-upload>
+        </el-tab-pane>
+
+        <!-- 媒体库 -->
+        <el-tab-pane label="媒体库" name="library">
+          <div class="media-library">
+            <el-input
+              v-model="mediaKeyword"
+              placeholder="搜索素材名称"
+              clearable
+              class="media-search"
+              @input="handleMediaSearch"
+            >
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+            <div v-if="mediaList.length === 0" class="media-empty">
+              <el-empty description="媒体库为空，请先上传" />
+            </div>
+            <div v-else class="media-grid pretty-scroll">
+              <div
+                v-for="item in filteredMediaList"
+                :key="item.id"
+                class="media-item"
+                :class="{ 'is-selected': selectedMediaId === item.id }"
+                @click="selectedMediaId = item.id"
+              >
+                <el-image
+                  :src="getFileFullUrl(item.file_url || item.url)"
+                  fit="cover"
+                  class="media-thumb"
+                >
+                  <template #error>
+                    <div class="media-thumb-fallback">
+                      <el-icon><Picture /></el-icon>
+                    </div>
+                  </template>
+                </el-image>
+                <div class="media-item-name">{{ item.name || item.file_name || getFileName(item.file_url || item.url) }}</div>
+                <div v-if="selectedMediaId === item.id" class="media-item-check">
+                  <el-icon><Check /></el-icon>
+                </div>
+              </div>
+            </div>
+            <div v-if="filteredMediaList.length > 0" class="media-footer">
+              <span class="media-selected-tip">
+                {{ selectedMediaId ? '已选择 1 项' : '请选择一项' }}
+              </span>
+              <el-button
+                type="primary"
+                :disabled="!selectedMediaId"
+                @click="confirmSelectMedia"
+              >
+                确认选择
+              </el-button>
+            </div>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
     </div>
   </el-dialog>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch, computed } from "vue";
-import { Upload, Grid } from '@element-plus/icons-vue';
+import { Upload, Grid, Search, Picture, Check } from '@element-plus/icons-vue';
 import {
   getPageById,
-  upload_bind_img,
-  get_bind_img,
+  getPageConfig,
   getFileFullUrl,
+  savePageConfig,
 } from "@/apis/index.js";
+import { saveMedia, getMediaByDemo } from "@/apis/media.js";
 import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
 import { extractEditableData, updateField, mapToObject } from "@/utils/dataExtractor.js";
 
 const dialogVisible = ref(false);
 const uploading = ref(false);
+const uploadTab = ref("upload");
+const mediaLoading = ref(false);
+const mediaList = ref([]);
+const mediaKeyword = ref("");
+const selectedMediaId = ref(null);
 /** 按模块 elementor id 存截图，与 visibleParts 顺序无关、与右侧板块一一对应 */
 const moduleImages = ref({});
 let currentUploadModuleId = null;
+let currentUploadPartIndex = null;
 
 function moduleImageKey(id) {
   return id == null ? "" : String(id);
+}
+
+/** 仅当前可见板块对应的素材，一板块一条；避免 Object.values 混入历史 page key 导致多一条 */
+function buildPageMaterialsPayload() {
+  const rows = [];
+  visibleParts.value.forEach((part, idx) => {
+    const key = String(part.id);
+    const m = moduleImages.value[key];
+    if (!m?.id) return;
+    const rawUrl = m.url || m.file_url;
+    if (!rawUrl) return;
+    rows.push({
+      id: m.id,
+      demo: m.demo,
+      page: String(idx + 1),
+      url: rawUrl.startsWith("http") ? rawUrl : getFileFullUrl(rawUrl),
+    });
+  });
+  return rows;
 }
 
 function getModuleImage(id) {
@@ -149,6 +233,12 @@ const state = reactive({
 });
 
 const { websiteInfo, user } = useGlobalStore();
+
+/** 媒体库 /api/media/* 的 demo 参数须为站点 Demo 名称（如 demo67），不可传 site_id */
+function mediaDemoName() {
+  const d = websiteInfo?.demo_site;
+  return d != null && String(d).trim() !== "" ? String(d).trim() : "";
+}
 
 const isAdmin = computed(() => {
   const role = (user?.role ?? "user").toString().toLowerCase();
@@ -273,9 +363,14 @@ function extractData(data) {
 
 // ── 上传截图 ─────────────────────────────────────────────────────────────────
 
-function openUploadDialog(moduleId) {
+function openUploadDialog(moduleId, partIndex) {
   currentUploadModuleId = moduleId;
+  currentUploadPartIndex = partIndex;
+  selectedMediaId.value = null;
+  mediaKeyword.value = "";
+  uploadTab.value = "upload";
   dialogVisible.value = true;
+  loadMediaList();
 }
 
 function openUploadDialogFromHeader() {
@@ -285,6 +380,72 @@ function openUploadDialogFromHeader() {
     return;
   }
   openUploadDialog(first.id);
+}
+
+// ── 媒体库 ──────────────────────────────────────────────────────────────────
+
+async function loadMediaList() {
+  const demo = mediaDemoName();
+  if (!demo) {
+    mediaList.value = [];
+    ElMessage.warning("当前站点未配置 Demo 名称，无法加载媒体库");
+    return;
+  }
+  mediaLoading.value = true;
+  try {
+    const res = await getMediaByDemo(demo);
+    if (res?.code === 0 && Array.isArray(res.data?.list)) {
+      mediaList.value = res.data.list;
+    } else if (Array.isArray(res.data)) {
+      mediaList.value = res.data;
+    } else {
+      mediaList.value = [];
+    }
+  } finally {
+    mediaLoading.value = false;
+  }
+}
+
+const filteredMediaList = computed(() => {
+  if (!mediaKeyword.value.trim()) return mediaList.value;
+  const kw = mediaKeyword.value.trim().toLowerCase();
+  return mediaList.value.filter((item) => {
+    const name = (item.name || item.file_name || "").toLowerCase();
+    const url = (item.file_url || item.url || "").toLowerCase();
+    return name.includes(kw) || url.includes(kw);
+  });
+});
+
+let mediaSearchTimer = null;
+function handleMediaSearch() {
+  clearTimeout(mediaSearchTimer);
+  mediaSearchTimer = setTimeout(() => {
+    // 搜索已由 computed 处理
+  }, 300);
+}
+
+function getFileName(path) {
+  if (!path) return "";
+  const parts = path.split("/");
+  return parts[parts.length - 1] || "";
+}
+
+async function confirmSelectMedia() {
+  const item = mediaList.value.find((m) => m.id === selectedMediaId.value);
+  if (!item) return;
+  const site_id = websiteInfo?.site_id;
+  const mid = currentUploadModuleId;
+  const k = moduleImageKey(mid);
+  moduleImages.value[k] = {
+    id: item.id,
+    demo: item.demo ?? mediaDemoName(),
+    url: item.url || item.file_url,
+    file_url: getFileFullUrl(item.file_url || item.url),
+  };
+  const pageId = String(props.pageId);
+  await savePageConfig(site_id, pageId, buildPageMaterialsPayload());
+  ElMessage.success("已从媒体库选择图片！");
+  dialogVisible.value = false;
 }
 
 function handleBeforeUpload(file) {
@@ -301,24 +462,33 @@ const customUpload = async (file) => {
   try {
     const site_id = websiteInfo?.site_id;
     if (!site_id) { ElMessage.error("未选择站点"); return; }
+    const demo = mediaDemoName();
+    if (!demo) {
+      ElMessage.error("当前站点未配置 Demo 名称，无法上传到媒体库");
+      return;
+    }
     const mid = currentUploadModuleId;
     if (mid == null) {
       ElMessage.error("未选择模块");
       return;
     }
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("site_id", site_id);
-    fd.append("elementor_id", String(mid));
-
-    const res = await upload_bind_img(fd);
-    if (res.code === 0) {
-      const res2 = await get_bind_img(site_id, mid);
-      if (res2?.code === 0 && res2?.data?.list?.[0]) {
-        const item = res2.data.list[0];
-        const k = moduleImageKey(mid);
-        moduleImages.value[k] = { ...item, file_url: getFileFullUrl(item.file_url) };
+    const pi = currentUploadPartIndex;
+    const res = await saveMedia({ file, demo, page: String(pi + 1) });
+    if (res.code === 0 || res.success) {
+      const saved = res.data; // { id, demo, page, url }
+      if (!saved?.id) {
+        ElMessage.error("保存媒体库记录失败，未返回素材ID");
+        return;
       }
+      // 更新截图预览
+      const k = moduleImageKey(mid);
+      moduleImages.value[k] = {
+        ...saved,
+        page: String(pi + 1),
+        file_url: getFileFullUrl(saved.url || saved.file_url),
+      };
+      const pageId = String(props.pageId);
+      await savePageConfig(site_id, pageId, buildPageMaterialsPayload());
       ElMessage.success("图片上传成功！");
       dialogVisible.value = false;
     } else {
@@ -359,16 +529,23 @@ watch(
     }
 
     moduleImages.value = {};
-    if (site_id && state.originData) {
-      for (let i = 0; i < state.originData.length; i++) {
-        const mod = state.originData[i];
-        const mid = mod?.id;
-        if (mid == null) continue;
-        const res2 = await get_bind_img(site_id, mid);
-        if (res2?.code === 0 && res2?.data?.list?.[0]) {
-          const item = res2.data.list[0];
-          moduleImages.value[moduleImageKey(mid)] = { ...item, file_url: getFileFullUrl(item.file_url) };
-        }
+    if (site_id && newId) {
+      const res2 = await getPageConfig(site_id, newId);
+      if (res2?.code === 0) {
+        const { materials = [] } = res2.data || {};
+        const allowed = new Set(visibleParts.value.map((_, i) => String(i + 1)));
+        visibleParts.value.forEach((part, idx) => {
+          const key = String(part.id);
+          const found = materials.find((m) => m.page === String(idx + 1));
+          if (!found) return;
+          moduleImages.value[key] = {
+            id: found.id,
+            url: found.url,
+            demo: found.demo,
+            page: String(idx + 1),
+            file_url: getFileFullUrl(found.url),
+          };
+        });
       }
     }
 
@@ -395,75 +572,68 @@ defineExpose({
   overflow: hidden;
 }
 
-/* 左侧预览区域 */
+/* 左侧预览区域（与右侧同：editor-scroll + editor-content + section-block） */
 .preview-section {
   flex: 0 0 45%;
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
-}
-
-.preview-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
 }
 
-.preview-header {
+.section-preview-intro {
   flex-shrink: 0;
+}
+
+.preview-intro-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e4e7ed;
-  background: linear-gradient(to bottom, #ffffff, #fafbfc);
+  padding: 1.25rem 1.5rem;
+  background: #fff;
 }
 
-.preview-header h3 {
+.preview-intro-title {
   margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
   color: #303133;
 }
 
-.preview-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 1rem;
+.section-preview-block {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
 }
 
-.module-preview-item {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.module-preview-label {
+.preview-block-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0.75rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 1.25rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.preview-block-body {
+  padding: 1.5rem;
   background: #fafbfc;
-  border-bottom: 1px solid #e4e7ed;
-  font-size: 0.8rem;
-  color: #606266;
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .preview-image {
   width: 100%;
+  max-height: 320px;
   height: auto;
+  object-fit: contain;
   display: block;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* 右侧编辑区域 */
@@ -571,8 +741,110 @@ defineExpose({
 
 .upload-dialog-content {
   min-height: 300px;
+}
+
+/* 媒体库 */
+:deep(.upload-tabs) { margin-top: -8px; }
+:deep(.upload-tabs .el-tabs__header) { margin-bottom: 16px; }
+
+.media-library {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.media-search {
+  max-width: 280px;
+}
+
+.media-empty {
+  padding: 40px 0;
+  text-align: center;
+}
+
+.media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.media-item {
+  position: relative;
+  border: 2px solid #e4e7ed;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fafbfc;
+}
+
+.media-item:hover {
+  border-color: #409eff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+}
+
+.media-item.is-selected {
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+}
+
+.media-thumb {
+  width: 100%;
+  height: 90px;
+  display: block;
+}
+
+.media-thumb-fallback {
+  width: 100%;
+  height: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #c0c4cc;
+  font-size: 24px;
+  background: #f1f2f4;
+}
+
+.media-item-name {
+  font-size: 0.7rem;
+  color: #606266;
+  padding: 4px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  background: #fff;
+  border-top: 1px solid #e4e7ed;
+}
+
+.media-item-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: #409eff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+}
+
+.media-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid #ebeef5;
+}
+
+.media-selected-tip {
+  font-size: 0.875rem;
+  color: #909399;
 }
 </style>

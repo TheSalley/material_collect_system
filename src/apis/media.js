@@ -18,7 +18,7 @@ export const getMediaByDemo = async (demo) => {
 /**
  * 管理员上传素材
  * POST /api/media/save
- * body: { file, demo, page }
+ * body: FormData { file, demo, page }
  */
 export const saveMedia = async ({ file, demo, page }) => {
   const fd = new FormData();

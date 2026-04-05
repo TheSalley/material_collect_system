@@ -41,6 +41,42 @@ export const getFileFullUrl = (path) => {
   return path.startsWith("http") ? path : config.baseUrl + "/" + path.replace(/^\//, "");
 };
 
+/**
+ * 查询页面截图配置
+ * GET /api/page_config/get?site_id=&page_id=
+ */
+export const getPageConfig = async (site_id, page_id) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append("site_id", site_id);
+  if (page_id) queryParams.append("page_id", page_id);
+  const url = config.baseUrl + "/api/page_config/get?" + queryParams.toString();
+  return await fetchWithAuth(url, {
+    method: "GET",
+    headers: getAuthHeaders(false),
+  });
+};
+
+/**
+ * 保存页面截图配置
+ * POST /api/page_config/save_materials
+ * body: { site_id, data: { [page_id]: [...] } }
+ */
+export const savePageConfig = async (site_id, pageId, materialsData = []) => {
+  const payload = {
+    site_id,
+    data: {
+      [pageId]: materialsData,
+    },
+  };
+  const headers = getAuthHeaders(false);
+  headers["Content-Type"] = "application/json";
+  return await fetchWithAuth(config.baseUrl + "/api/page_config/save_materials", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+};
+
 // 向后兼容的别名
 export const upload_bind_img = uploadFile;
 export const get_bind_img = (site_id, elementor_id, page_id, component_id) => {

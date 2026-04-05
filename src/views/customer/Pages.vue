@@ -68,7 +68,7 @@
             <el-button
               type="success"
               :icon="Sort"
-              :loading="translating"
+              :loading="isTranslating"
               @click="toggleTranslate"
               size="default"
             >

@@ -287,7 +287,7 @@
   </div>
 </template>
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue";
+import { ref, reactive, onMounted, computed, watch } from "vue";
 import { getPages, getUserList, getPagePermissions, setPagePermission } from "@/apis/index.js";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
@@ -303,8 +303,12 @@ import {
 
 const { user } = useGlobalStore();
 
-// 二级 Tab：site / pages / news / product
-const activeSubTab = ref("pages");
+// 二级 Tab：site / pages / news / product（页面返回时恢复上次 tab，避免总跳回页面设置）
+const activeSubTab = ref(sessionStorage.getItem("detail_activeSubTab") || "pages");
+
+watch(activeSubTab, (val) => {
+  sessionStorage.setItem("detail_activeSubTab", val);
+});
 
 let pageList = reactive([]);
 const router = useRouter();
