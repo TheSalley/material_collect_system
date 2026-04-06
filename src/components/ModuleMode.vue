@@ -66,6 +66,7 @@
                     v-if="part?.id"
                     :original-node="part"
                     :editable-map="state.editableMap"
+                    :section-index="index"
                     @update:field="handleFieldUpdate"
                   />
                 </div>
@@ -163,13 +164,15 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch, computed } from "vue";
+import { ref, reactive, onMounted, nextTick, watch, computed, provide } from "vue";
 import { Upload, Grid, Search, Picture, Check } from '@element-plus/icons-vue';
+import { ElLoading, ElMessage } from "element-plus";
 import {
   getPageById,
   getPageConfig,
   getFileFullUrl,
   savePageConfig,
+  savePageSizes,
 } from "@/apis/index.js";
 import { saveMedia, getMediaByDemo } from "@/apis/media.js";
 import DataExtractor from "./DataExtractor.vue";
@@ -183,6 +186,10 @@ const mediaLoading = ref(false);
 const mediaList = ref([]);
 const mediaKeyword = ref("");
 const selectedMediaId = ref(null);
+/** 与左侧截图板块同序：每板块 { width, height }，供右侧上传校验与保存 save_sizes */
+const sectionSizes = ref([]);
+provide("sectionSizes", sectionSizes);
+
 /** 按模块 elementor id 存截图，与 visibleParts 顺序无关、与右侧板块一一对应 */
 const moduleImages = ref({});
 let currentUploadModuleId = null;
@@ -209,6 +216,40 @@ function buildPageMaterialsPayload() {
     });
   });
   return rows;
+}
+
+/** 输出与 visibleParts 等长的尺寸数组，供 POST /api/page_config/save_sizes */
+function buildPageSizesPayload() {
+  return visibleParts.value.map((_, idx) => {
+    const s = sectionSizes.value[idx] || {};
+    const w = Number(s.width);
+    const h = Number(s.height);
+    const out = {};
+    if (!Number.isNaN(w) && w > 0) out.width = Math.round(w);
+    if (!Number.isNaN(h) && h > 0) out.height = Math.round(h);
+    return out;
+  });
+}
+
+async function saveSectionSizes() {
+  const site_id = websiteInfo?.site_id;
+  if (!site_id || !props.pageId) {
+    ElMessage.warning("缺少站点或页面信息");
+    return;
+  }
+  const loadingInstance = ElLoading.service({ fullscreen: true, text: "正在保存尺寸..." });
+  try {
+    const res = await savePageSizes(site_id, String(props.pageId), buildPageSizesPayload());
+    if (res?.code === 0) {
+      ElMessage.success(res.message || "尺寸保存成功");
+    } else {
+      ElMessage.error(res?.message || "尺寸保存失败");
+    }
+  } catch (e) {
+    ElMessage.error("尺寸保存失败：" + (e?.message || ""));
+  } finally {
+    loadingInstance.close();
+  }
 }
 
 function getModuleImage(id) {
@@ -529,11 +570,22 @@ watch(
     }
 
     moduleImages.value = {};
+    sectionSizes.value = [];
     if (site_id && newId) {
       const res2 = await getPageConfig(site_id, newId);
       if (res2?.code === 0) {
-        const { materials = [] } = res2.data || {};
-        const allowed = new Set(visibleParts.value.map((_, i) => String(i + 1)));
+        const { materials = [], sizes = [] } = res2.data || {};
+        const n = visibleParts.value.length;
+        sectionSizes.value = Array.from({ length: n }, (_, idx) => {
+          const j = materials.findIndex((m) => String(m.page) === String(idx + 1));
+          const raw = j >= 0 && sizes[j] != null ? sizes[j] : sizes[idx];
+          const o = raw && typeof raw === "object" ? raw : {};
+          let w = o.width != null ? Number(o.width) : null;
+          let h = o.height != null ? Number(o.height) : null;
+          if (w != null && Number.isNaN(w)) w = null;
+          if (h != null && Number.isNaN(h)) h = null;
+          return { width: w, height: h };
+        });
         visibleParts.value.forEach((part, idx) => {
           const key = String(part.id);
           const found = materials.find((m) => m.page === String(idx + 1));
@@ -558,6 +610,7 @@ defineExpose({
   state,
   getFinalData,
   applyBulkFieldUpdates,
+  saveSectionSizes,
 });
 </script>
 

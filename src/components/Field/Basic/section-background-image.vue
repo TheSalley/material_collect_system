@@ -5,6 +5,29 @@
       背景图
     </label>
 
+    <div v-if="hasSizeEditor" class="size-config-row">
+      <span class="hint-line size-config-label">截图目标尺寸（板块 {{ sectionIndex + 1 }}，与左侧截图一致）</span>
+      <div class="size-inputs">
+        <el-input-number
+          v-model="sectionSizes[sectionIndex].width"
+          :min="1"
+          :max="16384"
+          controls-position="right"
+          placeholder="宽"
+        />
+        <span class="size-x">×</span>
+        <el-input-number
+          v-model="sectionSizes[sectionIndex].height"
+          :min="1"
+          :max="16384"
+          controls-position="right"
+          placeholder="高"
+        />
+        <span class="size-unit">px</span>
+      </div>
+      <p v-if="configuredDimsLabel" class="hint-line">{{ configuredDimsLabel }}</p>
+    </div>
+
     <!-- 主背景图：仅当数据里已有主背景时才渲染（与 WP 一致，不在此凭空补空块） -->
     <div
       v-if="hasMainBg"
@@ -80,14 +103,15 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, inject } from "vue";
 import { PictureFilled, Upload } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
 import {
-  validateImageFileWithDimensions,
   uploadImageFile,
   IMAGE_UPLOAD_DEFAULTS,
   buildImageUploadTip,
   getImageNaturalSizeFromUrl,
+  getImageNaturalSizeFromFile,
   formatNaturalSizeLabel,
 } from "@/utils/imageUpload";
 import { getFileFullUrl } from "@/apis";
@@ -98,6 +122,30 @@ const props = defineProps({
   nodeId: { type: String, required: true },
   fields: { type: Object, required: true },
   onUpdate: { type: Function, required: true },
+  /** 与 ModuleMode 左侧板块 index 对齐（0-based） */
+  sectionIndex: { type: Number, default: undefined },
+});
+
+const sectionSizes = inject("sectionSizes", null);
+const hasSizeEditor = computed(
+  () =>
+    sectionSizes != null &&
+    props.sectionIndex != null &&
+    props.sectionIndex >= 0 &&
+    sectionSizes.value[props.sectionIndex]
+);
+const configuredDims = computed(() => {
+  if (!hasSizeEditor.value) return null;
+  const s = sectionSizes.value[props.sectionIndex];
+  const w = Number(s.width);
+  const h = Number(s.height);
+  if (!Number.isNaN(w) && !Number.isNaN(h) && w > 0 && h > 0) return { width: w, height: h };
+  return null;
+});
+const configuredDimsLabel = computed(() => {
+  const d = configuredDims.value;
+  if (!d) return "";
+  return `上传建议尺寸 ${d.width}×${d.height}px（可在「保存尺寸」中记录当前值）`;
 });
 
 function pickRawImageUrl(val) {
@@ -255,11 +303,15 @@ watch(
 
 async function handleBeforeUpload(file, fieldKey) {
   const sizeInfo = fieldKey === "background_overlay_image" ? overlaySizeInfo : bgSizeInfo;
-  const opts = sizeInfo.value.dims
-    ? { strictMatch: true, refDimensions: sizeInfo.value.dims }
-    : {};
-  const ok = await validateImageFileWithDimensions(file, opts);
-  if (!ok) return false;
+  const refDim = configuredDims.value || sizeInfo.value.dims;
+  if (refDim) {
+    const dim = await getImageNaturalSizeFromFile(file);
+    if (dim && (dim.width !== refDim.width || dim.height !== refDim.height)) {
+      ElMessage.warning(
+        `图片尺寸 ${dim.width}×${dim.height}px 与建议尺寸 ${refDim.width}×${refDim.height}px 不一致，但仍将上传`
+      );
+    }
+  }
 
   const uploadingRef = fieldKey === "background_overlay_image" ? overlayUploading : bgUploading;
   uploadingRef.value = true;
@@ -384,5 +436,37 @@ async function handleBeforeUpload(file, fieldKey) {
 
 .resolve-failed {
   color: var(--el-color-warning);
+}
+
+.size-config-row {
+  margin-top: 0.5rem;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--el-fill-color-light);
+  border: 1px dashed var(--el-border-color);
+}
+
+.size-config-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.75rem;
+  color: #606266;
+}
+
+.size-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.size-inputs .el-input-number {
+  width: 120px;
+}
+
+.size-x,
+.size-unit {
+  font-size: 0.85rem;
+  color: #909399;
 }
 </style>

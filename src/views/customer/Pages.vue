@@ -76,7 +76,15 @@
             </el-button>
           </div>
 
-          <!-- 保存按钮 -->
+          <!-- 保存尺寸按钮（仅 admin 可见） -->
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            @click="handleSaveSizes"
+            :loading="isSavingSizes"
+            size="large"
+          >
+            保存尺寸
+          </el-button>
           <el-button 
             type="primary" 
             :icon="Check"
@@ -117,6 +125,7 @@
 import { computed, reactive, ref, watch, nextTick, provide } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { updatePageById, translate } from "@/apis/index";
+import { ElLoading, ElMessage } from "element-plus";
 import ModuleMode from "@/components/ModuleMode.vue";
 import PageMode from "@/components/PageMode.vue";
 import { useRoute, useRouter } from "vue-router";
@@ -140,6 +149,7 @@ const translateConfig = reactive({
   targetLanguage: "fr",
 });
 const isTranslating = ref(false);
+const isSavingSizes = ref(false);
 provide("translateConfig", translateConfig);
 provide("isTranslate", isTranslating);
 
@@ -324,6 +334,20 @@ function updateDataWithTranslation(data, translationMap) {
     if (item.elements && item.elements.length > 0) {
       updateDataWithTranslation(item.elements, translationMap);
     }
+  }
+}
+
+async function handleSaveSizes() {
+  const fn = ModuleModeNode.value?.saveSectionSizes;
+  if (typeof fn !== "function") {
+    ElMessage({ message: "当前页面不支持保存尺寸", type: "warning" });
+    return;
+  }
+  isSavingSizes.value = true;
+  try {
+    await fn();
+  } finally {
+    isSavingSizes.value = false;
   }
 }
 

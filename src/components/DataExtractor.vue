@@ -5,6 +5,7 @@
     v-if="editableNode && getFieldComponent(editableNode?.widgetType)" 
     :node-id="editableNode.id" 
     :fields="editableNode.fields"
+    :section-index="sectionIndex"
     :on-update="handleFieldUpdate" />
 
   <!-- 递归渲染子节点 -->
@@ -15,6 +16,7 @@
         :key="childNode.id"
         :original-node="childNode"
         :editable-map="editableMap"
+        :section-index="sectionIndex"
         @update:field="emit('update:field', $event)" />
     </div>
   </template>
@@ -60,6 +62,11 @@ const props = defineProps({
   editableMap: {
     type: Map,
     required: true,
+  },
+  /** 顶层板块序号（0-based），与左侧截图板块 index 对齐；子树透传 */
+  sectionIndex: {
+    type: Number,
+    default: undefined,
   },
 });
 
