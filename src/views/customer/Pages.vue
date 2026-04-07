@@ -308,8 +308,7 @@ async function toggleTranslate() {
 
 // 同步 DOM 翻译结果到 Vue 的 pageData（旧版：用 translationMap 精确替换）
 async function syncDomToVueData(translationMap) {
-  const isModuleMode = websiteInfo.mode === 1;
-  const targetNode = isModuleMode ? ModuleModeNode.value : PageModeNode.value;
+  const targetNode = ModuleModeNode.value ?? PageModeNode.value;
   if (!targetNode?.state?.pageData && !targetNode?.state?.originData) return;
   await nextTick();
   const data = targetNode.state.pageData ?? targetNode.state.originData;
@@ -354,9 +353,8 @@ async function handleSaveSizes() {
 async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
-    // 根据当前模式取对应组件的数据
-    const isModuleMode = websiteInfo.mode === 1;
-    const targetNode = isModuleMode ? ModuleModeNode.value : PageModeNode.value;
+    // ModuleModeNode 在模板中实际挂载（PageMode 被注释），优先使用
+    const targetNode = ModuleModeNode.value ?? PageModeNode.value;
     const finalData = targetNode?.getFinalData?.();
 
     if (!finalData) {

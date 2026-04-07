@@ -26,6 +26,15 @@ const EDITABLE_FIELDS_MAP = {
     'ekit_icon_box_description_text', 
     'ekit_icon_box_btn_text'
   ],
+  'jkit_icon_box': [
+    'sg_icon_text',
+    'sg_icon_description',
+    'sg_readmore_button_label',
+    'sg_badge_text'
+  ],
+  'jkit_testimonials': [
+    'sg_testimonials_list'
+  ],
   'elementskit-image-box': [
     'ekit_image_box_title_text', 
     'ekit_image_box_description_text', 

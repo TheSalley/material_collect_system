@@ -89,6 +89,7 @@ import {
 import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
 import { extractEditableData, syncDataToOriginal, updateField, mapToObject } from "@/utils/dataExtractor.js";
+import { normalizeElementorRoots, pickFieldModule } from "@/utils/elementorFieldUi.js";
 
 const dialogVisible = ref(false);
 const uploading = ref(false);
@@ -125,16 +126,7 @@ function hasEditableInTree(node, editableMap) {
 // 判断某个 widgetType 是否有对应的 Field 组件可渲染
 const fieldModules = import.meta.glob("/src/components/Field/**/*.vue", { eager: true });
 function hasFieldComponent(widgetType) {
-  if (!widgetType) return false;
-  const possiblePaths = [
-    `/src/components/Field/${widgetType}.vue`,
-    `/src/components/Field/Basic/${widgetType}.vue`,
-    `/src/components/Field/General/${widgetType}.vue`,
-    `/src/components/Field/Jkit/${widgetType}.vue`,
-    `/src/components/Field/Pro/${widgetType}.vue`,
-    `/src/components/Field/Other/${widgetType}.vue`,
-  ];
-  return possiblePaths.some((p) => Boolean(fieldModules[p]));
+  return pickFieldModule(fieldModules, widgetType) != null;
 }
 
 function hasRenderableEditableInTree(node, editableMap) {
@@ -155,15 +147,12 @@ function hasRenderableEditableInTree(node, editableMap) {
 }
 
 const visibleParts = computed(() => {
-  const parts = state.originData;
+  const parts = normalizeElementorRoots(state.originData);
   const editableMap = state.editableMap;
-  if (!Array.isArray(parts) || !editableMap) return [];
-  return parts.filter((part) => {
-    // 板块本身没有任何元素时直接隐藏
-    if (!part?.elements || part.elements.length === 0) return false;
-    // 板块下必须至少存在一个“可渲染”的可编辑组件，否则隐藏（避免出现空白板块）
-    return hasRenderableEditableInTree(part, editableMap);
-  });
+  if (!editableMap) return [];
+  return parts.filter(
+    (part) => part && hasRenderableEditableInTree(part, editableMap)
+  );
 });
 
 const { websiteInfo, user } = useGlobalStore();

@@ -178,6 +178,7 @@ import { saveMedia, getMediaByDemo } from "@/apis/media.js";
 import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
 import { extractEditableData, updateField, mapToObject } from "@/utils/dataExtractor.js";
+import { normalizeElementorRoots, pickFieldModule } from "@/utils/elementorFieldUi.js";
 
 const dialogVisible = ref(false);
 const uploading = ref(false);
@@ -290,16 +291,7 @@ const isAdmin = computed(() => {
 
 const fieldModules = import.meta.glob("/src/components/Field/**/*.vue", { eager: true });
 function hasFieldComponent(widgetType) {
-  if (!widgetType) return false;
-  const possiblePaths = [
-    `/src/components/Field/${widgetType}.vue`,
-    `/src/components/Field/Basic/${widgetType}.vue`,
-    `/src/components/Field/General/${widgetType}.vue`,
-    `/src/components/Field/Jkit/${widgetType}.vue`,
-    `/src/components/Field/Pro/${widgetType}.vue`,
-    `/src/components/Field/Other/${widgetType}.vue`,
-  ];
-  return possiblePaths.some((p) => Boolean(fieldModules[p]));
+  return pickFieldModule(fieldModules, widgetType) != null;
 }
 
 function hasRenderableEditableInTree(node, editableMap) {
@@ -318,13 +310,12 @@ function hasRenderableEditableInTree(node, editableMap) {
 }
 
 const visibleParts = computed(() => {
-  const parts = state.originData;
+  const parts = normalizeElementorRoots(state.originData);
   const editableMap = state.editableMap;
-  if (!Array.isArray(parts) || !editableMap) return [];
-  return parts.filter((part) => {
-    if (!part?.elements || part.elements.length === 0) return false;
-    return hasRenderableEditableInTree(part, editableMap);
-  });
+  if (!editableMap) return [];
+  return parts.filter(
+    (part) => part && hasRenderableEditableInTree(part, editableMap)
+  );
 });
 
 onMounted(async () => {});
@@ -389,6 +380,13 @@ function applyBulkFieldUpdates(updates = []) {
 // ── 获取最终保存数据 ─────────────────────────────────────────────────────────
 
 function getFinalData() {
+  if (!state.pageData) {
+    console.warn('[ModuleMode] getFinalData: pageData 为 null', {
+      moduleId: state.moduleId,
+      meta_id: state.meta_id,
+      editableMapSize: state.editableMap?.size,
+    });
+  }
   return state.pageData;
 }
 

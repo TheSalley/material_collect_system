@@ -1,23 +1,8 @@
 <template>
     <div class="field-item">
-        <!-- 图标头部 -->
+        <!-- 图标标题 -->
         <div class="mb-4">
-            <label class="field-label">
-                <el-icon><MagicStick /></el-icon>
-                图标类名
-            </label>
-            <el-input
-                v-model="fields.sg_icon_header"
-                @input="onUpdate('sg_icon_header', fields.sg_icon_header)"
-                placeholder="如: jki jki-planting-light" />
-        </div>
-
-        <!-- 图标文本 -->
-        <div class="mb-4">
-            <label class="field-label">
-                <el-icon><ChatDotSquare /></el-icon>
-                图标标题
-            </label>
+            <label class="field-label">标题</label>
             <el-input
                 v-model="fields.sg_icon_text"
                 @input="onUpdate('sg_icon_text', fields.sg_icon_text)"
@@ -26,10 +11,7 @@
 
         <!-- 图标描述 -->
         <div class="mb-4">
-            <label class="field-label">
-                <el-icon><Document /></el-icon>
-                图标描述
-            </label>
+            <label class="field-label">描述</label>
             <el-input
                 v-model="fields.sg_icon_description"
                 show-word-limit
@@ -40,7 +22,7 @@
         </div>
 
         <!-- 阅读更多按钮文本 -->
-        <div class="mb-4">
+        <div class="mb-4" v-if="settings?.sg_readmore_enable_button === 'yes'">
             <label class="field-label">
                 <el-icon><Link /></el-icon>
                 按钮文本
@@ -52,7 +34,7 @@
         </div>
 
         <!-- 徽章文本 -->
-        <div class="mb-4">
+        <div class="mb-4" v-if="settings?.sg_badge_show === 'yes'">
             <label class="field-label">
                 <el-icon><PriceTag /></el-icon>
                 徽章文本
@@ -66,21 +48,26 @@
 </template>
 
 <script setup>
-import { MagicStick, ChatDotSquare, Document, Link, PriceTag } from '@element-plus/icons-vue';
+import { ChatDotSquare, Document, Link, PriceTag } from "@element-plus/icons-vue";
 
 const props = defineProps({
     nodeId: {
         type: String,
-        required: true
+        required: true,
     },
     fields: {
         type: Object,
-        required: true
+        required: true,
+    },
+    /** 原始节点 settings（含控制字段如 sg_readmore_enable_button） */
+    settings: {
+        type: Object,
+        default: () => ({}),
     },
     onUpdate: {
         type: Function,
-        required: true
-    }
+        required: true,
+    },
 });
 </script>
 
