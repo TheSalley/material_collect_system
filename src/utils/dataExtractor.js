@@ -35,6 +35,23 @@ const EDITABLE_FIELDS_MAP = {
   'jkit_testimonials': [
     'sg_testimonials_list'
   ],
+  'jkit_fun_fact': [
+    'sg_content_number',
+    'sg_content_number_prefix',
+    'sg_content_number_suffix',
+    'sg_content_super',
+    'sg_content_title'
+  ],
+  'jkit_team': [
+    'sg_member_image',
+    'sg_member_name',
+    'sg_member_description'
+  ],
+  'jkit_heading': [
+    'sg_title_text',
+    'sg_subtitle_heading',
+    'sg_description'
+  ],
   'elementskit-image-box': [
     'ekit_image_box_title_text', 
     'ekit_image_box_description_text', 
