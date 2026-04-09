@@ -5,29 +5,6 @@
       背景图
     </label>
 
-    <div v-if="hasSizeEditor" class="size-config-row">
-      <span class="hint-line size-config-label">截图目标尺寸（板块 {{ sectionIndex + 1 }}，与左侧截图一致）</span>
-      <div class="size-inputs">
-        <el-input-number
-          v-model="sectionSizes[sectionIndex].width"
-          :min="1"
-          :max="16384"
-          controls-position="right"
-          placeholder="宽"
-        />
-        <span class="size-x">×</span>
-        <el-input-number
-          v-model="sectionSizes[sectionIndex].height"
-          :min="1"
-          :max="16384"
-          controls-position="right"
-          placeholder="高"
-        />
-        <span class="size-unit">px</span>
-      </div>
-      <p v-if="configuredDimsLabel" class="hint-line">{{ configuredDimsLabel }}</p>
-    </div>
-
     <!-- 主背景图：仅当数据里已有主背景时才渲染（与 WP 一致，不在此凭空补空块） -->
     <div
       v-if="hasMainBg"
@@ -61,6 +38,34 @@
       <div class="field-upload-hints">
         <p v-if="bgSizeInfo.label" class="hint-line">{{ bgSizeInfo.label }}</p>
         <p class="hint-line">{{ uploadTip }}</p>
+        <div v-if="hasSizeEditor" class="hint-line target-size-hint">
+          <span class="target-size-hint__label">截图目标尺寸</span>
+          <template v-if="configuredDims && !isAdmin">
+            <span class="target-size-hint__sep">：</span>
+            <span class="target-size-hint__value">{{ configuredDims.width }} × {{ configuredDims.height }} px</span>
+          </template>
+          <template v-else-if="isAdmin">
+            <span class="target-size-hint__sep">：</span>
+            <el-input-number
+              v-model="sectionSizes[sectionIndex].width"
+              :min="1"
+              :max="16384"
+              controls-position="right"
+              size="small"
+              class="target-size-hint__input"
+            />
+            <span class="target-size-hint__x">×</span>
+            <el-input-number
+              v-model="sectionSizes[sectionIndex].height"
+              :min="1"
+              :max="16384"
+              controls-position="right"
+              size="small"
+              class="target-size-hint__input"
+            />
+            <span class="target-size-hint__unit">px</span>
+          </template>
+        </div>
       </div>
     </div>
 
@@ -97,6 +102,34 @@
       <div class="field-upload-hints">
         <p v-if="overlaySizeInfo.label" class="hint-line">{{ overlaySizeInfo.label }}</p>
         <p class="hint-line">{{ uploadTip }}</p>
+        <div v-if="hasSizeEditor" class="hint-line target-size-hint">
+          <span class="target-size-hint__label">截图目标尺寸</span>
+          <template v-if="configuredDims && !isAdmin">
+            <span class="target-size-hint__sep">：</span>
+            <span class="target-size-hint__value">{{ configuredDims.width }} × {{ configuredDims.height }} px</span>
+          </template>
+          <template v-else-if="isAdmin">
+            <span class="target-size-hint__sep">：</span>
+            <el-input-number
+              v-model="sectionSizes[sectionIndex].width"
+              :min="1"
+              :max="16384"
+              controls-position="right"
+              size="small"
+              class="target-size-hint__input"
+            />
+            <span class="target-size-hint__x">×</span>
+            <el-input-number
+              v-model="sectionSizes[sectionIndex].height"
+              :min="1"
+              :max="16384"
+              controls-position="right"
+              size="small"
+              class="target-size-hint__input"
+            />
+            <span class="target-size-hint__unit">px</span>
+          </template>
+        </div>
       </div>
     </div>
   </div>
@@ -142,11 +175,6 @@ const configuredDims = computed(() => {
   if (!Number.isNaN(w) && !Number.isNaN(h) && w > 0 && h > 0) return { width: w, height: h };
   return null;
 });
-const configuredDimsLabel = computed(() => {
-  const d = configuredDims.value;
-  if (!d) return "";
-  return `上传建议尺寸 ${d.width}×${d.height}px（可在「保存尺寸」中记录当前值）`;
-});
 
 function pickRawImageUrl(val) {
   if (val == null) return "";
@@ -187,6 +215,10 @@ function toDisplayUrl(raw) {
 }
 
 const globalStore = useGlobalStore();
+const isAdmin = computed(() => {
+  const role = (globalStore.user?.role ?? "user").toString().toLowerCase();
+  return role === "admin";
+});
 function useMaybeResolveImage(fieldKey) {
   const resolvedUrl = ref("");
   const resolveLoading = ref(false);
@@ -423,6 +455,51 @@ async function handleBeforeUpload(file, fieldKey) {
   margin-bottom: 0;
 }
 
+/* 截图目标尺寸：内嵌在同一行提示里 */
+.target-size-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: linear-gradient(
+    135deg,
+    var(--el-color-primary-light-9) 0%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+  border: 1px solid var(--el-color-primary-light-5);
+}
+
+.target-size-hint__label {
+  font-weight: 600;
+  color: var(--el-color-primary);
+  font-size: 0.75rem;
+}
+
+.target-size-hint__sep {
+  color: #606266;
+  font-size: 0.75rem;
+}
+
+.target-size-hint__value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--el-color-primary-dark-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.target-size-hint__input {
+  width: 80px;
+}
+
+.target-size-hint__x,
+.target-size-hint__unit {
+  font-size: 0.75rem;
+  color: #909399;
+}
+
 .resolve-loading,
 .resolve-failed {
   margin: 0;
@@ -446,27 +523,48 @@ async function handleBeforeUpload(file, fieldKey) {
   border: 1px dashed var(--el-border-color);
 }
 
-.size-config-label {
-  display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.75rem;
-  color: #606266;
-}
-
-.size-inputs {
+/* 截图目标尺寸：内嵌在同一行提示里 */
+.target-size-hint {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: linear-gradient(
+    135deg,
+    var(--el-color-primary-light-9) 0%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+  border: 1px solid var(--el-color-primary-light-5);
 }
 
-.size-inputs .el-input-number {
-  width: 120px;
+.target-size-hint__label {
+  font-weight: 600;
+  color: var(--el-color-primary);
+  font-size: 0.75rem;
 }
 
-.size-x,
-.size-unit {
-  font-size: 0.85rem;
+.target-size-hint__sep {
+  color: #606266;
+  font-size: 0.75rem;
+}
+
+.target-size-hint__value {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--el-color-primary-dark-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.target-size-hint__input {
+  width: 80px;
+}
+
+.target-size-hint__x,
+.target-size-hint__unit {
+  font-size: 0.75rem;
   color: #909399;
 }
 </style>

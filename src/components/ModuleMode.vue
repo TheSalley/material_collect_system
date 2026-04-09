@@ -8,19 +8,20 @@
             v-for="(part, index) in visibleParts"
             :key="part.id"
             class="section-block section-preview-block"
+            :class="{ 'is-active-part': activePartIndex === index }"
+            @click="handlePreviewClick(index)"
           >
             <div class="preview-block-header">
               <div class="collapse-title">
                 <el-icon class="collapse-icon"><Grid /></el-icon>
                 <span class="collapse-text">板块 {{ index + 1 }}</span>
-                <el-tag size="small" type="info">{{ part.elType || "section" }}</el-tag>
               </div>
               <el-button
                 v-if="isAdmin"
                 type="primary"
                 size="small"
                 plain
-                @click="openUploadDialog(part.id, index)"
+                @click.stop="openUploadDialog(part.id, index)"
               >
                 <el-icon><Upload /></el-icon>
                 上传
@@ -40,40 +41,43 @@
       </div>
     </div>
 
-    <!-- 右侧：编辑区（独立滚动） -->
+    <!-- 右侧：编辑区（独立滚动）；单个手风琴，避免「每板块一个 collapse」导致展开不同步 -->
     <div class="editor-section">
       <div
         v-if="state?.moduleId && state?.editableMap"
+        ref="editorScrollRef"
         class="editor-scroll pretty-scroll"
       >
-        <div class="editor-content">
-          <div
+        <el-collapse
+          v-model="activeCollapseName"
+          accordion
+          class="module-parts-collapse"
+        >
+          <el-collapse-item
             v-for="(part, index) in visibleParts"
             :key="part.id"
-            class="section-block"
+            :name="`part-${index}`"
+            class="module-section-card"
+            :class="{ 'is-active-part': activePartIndex === index }"
           >
-            <el-collapse accordion>
-              <el-collapse-item :name="`part-${index}`">
-                <template #title>
-                  <div class="collapse-title">
-                    <el-icon class="collapse-icon"><Grid /></el-icon>
-                    <span class="collapse-text">板块 {{ index + 1 }}</span>
-                    <el-tag size="small" type="info">{{ part.elType || 'section' }}</el-tag>
-                  </div>
-                </template>
-                <div class="collapse-content">
-                  <DataExtractor
-                    v-if="part?.id"
-                    :original-node="part"
-                    :editable-map="state.editableMap"
-                    :section-index="index"
-                    @update:field="handleFieldUpdate"
-                  />
-                </div>
-              </el-collapse-item>
-            </el-collapse>
-          </div>
-        </div>
+            <template #title>
+              <div class="collapse-title">
+                <el-icon class="collapse-icon"><Grid /></el-icon>
+                <span class="collapse-text">板块 {{ index + 1 }}</span>
+                <el-tag size="small" type="info">{{ part.elType || 'section' }}</el-tag>
+              </div>
+            </template>
+            <div class="collapse-content">
+              <DataExtractor
+                v-if="part?.id"
+                :original-node="part"
+                :editable-map="state.editableMap"
+                :section-index="index"
+                @update:field="handleFieldUpdate"
+              />
+            </div>
+          </el-collapse-item>
+        </el-collapse>
       </div>
       <div v-else class="editor-scroll pretty-scroll empty-state-wrap">
         <div class="empty-state">
@@ -89,6 +93,11 @@
       <el-tabs v-model="uploadTab" class="upload-tabs">
         <!-- 本地上传 -->
         <el-tab-pane label="本地上传" name="upload">
+          <el-form label-position="top">
+            <el-form-item label="页面标识">
+              <el-input v-model="uploadPageName" placeholder="手动填写页面标识" />
+            </el-form-item>
+          </el-form>
           <el-upload drag action="#" :before-upload="handleBeforeUpload">
             <el-icon class="el-icon--upload">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
@@ -186,7 +195,27 @@ const uploadTab = ref("upload");
 const mediaLoading = ref(false);
 const mediaList = ref([]);
 const mediaKeyword = ref("");
+const uploadPageName = ref("");
 const selectedMediaId = ref(null);
+/** 同步高亮：点击左侧截图或与右侧手风琴联动 */
+const activePartIndex = ref(null);
+/** 与 el-collapse 双向同步（单源：仍以 activePartIndex 为准） */
+const activeCollapseName = computed({
+  get() {
+    const i = activePartIndex.value;
+    if (i === null || i === undefined) return undefined;
+    return `part-${i}`;
+  },
+  set(v) {
+    if (v === undefined || v === null || v === "") {
+      activePartIndex.value = null;
+      return;
+    }
+    const m = /^part-(\d+)$/.exec(String(v));
+    activePartIndex.value = m ? Number(m[1]) : null;
+  },
+});
+const editorScrollRef = ref(null);
 /** 与左侧截图板块同序：每板块 { width, height }，供右侧上传校验与保存 save_sizes */
 const sectionSizes = ref([]);
 provide("sectionSizes", sectionSizes);
@@ -200,7 +229,6 @@ function moduleImageKey(id) {
   return id == null ? "" : String(id);
 }
 
-/** 仅当前可见板块对应的素材，一板块一条；避免 Object.values 混入历史 page key 导致多一条 */
 function buildPageMaterialsPayload() {
   const rows = [];
   visibleParts.value.forEach((part, idx) => {
@@ -209,10 +237,11 @@ function buildPageMaterialsPayload() {
     if (!m?.id) return;
     const rawUrl = m.url || m.file_url;
     if (!rawUrl) return;
+    const pageValue = m.page?.trim() || "";
     rows.push({
       id: m.id,
       demo: m.demo,
-      page: String(idx + 1),
+      page: pageValue,
       url: rawUrl.startsWith("http") ? rawUrl : getFileFullUrl(rawUrl),
     });
   });
@@ -407,6 +436,7 @@ function openUploadDialog(moduleId, partIndex) {
   currentUploadPartIndex = partIndex;
   selectedMediaId.value = null;
   mediaKeyword.value = "";
+  uploadPageName.value = "";
   uploadTab.value = "upload";
   dialogVisible.value = true;
   loadMediaList();
@@ -475,16 +505,22 @@ async function confirmSelectMedia() {
   const site_id = websiteInfo?.site_id;
   const mid = currentUploadModuleId;
   const k = moduleImageKey(mid);
+  const pageName = uploadPageName.value?.trim() || item.page || "";
   moduleImages.value[k] = {
     id: item.id,
     demo: item.demo ?? mediaDemoName(),
     url: item.url || item.file_url,
+    page: pageName,
     file_url: getFileFullUrl(item.file_url || item.url),
   };
   const pageId = String(props.pageId);
   await savePageConfig(site_id, pageId, buildPageMaterialsPayload());
   ElMessage.success("已从媒体库选择图片！");
   dialogVisible.value = false;
+}
+
+function handlePreviewClick(index) {
+  activePartIndex.value = index;
 }
 
 function handleBeforeUpload(file) {
@@ -512,7 +548,8 @@ const customUpload = async (file) => {
       return;
     }
     const pi = currentUploadPartIndex;
-    const res = await saveMedia({ file, demo, page: String(pi + 1) });
+    const pageName = uploadPageName.value?.trim() || "";
+    const res = await saveMedia({ file, demo, page: pageName });
     if (res.code === 0 || res.success) {
       const saved = res.data; // { id, demo, page, url }
       if (!saved?.id) {
@@ -604,6 +641,47 @@ watch(
   { immediate: true }
 );
 
+// ── 监听高亮索引：展开后滚动（等折叠动画/layout 稳定再滚，避免错位） ────────────
+
+function scrollEditorToActivePart(index) {
+  if (index == null) return;
+  const scrollEl = editorScrollRef.value;
+  const itemEl = scrollEl?.querySelector(
+    `.module-parts-collapse > .el-collapse-item:nth-child(${index + 1})`
+  );
+  if (!scrollEl || !itemEl) return;
+  const se = scrollEl.getBoundingClientRect();
+  const ie = itemEl.getBoundingClientRect();
+  const margin = 10;
+  const outAbove = ie.top < se.top + margin;
+  const outBelow = ie.bottom > se.bottom - margin;
+  if (outAbove || outBelow) {
+    const delta = ie.top - se.top - margin;
+    scrollEl.scrollTop += delta;
+  }
+}
+
+function scheduleScrollToActivePart(index) {
+  if (index == null) return;
+  const run = () => scrollEditorToActivePart(index);
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        run();
+        setTimeout(run, 120);
+      });
+    });
+  });
+}
+
+watch(
+  () => activePartIndex.value,
+  (index) => {
+    scheduleScrollToActivePart(index);
+  },
+  { flush: "post" }
+);
+
 defineExpose({
   state,
   getFinalData,
@@ -655,6 +733,7 @@ defineExpose({
 .section-preview-block {
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .preview-block-header {
@@ -728,6 +807,15 @@ defineExpose({
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
+/* 左侧预览：左侧色条 + 浅底，避免粗边框与缩放带来的跳动 */
+.section-block.section-preview-block.is-active-part {
+  transform: none;
+  border-left: 4px solid #409eff;
+  box-shadow: 0 4px 18px rgba(64, 158, 255, 0.16);
+  background: linear-gradient(90deg, rgba(236, 245, 255, 0.75) 0%, #fff 42%);
+  transition: box-shadow 0.2s ease, background 0.2s ease;
+}
+
 .collapse-title {
   display: flex;
   align-items: center;
@@ -777,18 +865,38 @@ defineExpose({
   background: linear-gradient(180deg, #64748b 0%, #475569 100%);
 }
 
-/* 折叠面板 */
-:deep(.el-collapse) { border: none; }
-:deep(.el-collapse-item__header) {
+/* 右侧：单一手风琴 + 卡片外观 */
+:deep(.module-parts-collapse) {
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+:deep(.module-parts-collapse > .module-section-card.el-collapse-item) {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s ease;
+}
+:deep(.module-parts-collapse > .module-section-card.is-active-part) {
+  box-shadow: 0 4px 20px rgba(64, 158, 255, 0.18);
+}
+:deep(.module-parts-collapse .el-collapse-item__header) {
   padding: 1.25rem 1.5rem;
   background: white;
   border: none;
   font-weight: 500;
   height: auto;
   line-height: 1.5;
+  transition: background 0.2s ease;
 }
-:deep(.el-collapse-item__wrap) { border: none; background: #fafbfc; }
-:deep(.el-collapse-item__content) { padding: 0; }
+:deep(.module-parts-collapse > .module-section-card.is-active-part .el-collapse-item__header) {
+  background: linear-gradient(90deg, rgba(236, 245, 255, 0.95) 0%, #fff 50%);
+  box-shadow: inset 4px 0 0 #409eff;
+}
+:deep(.module-parts-collapse .el-collapse-item__wrap) { border: none; background: #fafbfc; }
+:deep(.module-parts-collapse .el-collapse-item__content) { padding: 0; }
 
 .upload-dialog-content {
   min-height: 300px;

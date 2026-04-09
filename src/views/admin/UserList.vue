@@ -380,7 +380,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch } from "vue";
-import { getUserList, updateUser, createUser, getList, deleteUser } from "@/apis/index.js";
+import { getUserList, updateUser, createUser, getSiteList, deleteUser } from "@/apis/index.js";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import { 
@@ -487,7 +487,7 @@ const formatDate = (dateString) => {
 async function fetchSiteList() {
   siteListLoading.value = true;
   try {
-    const res = await getList();
+    const res = await getSiteList();
     if (res.code === 0 && Array.isArray(res.data)) {
       siteList.value = res.data;
     } else {

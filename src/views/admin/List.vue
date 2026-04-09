@@ -229,7 +229,7 @@
 </template>
 <script setup>
 import { ref, reactive, onMounted, computed, nextTick } from "vue";
-import { getList, createSite, deleteSite } from "@/apis/index.js";
+import { getSiteList, createSite, deleteSite } from "@/apis/index.js";
 import { ElMessage, ElMessageBox } from "element-plus";
 import "element-plus/theme-chalk/el-message-box.css";
 import { useRouter } from "vue-router";
@@ -326,7 +326,7 @@ async function fetchList() {
   try {
     // 根据 API 文档，可以使用 keyword 参数进行搜索
     const params = searchValue.value ? { keyword: searchValue.value } : {};
-    const res = await getList(params);
+    const res = await getSiteList(params);
     if (res.code === 0) {
       tableData.length = 0;
       const list = res.data || [];

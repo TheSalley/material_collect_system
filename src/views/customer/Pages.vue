@@ -127,7 +127,6 @@ import { useGlobalStore } from "@/stores/global.js";
 import { updatePageById, translate } from "@/apis/index";
 import { ElLoading, ElMessage } from "element-plus";
 import ModuleMode from "@/components/ModuleMode.vue";
-import PageMode from "@/components/PageMode.vue";
 import { useRoute, useRouter } from "vue-router";
 import {
   Document, House, ArrowRight, Check, Sort
@@ -137,7 +136,6 @@ const router = useRouter();
 
 let pageData = ref(null);
 const ModuleModeNode = ref(null);
-const PageModeNode = ref(null);
 const { user, websiteInfo } = useGlobalStore();
 const route = useRoute();
 
@@ -308,7 +306,7 @@ async function toggleTranslate() {
 
 // 同步 DOM 翻译结果到 Vue 的 pageData（旧版：用 translationMap 精确替换）
 async function syncDomToVueData(translationMap) {
-  const targetNode = ModuleModeNode.value ?? PageModeNode.value;
+  const targetNode = ModuleModeNode.value;
   if (!targetNode?.state?.pageData && !targetNode?.state?.originData) return;
   await nextTick();
   const data = targetNode.state.pageData ?? targetNode.state.originData;
@@ -354,7 +352,7 @@ async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
     // ModuleModeNode 在模板中实际挂载（PageMode 被注释），优先使用
-    const targetNode = ModuleModeNode.value ?? PageModeNode.value;
+    const targetNode = ModuleModeNode.value;
     const finalData = targetNode?.getFinalData?.();
 
     if (!finalData) {

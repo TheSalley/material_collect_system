@@ -8,5 +8,5 @@ export * from "./translate";
 export * from "./media";
 
 // 导出配置和工具函数
-export { config, fetchWithAuth, getAuthHeaders } from "./config";
+export { config, fetchWithAuth, getAuthHeaders, request, requestWithoutAuth } from "./config";
 export { getFileFullUrl } from "./file";

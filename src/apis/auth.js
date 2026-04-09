@@ -1,19 +1,17 @@
-import { config, fetchWithAuth } from "./config";
+import { config, requestWithoutAuth } from "./config";
 
 /**
  * 2.1 用户登录
  * POST /api/auth/login
  */
 export const login = async (payload) => {
-  const res = await fetch(config.baseUrl + "/api/auth/login", {
+  return await requestWithoutAuth(config.baseUrl + "/api/auth/login", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  return data;
 };
 
 /**
@@ -21,16 +19,16 @@ export const login = async (payload) => {
  * POST /api/auth/refresh
  */
 export const refreshToken = async (refresh_token) => {
-  return await fetch(config.baseUrl + "/api/auth/refresh", {
+  return await requestWithoutAuth(config.baseUrl + "/api/auth/refresh", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ refresh_token }),
-  }).then(res => res.json());
+  });
 };
 
-import { getAuthHeaders } from "./config";
+import { fetchWithAuth, getAuthHeaders } from "./config";
 
 /**
  * 2.3 获取当前用户信息

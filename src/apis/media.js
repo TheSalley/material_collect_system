@@ -1,5 +1,6 @@
 import { config, fetchWithAuth, getAuthHeaders } from "./config";
 import { useGlobalStore } from "@/stores/global";
+import { ElMessage } from "element-plus";
 
 /**
  * 管理员查询素材列表
@@ -27,12 +28,32 @@ export const saveMedia = async ({ file, demo, page }) => {
   fd.append("page", page);
 
   const globalStore = useGlobalStore();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), config.timeout);
 
-  return await fetch(`${config.baseUrl}/api/media/save`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${globalStore.access_token}`,
-    },
-    body: fd,
-  }).then((r) => r.json());
+  try {
+    const res = await fetch(`${config.baseUrl}/api/media/save`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${globalStore.access_token}`,
+      },
+      body: fd,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const data = await res.json();
+
+    if (!res.ok || data?.code >= 400) {
+      ElMessage.error(data?.msg || data?.message || "上传失败");
+      return data;
+    }
+
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error("图片上传失败:", error);
+    ElMessage.error("图片上传失败");
+    return { code: -1, message: "上传失败" };
+  }
 };
