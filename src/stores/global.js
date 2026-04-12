@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { resetRoutes } from "@/utils/"
 
 export const useGlobalStore = defineStore(
@@ -36,7 +36,13 @@ export const useGlobalStore = defineStore(
       user.value = data;
     }
 
-    return { user, access_token, isLogin, clearUser, websiteInfo, setWebsiteInfo, setUser, sites, sitePageList };
+    /** 当前用户是否为管理员 */
+    const isAdmin = computed(() => {
+      const role = (user?.value?.role ?? "user").toString().toLowerCase();
+      return role === "admin";
+    });
+
+    return { user, access_token, isLogin, clearUser, websiteInfo, setWebsiteInfo, setUser, sites, sitePageList, isAdmin };
   },
   { 
     persist: true

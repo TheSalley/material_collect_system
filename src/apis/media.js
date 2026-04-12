@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "./config";
+import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
 import { useGlobalStore } from "@/stores/global";
 import { ElMessage } from "element-plus";
 

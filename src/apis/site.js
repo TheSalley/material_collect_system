@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders, requestWithoutAuth } from "./config";
+import { config, fetchWithAuth, getAuthHeaders, requestWithoutAuth } from "@/utils/http";
 
 /**
  * 4.1 创建站点

@@ -1,8 +1,8 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <!-- 图标标题 -->
         <div class="mb-4">
-            <label class="field-label">标题</label>
+            <label class="__field-label">标题</label>
             <el-input
                 v-model="fields.sg_icon_text"
                 @input="onUpdate('sg_icon_text', fields.sg_icon_text)"
@@ -11,7 +11,7 @@
 
         <!-- 图标描述 -->
         <div class="mb-4">
-            <label class="field-label">描述</label>
+            <label class="__field-label">描述</label>
             <el-input
                 v-model="fields.sg_icon_description"
                 show-word-limit
@@ -23,7 +23,7 @@
 
         <!-- 阅读更多按钮文本 -->
         <div class="mb-4" v-if="settings?.sg_readmore_enable_button === 'yes'">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Link /></el-icon>
                 按钮文本
             </label>
@@ -35,7 +35,7 @@
 
         <!-- 徽章文本 -->
         <div class="mb-4" v-if="settings?.sg_badge_show === 'yes'">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><PriceTag /></el-icon>
                 徽章文本
             </label>
@@ -76,7 +76,7 @@ const props = defineProps({
     margin-bottom: 1rem;
 }
 
-.field-label {
+.__field-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;

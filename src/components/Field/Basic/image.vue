@@ -1,6 +1,6 @@
 <template>
-  <div class="field-item">
-    <label class="field-label">
+  <div class="__field-item">
+    <label class="__field-label">
       <el-icon><Picture /></el-icon>
       图片
     </label>
@@ -103,10 +103,8 @@ const configuredDims = computed(() => {
 });
 
 const globalStore = useGlobalStore();
-const isAdmin = computed(() => {
-  const role = (globalStore.user?.role ?? "user").toString().toLowerCase();
-  return role === "admin";
-});
+
+const isAdmin = computed(() => globalStore.isAdmin);
 
 // 普通 image 控件：仅使用 settings.image 的标准 { url, id } 结构
 const imageUrl = computed(() => {
@@ -146,13 +144,13 @@ const handleBeforeUpload = (file) => {
 </script>
 
 <style scoped>
-.field-item {
+.__field-item {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.field-label {
+.__field-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -162,7 +160,7 @@ const handleBeforeUpload = (file) => {
   margin-bottom: 0.25rem;
 }
 
-.field-label .el-icon {
+.__field-label .el-icon {
   color: #409eff;
   font-size: 1rem;
 }

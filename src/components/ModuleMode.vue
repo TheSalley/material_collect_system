@@ -303,18 +303,13 @@ const state = reactive({
   ImageList: [],
 });
 
-const { websiteInfo, user } = useGlobalStore();
+const { websiteInfo, isAdmin } = useGlobalStore();
 
 /** 媒体库 /api/media/* 的 demo 参数须为站点 Demo 名称（如 demo67），不可传 site_id */
 function mediaDemoName() {
   const d = websiteInfo?.demo_site;
   return d != null && String(d).trim() !== "" ? String(d).trim() : "";
 }
-
-const isAdmin = computed(() => {
-  const role = (user?.role ?? "user").toString().toLowerCase();
-  return role === "admin";
-});
 
 // ── 与 PageMode 相同的 visibleParts：左右列共用，保证一一对应 ────────────────
 

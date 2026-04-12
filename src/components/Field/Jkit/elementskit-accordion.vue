@@ -70,9 +70,9 @@ function addItem() {
 </script>
 
 <template>
-  <div class="field-item">
+  <div class="__field-item">
     <div class="header">
-      <label class="field-label">
+      <label class="__field-label">
         <el-icon><Menu /></el-icon>
         手风琴（Elementskit）
       </label>
@@ -151,7 +151,7 @@ function addItem() {
 </template>
 
 <style scoped>
-.field-item {
+.__field-item {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -164,7 +164,7 @@ function addItem() {
   gap: 0.75rem;
 }
 
-.field-label {
+.__field-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -174,7 +174,7 @@ function addItem() {
   color: #303133;
 }
 
-.field-label .el-icon {
+.__field-label .el-icon {
   color: var(--el-color-primary);
   font-size: 1.1rem;
 }

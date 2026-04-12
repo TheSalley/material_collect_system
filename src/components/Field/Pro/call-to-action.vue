@@ -1,7 +1,7 @@
 <template>
   <div class="cta-field">
     <div class="cta-header">
-      <span class="field-label">Call to Action</span>
+      <span class="__field-label">Call to Action</span>
       <p class="field-desc">标题、描述、按钮文案；图片</p>
     </div>
 
@@ -169,7 +169,7 @@ async function handleBgImageUpload(file) {
   margin-bottom: 10px;
 }
 
-.field-label {
+.__field-label {
   font-size: 13px;
   color: #374151;
   font-weight: 600;

@@ -1,5 +1,5 @@
 <template>
-    <div class="slides-container field-item">
+    <div class="slides-container __field-item">
         <div class="slides-header">
             <h4>
                 <el-icon><PictureFilled /></el-icon>
@@ -22,8 +22,8 @@
                 
                 <div class="slide-content">
                     <!-- 标题 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><Promotion /></el-icon>
                             标题
                         </label>
@@ -37,8 +37,8 @@
                     </div>
                     
                     <!-- 描述 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><Document /></el-icon>
                             描述
                         </label>
@@ -52,8 +52,8 @@
                     </div>
                     
                     <!-- 按钮文本 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><Link /></el-icon>
                             按钮文本
                         </label>
@@ -65,8 +65,8 @@
                     </div>
                     
                     <!-- 背景图片 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><PictureFilled /></el-icon>
                             背景图片
                         </label>
@@ -230,13 +230,13 @@ const handleSlideImageUpload = async (file, slideIndex) => {
     padding: 1rem 0;
 }
 
-.field-group {
+.__field-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.field-label {
+.__field-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;

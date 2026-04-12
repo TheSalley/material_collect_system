@@ -1,48 +1,34 @@
 <template>
-    <div class="field-item">
-        <div class="field-group">
-            <label class="field-label">
+    <div class="__field-item">
+        <div class="__field-group">
+            <label class="__field-label">
                 <el-icon>
                     <Promotion />
                 </el-icon>
-                标题
+                <span>标题</span>
+                <FieldWidgetType :type="widgetType" />
             </label>
-            <el-input v-model="fields.title" show-word-limit :rows="2" placeholder="请输入标题内容"
-                @input="onUpdate('title', fields.title)" />
+            <el-input v-model="fields.title" placeholder="请输入标题内容" @input="onUpdate('title', fields.title)" />
         </div>
     </div>
 </template>
 
 <script setup>
-import { Promotion } from '@element-plus/icons-vue';
+import { Promotion } from "@element-plus/icons-vue";
+import FieldWidgetType from "@/components/FieldWidgetType.vue";
 
 const props = defineProps({
-    nodeId: {
+    widgetType: {
         type: String,
-        required: true
+        required: true,
     },
     fields: {
         type: Object,
-        required: true
+        required: true,
     },
     onUpdate: {
         type: Function,
-        required: true
-    }
+        required: true,
+    },
 });
 </script>
-
-<style scoped>
-.field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.field-label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-}
-</style>

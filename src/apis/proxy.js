@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "./config";
+import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
 
 /**
  * 6.1 获取页面列表
@@ -21,6 +21,18 @@ export const getElementorData = async (id, site_id) => {
       headers: getAuthHeaders(false),
     }
   );
+};
+
+/**
+ * 6.2.1 更新 Elementor 数据
+ * POST /api/proxy/update_elementor_data
+ */
+export const updateElementorData = async ({ site_id, id, data }) => {
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/update_elementor_data", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ site_id, id, data }),
+  });
 };
 
 /**
@@ -213,7 +225,7 @@ export const getProductList = async (params) => {
 
 // 向后兼容的别名
 export const getPageById = getElementorData;
-export const updatePageById = getElementorData;
+export const updatePageById = updateElementorData;
 export const updateSiteTitle = (site_id, title) => setSiteTitle({ site_id, title });
 export const updateSiteIcon = (site_id, file) => {
   const formData = new FormData();

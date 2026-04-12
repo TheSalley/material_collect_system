@@ -1,8 +1,8 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <!-- 图标头部 -->
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><MagicStick /></el-icon>
                 图标类名
             </label>
@@ -14,7 +14,7 @@
 
         <!-- 图标文本 -->
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><ChatDotSquare /></el-icon>
                 图标标题
             </label>
@@ -26,7 +26,7 @@
 
         <!-- 图标描述 -->
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Document /></el-icon>
                 图标描述
             </label>
@@ -41,7 +41,7 @@
 
         <!-- 阅读更多按钮文本 -->
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Link /></el-icon>
                 按钮文本
             </label>
@@ -53,7 +53,7 @@
 
         <!-- 徽章文本 -->
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><PriceTag /></el-icon>
                 徽章文本
             </label>
@@ -89,7 +89,7 @@ const props = defineProps({
     margin-bottom: 1rem;
 }
 
-.field-label {
+.__field-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;

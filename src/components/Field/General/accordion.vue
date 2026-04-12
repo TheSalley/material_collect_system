@@ -1,10 +1,10 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div v-for="(item, index) in fields.tabs" :key="index">
-            <span class="field-label">标题：</span>
+            <span class="__field-label">标题：</span>
             <el-input v-model="item.tab_title"
             show-word-limit type="textarea" @input="onUpdate('tabs', fields.tabs)" />
-            <div class="field-label">内容</div>
+            <div class="__field-label">内容</div>
             <QuillEditor 
                 :node-id="`${props.nodeId}_tab_${index}`"
                 v-model:modelValue="item.tab_content"

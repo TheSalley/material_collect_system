@@ -1,4 +1,4 @@
-import { config, requestWithoutAuth } from "./config";
+import { config, requestWithoutAuth } from "@/utils/http";
 
 /**
  * 2.1 用户登录
@@ -28,7 +28,7 @@ export const refreshToken = async (refresh_token) => {
   });
 };
 
-import { fetchWithAuth, getAuthHeaders } from "./config";
+import { fetchWithAuth, getAuthHeaders } from "@/utils/http";
 
 /**
  * 2.3 获取当前用户信息

@@ -1,7 +1,7 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div class="mb-4">
-            <label class="field-label">数字</label>
+            <label class="__field-label">数字</label>
             <el-input
                 v-model="fields.sg_content_number"
                 @input="onUpdate('sg_content_number', fields.sg_content_number)"
@@ -9,7 +9,7 @@
         </div>
 
         <div class="mb-4">
-            <label class="field-label">数字前缀</label>
+            <label class="__field-label">数字前缀</label>
             <el-input
                 v-model="fields.sg_content_number_prefix"
                 @input="onUpdate('sg_content_number_prefix', fields.sg_content_number_prefix)"
@@ -17,7 +17,7 @@
         </div>
 
         <div class="mb-4">
-            <label class="field-label">数字后缀</label>
+            <label class="__field-label">数字后缀</label>
             <el-input
                 v-model="fields.sg_content_number_suffix"
                 @input="onUpdate('sg_content_number_suffix', fields.sg_content_number_suffix)"
@@ -25,7 +25,7 @@
         </div>
 
         <div class="mb-4" v-if="settings?.sg_setting_enable_super === 'yes'">
-            <label class="field-label">上标符号</label>
+            <label class="__field-label">上标符号</label>
             <el-input
                 v-model="fields.sg_content_super"
                 @input="onUpdate('sg_content_super', fields.sg_content_super)"
@@ -33,7 +33,7 @@
         </div>
 
         <div class="mb-4">
-            <label class="field-label">标题文本</label>
+            <label class="__field-label">标题文本</label>
             <el-input
                 v-model="fields.sg_content_title"
                 @input="onUpdate('sg_content_title', fields.sg_content_title)"
@@ -68,7 +68,7 @@ const props = defineProps({
     margin-bottom: 1rem;
 }
 
-.field-label {
+.__field-label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;

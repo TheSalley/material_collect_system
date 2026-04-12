@@ -1,7 +1,7 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div v-for="item in fields.icon_list" :key="item.id">
-            <span class="field-label">标题：</span>
+            <span class="__field-label">标题：</span>
             <el-input v-model="item.text" show-word-limit @input="onUpdate('icon_list', fields.icon_list)" />
         </div>
     </div>

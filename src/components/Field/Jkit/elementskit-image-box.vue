@@ -1,7 +1,7 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Promotion /></el-icon>
                 标题文本
             </label>
@@ -15,7 +15,7 @@
         </div>
         
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Document /></el-icon>
                 描述文本
             </label>
@@ -29,7 +29,7 @@
         </div>
         
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Link /></el-icon>
                 按钮文本
             </label>
@@ -41,7 +41,7 @@
         </div>
         
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Picture /></el-icon>
                 图片
             </label>
@@ -142,7 +142,7 @@ const handleBeforeUpload = (file) => {
     margin-bottom: 0.75rem;
 }
 
-.field-label {
+.__field-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;

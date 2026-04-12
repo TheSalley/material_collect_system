@@ -1,26 +1,27 @@
+/**
+ * HTTP 请求工具函数（统一从 @/config 导入配置）
+ */
 import { useGlobalStore } from "@/stores/global";
 import router from "@/router";
 import { ElMessage } from "element-plus";
+import {
+  API_BASE_URL,
+  API_TIMEOUT,
+  HTTP_ERROR_MESSAGES,
+} from "@/config";
 
+/**
+ * API 配置
+ */
 export const config = {
-  baseUrl: "https://apitest.yhct.site",
-  // baseUrl: "http://127.0.0.1:3501",
-  // 默认超时时间（毫秒）
-  timeout: 30000,
+  baseUrl: API_BASE_URL,
+  timeout: API_TIMEOUT,
 };
 
 /**
- * 统一错误响应码提示
+ * HTTP 错误状态码提示
  */
-const ERROR_MESSAGES = {
-  401: "登录已过期，请重新登录",
-  403: "没有权限访问该资源",
-  404: "请求的资源不存在",
-  500: "服务器内部错误，请稍后重试",
-  502: "网关错误，请稍后重试",
-  503: "服务暂时不可用，请稍后重试",
-  network: "网络连接失败，请检查网络",
-};
+const ERROR_MESSAGES = HTTP_ERROR_MESSAGES;
 
 /**
  * 处理 HTTP 错误状态码
@@ -41,10 +42,23 @@ function handleHttpError(status, data) {
 }
 
 /**
+ * 获取认证头
+ */
+export function getAuthHeaders(includeContentType = true) {
+  const globalStore = useGlobalStore();
+  const headers = {
+    Authorization: `Bearer ${globalStore.access_token}`,
+  };
+
+  if (includeContentType) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  return headers;
+}
+
+/**
  * 统一请求封装 - 无需认证
- * @param {string} url - 请求地址
- * @param {RequestInit} options - fetch 选项
- * @returns {Promise<any>} 响应数据（保持原有返回格式）
  */
 export async function requestWithoutAuth(url, options = {}) {
   const controller = new AbortController();
@@ -88,26 +102,7 @@ export async function requestWithoutAuth(url, options = {}) {
 }
 
 /**
- * 获取认证头
- */
-export function getAuthHeaders(includeContentType = true) {
-  const globalStore = useGlobalStore();
-  const headers = {
-    Authorization: `Bearer ${globalStore.access_token}`,
-  };
-
-  if (includeContentType) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  return headers;
-}
-
-/**
  * 统一请求封装 - 需要认证
- * @param {string} url - 请求地址
- * @param {RequestInit} options - fetch 选项
- * @returns {Promise<any>} 响应数据
  */
 export async function fetchWithAuth(url, options = {}) {
   const controller = new AbortController();
@@ -122,7 +117,6 @@ export async function fetchWithAuth(url, options = {}) {
 
     const data = await res.json();
 
-    // 401 未授权
     if (res.status === 401 || data?.code === 401) {
       const globalStore = useGlobalStore();
       globalStore.clearUser();
@@ -147,9 +141,6 @@ export async function fetchWithAuth(url, options = {}) {
 
 /**
  * 统一请求封装（需要认证）- 规范化返回格式
- * @param {string} url - 请求地址
- * @param {RequestInit} options - fetch 选项
- * @returns {Promise<{success: boolean, data?: any, message?: string}>}
  */
 export async function request(url, options = {}) {
   const controller = new AbortController();

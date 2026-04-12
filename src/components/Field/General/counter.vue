@@ -1,7 +1,7 @@
 <template>
   <div class="counter-field">
     <div class="counter-header">
-      <span class="field-label">数字变化：</span>
+      <span class="__field-label">数字变化：</span>
     </div>
 
     <div class="counter-body">
@@ -62,7 +62,7 @@ const props = defineProps({
   margin-bottom: 8px;
 }
 
-.field-label {
+.__field-label {
   font-size: 13px;
   color: #4b5563;
   font-weight: 500;

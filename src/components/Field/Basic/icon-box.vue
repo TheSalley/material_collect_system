@@ -1,7 +1,7 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div class="mb-4">
-            <span class="field-label">标题：</span>
+            <span class="__field-label">标题：</span>
             <el-input 
                 v-model="fields.title_text"
                 show-word-limit 
@@ -11,7 +11,7 @@
         </div>
         
         <div class="mb-4">
-            <span class="field-label">描述：</span>
+            <span class="__field-label">描述：</span>
             <el-input 
                 v-model="fields.description_text"
                 show-word-limit 

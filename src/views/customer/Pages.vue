@@ -136,10 +136,8 @@ const router = useRouter();
 
 let pageData = ref(null);
 const ModuleModeNode = ref(null);
-const { user, websiteInfo } = useGlobalStore();
+const { user, websiteInfo, isAdmin } = useGlobalStore();
 const route = useRoute();
-
-const isAdmin = computed(() => (user?.role ?? "").toString().toLowerCase() === "admin");
 
 // 翻译配置（旧版：通过 provide 给子组件/字段用）
 const translateConfig = reactive({
@@ -155,7 +153,7 @@ function sameLang() {
   return translateConfig.sourceLanguage && translateConfig.sourceLanguage === translateConfig.targetLanguage;
 }
 
-// 切换翻译状态（旧版：扫描 DOM 的 field-item 输入框/文本域/Quill）
+// 切换翻译状态（旧版：扫描 DOM 的 __field-item 输入框/文本域/Quill）
 async function toggleTranslate() {
   if (sameLang()) {
     ElMessage({
@@ -172,7 +170,7 @@ async function toggleTranslate() {
   const translationMap = new Map(); // 原始文本/HTML -> 翻译文本
 
   // 获取所有 input 元素
-  const inputs = document.querySelectorAll('.field-item input[type="text"]');
+  const inputs = document.querySelectorAll('.__field-item input[type="text"]');
   inputs.forEach((input, index) => {
     if (input.value && input.value.trim()) {
       elementsToTranslate.push({
@@ -186,7 +184,7 @@ async function toggleTranslate() {
   });
 
   // 获取所有 textarea 元素
-  const textareas = document.querySelectorAll('.field-item textarea');
+  const textareas = document.querySelectorAll('.__field-item textarea');
   textareas.forEach((textarea, index) => {
     if (textarea.value && textarea.value.trim()) {
       elementsToTranslate.push({
@@ -200,7 +198,7 @@ async function toggleTranslate() {
   });
 
   // 获取所有 class 为 ql-editor 的元素
-  const qlEditors = document.querySelectorAll('.field-item .ql-editor');
+  const qlEditors = document.querySelectorAll('.__field-item .ql-editor');
   qlEditors.forEach((editor, index) => {
     const htmlContent = editor.innerHTML || '';
     const textContent = editor.innerText || editor.textContent || '';
@@ -364,9 +362,9 @@ async function handleSave() {
     console.log('保存数据:', finalData);
 
     const res = await updatePageById({
-      data: JSON.stringify(finalData),
-      id: Number(targetNode.state.pageId ?? targetNode.state.moduleId),
       site_id: websiteInfo.site_id,
+      id: String(targetNode.state.moduleId),
+      data: finalData,
     });
     if (res.code === 0) {
       ElMessage({ message: "保存成功", type: "success" });

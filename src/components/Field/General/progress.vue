@@ -1,7 +1,7 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div class="mb-4">
-            <span class="field-label">进度条标题：</span>
+            <span class="__field-label">进度条标题：</span>
             <el-input 
                 v-model="fields.title"
                 show-word-limit 
@@ -10,7 +10,7 @@
         </div>
         
         <div class="mb-4">
-            <span class="field-label">进度百分比：</span>
+            <span class="__field-label">进度百分比：</span>
             <el-input-number 
                 v-model="fields.percent"
                 :min="0"

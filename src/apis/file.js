@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "./config";
+import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
 
 /**
  * 5.1 上传文件

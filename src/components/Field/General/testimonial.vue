@@ -1,7 +1,7 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div class="mb-4">
-            <span class="field-label">推荐内容：</span>
+            <span class="__field-label">推荐内容：</span>
             <el-input 
                 v-model="fields.testimonial_content"
                 show-word-limit 
@@ -12,7 +12,7 @@
         </div>
         
         <div class="mb-4">
-            <span class="field-label">推荐人姓名：</span>
+            <span class="__field-label">推荐人姓名：</span>
             <el-input 
                 v-model="fields.testimonial_name"
                 show-word-limit 
@@ -21,7 +21,7 @@
         </div>
         
         <div class="mb-4">
-            <span class="field-label">推荐人职位：</span>
+            <span class="__field-label">推荐人职位：</span>
             <el-input 
                 v-model="fields.testimonial_job"
                 show-word-limit 

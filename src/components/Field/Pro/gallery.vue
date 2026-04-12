@@ -1,7 +1,7 @@
 <template>
   <div class="gallery-field">
     <div class="gallery-header">
-      <span class="field-label">Gallery</span>
+      <span class="__field-label">Gallery</span>
       <p class="field-desc">多图片画廊展示，可上传或从媒体库选择 <code>gallery</code>（数组）。</p>
     </div>
 
@@ -177,7 +177,7 @@ function removeImage(index) {
   margin-bottom: 10px;
 }
 
-.field-label {
+.__field-label {
   font-size: 13px;
   color: #374151;
   font-weight: 600;

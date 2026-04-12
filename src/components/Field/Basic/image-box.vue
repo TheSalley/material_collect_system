@@ -1,7 +1,7 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Promotion /></el-icon>
                 标题
             </label>
@@ -15,7 +15,7 @@
         </div>
         
         <div class="mb-4">
-            <label class="field-label">
+            <label class="__field-label">
                 <el-icon><Document /></el-icon>
                 描述
             </label>
@@ -54,7 +54,7 @@ const props = defineProps({
     margin-bottom: 1rem;
 }
 
-.field-label {
+.__field-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;

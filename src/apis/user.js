@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "./config";
+import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
 
 /**
  * 3.1 获取用户列表

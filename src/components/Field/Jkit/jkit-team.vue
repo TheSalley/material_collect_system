@@ -1,8 +1,8 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <!-- 成员图片 -->
         <div class="mb-4">
-            <label class="field-label">成员图片</label>
+            <label class="__field-label">成员图片</label>
             <div class="image-row">
                 <div class="image-preview" v-if="imageUrl">
                     <img :src="imageUrl" alt="预览" />
@@ -22,7 +22,7 @@
 
         <!-- 成员名称 -->
         <div class="mb-4">
-            <label class="field-label">成员名称</label>
+            <label class="__field-label">成员名称</label>
             <el-input
                 v-model="fields.sg_member_name"
                 @input="onUpdate('sg_member_name', fields.sg_member_name)"
@@ -31,7 +31,7 @@
 
         <!-- 成员描述 -->
         <div class="mb-4" v-if="settings?.sg_member_show_description === 'yes'">
-            <label class="field-label">成员描述</label>
+            <label class="__field-label">成员描述</label>
             <el-input
                 v-model="fields.sg_member_description"
                 show-word-limit
@@ -117,7 +117,7 @@ async function handleImageUpload(file) {
     margin-bottom: 1rem;
 }
 
-.field-label {
+.__field-label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;

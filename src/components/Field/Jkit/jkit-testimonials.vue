@@ -1,5 +1,5 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div v-for="(item, index) in listItems" :key="item._id" class="testimonial-item mb-4">
             <div class="testimonial-header">
                 <span class="testimonial-index">{{ index + 1 }}</span>
@@ -15,7 +15,7 @@
 
             <!-- 头像上传 -->
             <div class="mb-3">
-                <label class="field-label">头像</label>
+                <label class="__field-label">头像</label>
                 <div class="avatar-row">
                     <div class="avatar-preview">
                         <img
@@ -39,7 +39,7 @@
             </div>
 
             <div class="mb-3">
-                <label class="field-label">客户名称</label>
+                <label class="__field-label">客户名称</label>
                 <el-input
                     v-model="item.sg_testimonials_list_client_name"
                     @input="updateItem(index, item)"
@@ -47,7 +47,7 @@
             </div>
 
             <div class="mb-3">
-                <label class="field-label">职位/称号</label>
+                <label class="__field-label">职位/称号</label>
                 <el-input
                     v-model="item.sg_testimonials_list_designation"
                     @input="updateItem(index, item)"
@@ -55,7 +55,7 @@
             </div>
 
             <div class="mb-3">
-                <label class="field-label">评价内容</label>
+                <label class="__field-label">评价内容</label>
                 <el-input
                     v-model="item.sg_testimonials_list_review"
                     show-word-limit
@@ -182,7 +182,7 @@ function generateId() {
     margin-bottom: 0.75rem;
 }
 
-.field-label {
+.__field-label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;

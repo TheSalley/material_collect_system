@@ -5,6 +5,7 @@
     v-if="editableNode && getFieldComponent(editableNode?.widgetType)"
     :node-id="editableNode.id"
     :fields="editableNode.fields"
+    :widgetType="editableNode.widgetType"
     :settings="settings"
     :section-index="sectionIndex"
     :on-update="handleFieldUpdate" />

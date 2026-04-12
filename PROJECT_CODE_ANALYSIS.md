@@ -117,9 +117,9 @@
 
 `src/views/customer/Pages.vue` 中“一键翻译”逻辑直接扫描并操作 DOM：
 
-- `document.querySelectorAll('.field-item input[type="text"]')`
-- `document.querySelectorAll('.field-item textarea')`
-- `document.querySelectorAll('.field-item .ql-editor')`
+- `document.querySelectorAll('.__field-item input[type="text"]')`
+- `document.querySelectorAll('.__field-item textarea')`
+- `document.querySelectorAll('.__field-item .ql-editor')`
 
 然后再通过事件回写和 `syncDomToVueData` 补同步回状态树。
 

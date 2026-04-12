@@ -1,7 +1,7 @@
 <template>
   <div class="flip-box-field">
     <div class="flip-box-header">
-      <span class="field-label">翻转卡片（Flip Box）</span>
+      <span class="__field-label">翻转卡片（Flip Box）</span>
       <p class="field-desc">配置卡片正反面的标题、描述和按钮文案。</p>
     </div>
 
@@ -93,7 +93,7 @@ const props = defineProps({
   margin-bottom: 10px;
 }
 
-.field-label {
+.__field-label {
   font-size: 13px;
   color: #374151;
   font-weight: 600;

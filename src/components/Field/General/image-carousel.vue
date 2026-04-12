@@ -106,8 +106,8 @@ const handleBeforeUpload = (file) => {
 </script>
 
 <template>
-  <div class="field-item">
-    <label class="field-label">
+  <div class="__field-item">
+    <label class="__field-label">
       <el-icon><Picture /></el-icon>
       轮播图片
     </label>
@@ -165,13 +165,13 @@ const handleBeforeUpload = (file) => {
 </template>
 
 <style scoped>
-.field-item {
+.__field-item {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.field-label {
+.__field-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -181,7 +181,7 @@ const handleBeforeUpload = (file) => {
   margin: 0;
 }
 
-.field-label .el-icon {
+.__field-label .el-icon {
   color: var(--el-color-primary);
   font-size: 1.1rem;
 }

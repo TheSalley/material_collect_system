@@ -1,5 +1,5 @@
 <template>
-    <div class="timeline-container field-item">
+    <div class="timeline-container __field-item">
         <div class="timeline-header">
             <h4>
                 <el-icon><Clock /></el-icon>
@@ -30,8 +30,8 @@
 
                 <div class="item-content">
                     <!-- 故事标题 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><Promotion /></el-icon>
                             故事标题
                         </label>
@@ -43,8 +43,8 @@
                     </div>
                     
                     <!-- 描述 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><Document /></el-icon>
                             描述
                         </label>
@@ -58,8 +58,8 @@
                     </div>
                     
                     <!-- 年份 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><Calendar /></el-icon>
                             年份
                         </label>
@@ -70,8 +70,8 @@
                     </div>
                     
                     <!-- 日期标签 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><Calendar /></el-icon>
                             日期标签
                         </label>
@@ -82,8 +82,8 @@
                     </div>
 
                     <!-- 图片上传 -->
-                    <div class="field-group mb-4">
-                        <label class="field-label">
+                    <div class="__field-group mb-4">
+                        <label class="__field-label">
                             <el-icon><Picture /></el-icon>
                             图片
                         </label>
@@ -105,7 +105,7 @@
                     </div>
 
                     <!-- 删除按钮 -->
-                    <div class="field-group">
+                    <div class="__field-group">
                         <el-button type="danger" plain @click="removeItem(index)" :icon="Delete">
                             删除此事件
                         </el-button>
@@ -270,13 +270,13 @@ function generateId() {
     padding: 1rem 0;
 }
 
-.field-group {
+.__field-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
 }
 
-.field-label {
+.__field-label {
     display: flex;
     align-items: center;
     gap: 0.5rem;

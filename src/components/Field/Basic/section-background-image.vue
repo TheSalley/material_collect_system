@@ -1,6 +1,6 @@
 <template>
-  <div v-if="shouldShowSection" class="field-item section-bg-field">
-    <label class="field-label">
+  <div v-if="shouldShowSection" class="__field-item section-bg-field">
+    <label class="__field-label">
       <el-icon><PictureFilled /></el-icon>
       背景图
     </label>
@@ -215,10 +215,8 @@ function toDisplayUrl(raw) {
 }
 
 const globalStore = useGlobalStore();
-const isAdmin = computed(() => {
-  const role = (globalStore.user?.role ?? "user").toString().toLowerCase();
-  return role === "admin";
-});
+
+const isAdmin = computed(() => globalStore.isAdmin);
 function useMaybeResolveImage(fieldKey) {
   const resolvedUrl = ref("");
   const resolveLoading = ref(false);
@@ -377,13 +375,13 @@ async function handleBeforeUpload(file, fieldKey) {
   gap: 0.75rem;
 }
 
-.field-item {
+.__field-item {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.field-label {
+.__field-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -393,7 +391,7 @@ async function handleBeforeUpload(file, fieldKey) {
   margin: 0;
 }
 
-.field-label .el-icon {
+.__field-label .el-icon {
   color: var(--el-color-primary);
   font-size: 1.1rem;
 }

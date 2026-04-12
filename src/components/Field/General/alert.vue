@@ -1,7 +1,7 @@
 <template>
-    <div class="field-item">
+    <div class="__field-item">
         <div class="mb-4">
-            <span class="field-label">提醒标题：</span>
+            <span class="__field-label">提醒标题：</span>
             <el-input 
                 v-model="fields.alert_title"
                 show-word-limit 
@@ -10,7 +10,7 @@
         </div>
         
         <div class="mb-4">
-            <span class="field-label">提醒描述：</span>
+            <span class="__field-label">提醒描述：</span>
             <el-input 
                 v-model="fields.alert_description"
                 show-word-limit 
