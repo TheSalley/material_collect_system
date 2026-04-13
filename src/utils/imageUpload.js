@@ -8,11 +8,10 @@ import { ElMessage } from "element-plus";
 import { useGlobalStore } from "@/stores/global";
 import { STRICT_IMAGE_DIMENSION_ENABLED } from "@/config/index";
 
-/** 默认上传规则（文件大小 + 像素上限，可按组件传入 options 覆盖） */
+/** 默认上传规则 */
 export const IMAGE_UPLOAD_DEFAULTS = {
-  maxSizeMB: 10,
-  maxWidth: 4096,
-  maxHeight: 4096,
+  maxSizeMB: 5,
+  accept: "webp,png,jpg,jpeg",
 };
 
 /** 兼容多种 upload_image 返回结构 */
@@ -114,19 +113,15 @@ export function assertImageDimensionsWithin(dim, limits) {
 }
 
 /**
- * 生成上传说明文案（格式、大小、像素上限）
+ * 生成上传说明文案（格式、大小）
  * @param {Object} options
- * @param {number} [options.maxSizeMB]
- * @param {number} [options.maxWidth]
- * @param {number} [options.maxHeight]
- * @returns {string}
  */
 export function buildImageUploadTip(options = {}) {
-  const { maxSizeMB } = {
+  const config = {
     ...IMAGE_UPLOAD_DEFAULTS,
     ...options,
   };
-  return `上传要求：支持 jpg/png/webp 等格式，单张不超过 ${maxSizeMB}MB`;
+  return `上传要求：支持 ${config.accept.split(",").join("/")} 等格式，单张不超过 ${config.maxSizeMB}MB`;
 }
 
 /**
@@ -151,7 +146,9 @@ export function assertImageDimensionsMatch(dim, ref) {
     return false;
   }
   if (dim.width !== ref.width || dim.height !== ref.height) {
-    ElMessage.error(`图片尺寸必须为 ${ref.width}×${ref.height}px，当前为 ${dim.width}×${dim.height}px`);
+    ElMessage.error(
+      `图片尺寸必须为 ${ref.width}×${ref.height}px，当前为 ${dim.width}×${dim.height}px`,
+    );
     return false;
   }
   return true;

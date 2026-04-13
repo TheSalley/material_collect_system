@@ -1,4 +1,4 @@
-const APP_VERSION = "0.1.6";
+const APP_VERSION = "0.1.7";
 
 /** 是否启用严格尺寸限制：开启后，选图后确定的尺寸即为唯一允许上传的尺寸 */
 const STRICT_IMAGE_DIMENSION_ENABLED = false;
