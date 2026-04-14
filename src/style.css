@@ -115,6 +115,10 @@
   line-height: 1.45;
 }
 
+.__field-item .__target-size-hint__input {
+  width: 80px;
+}
+
 /* 富文本编辑器优化 */
 .__field-item .ql-container {
   border-radius: 0 0 6px 6px;

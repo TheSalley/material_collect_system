@@ -35,7 +35,7 @@
         <!-- 截图自定义尺寸 -->
         <div
           v-if="isAdmin && sectionSizes[sectionIndex]"
-          class="__hint-line __target-size-hint"
+          class="__hint-line __target-size-hint mt-2"
         >
           <span class="__target-size-hint__label">截图目标尺寸：</span>
           <el-input-number
@@ -151,57 +151,4 @@ const handleBeforeUpload = (file) => {
 };
 </script>
 
-<style scoped>
-.size-config-row {
-  margin-top: 0.5rem;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: var(--el-fill-color-light);
-  border: 1px dashed var(--el-border-color);
-}
-
-/* 截图目标尺寸：内嵌在同一行提示里 */
-.target-size-hint {
-  /* display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-  padding: 5px 8px;
-  border-radius: 5px;
-  background: linear-gradient(
-    135deg,
-    var(--el-color-primary-light-9) 0%,
-    rgba(255, 255, 255, 0.92) 100%
-  );
-  border: 1px solid var(--el-color-primary-light-5); */
-}
-
-.target-size-hint__label {
-  /* font-weight: 600;
-  color: var(--el-color-primary);
-  font-size: 0.75rem; */
-}
-
-.target-size-hint__sep {
-  /* color: #606266;
-  font-size: 0.75rem; */
-}
-
-.target-size-hint__value {
-  /* font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--el-color-primary-dark-2);
-  font-variant-numeric: tabular-nums; */
-}
-
-.target-size-hint__input {
-  /* width: 80px; */
-}
-
-.target-size-hint__x,
-.target-size-hint__unit {
-  /* font-size: 0.75rem;
-  color: #909399; */
-}
-</style>
+<style scoped></style>

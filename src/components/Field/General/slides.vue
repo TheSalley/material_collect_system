@@ -328,4 +328,3 @@ const handleSlideImageUpload = async (file, slideIndex) => {
     padding: 0 1rem 1rem;
 }
 </style>
-
