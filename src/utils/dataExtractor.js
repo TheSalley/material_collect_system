@@ -8,87 +8,89 @@
  */
 const EDITABLE_FIELDS_MAP = {
   // Basic 组件
-  'button': ['text', 'link', 'size'],
-  'heading': ['title'],
-  'text-editor': ['editor'],
-  'video': ['youtube_url', 'video_type'],
-  'image': ['image', 'caption', 'link'],
-  
-  // General 组件  
-  'toggle': ['tabs'],
-  'accordion': ['tabs'],
-  'counter': ['title', 'ending_number', 'suffix'],
-  'icon-list': ['icon_list'],
-  
+  button: ["text", "link", "size"],
+  heading: ["title"],
+  "text-editor": ["editor"],
+  video: ["youtube_url", "video_type"],
+  image: ["image", "caption", "link"],
+
+  // General 组件
+  toggle: ["tabs"],
+  accordion: ["tabs"],
+  counter: ["title", "ending_number", "suffix"],
+  "icon-list": ["icon_list"],
+
   // Jkit 组件
-  'elementskit-icon-box': [
-    'ekit_icon_box_title_text', 
-    'ekit_icon_box_description_text', 
-    'ekit_icon_box_btn_text'
+  "elementskit-icon-box": [
+    "ekit_icon_box_title_text",
+    "ekit_icon_box_description_text",
+    "ekit_icon_box_btn_text",
   ],
-  'jkit_icon_box': [
-    'sg_icon_text',
-    'sg_icon_description',
-    'sg_readmore_button_label',
-    'sg_badge_text'
+  jkit_icon_box: [
+    "sg_icon_text",
+    "sg_icon_description",
+    "sg_readmore_button_label",
+    "sg_badge_text",
   ],
-  'jkit_testimonials': [
-    'sg_testimonials_list'
+  jkit_testimonials: ["sg_testimonials_list"],
+  jkit_fun_fact: [
+    "sg_content_number",
+    "sg_content_number_prefix",
+    "sg_content_number_suffix",
+    "sg_content_super",
+    "sg_content_title",
   ],
-  'jkit_fun_fact': [
-    'sg_content_number',
-    'sg_content_number_prefix',
-    'sg_content_number_suffix',
-    'sg_content_super',
-    'sg_content_title'
+  jkit_team: ["sg_member_image", "sg_member_name", "sg_member_description"],
+  jkit_heading: ["sg_title_text", "sg_subtitle_heading", "sg_description"],
+  "elementskit-image-box": [
+    "ekit_image_box_title_text",
+    "ekit_image_box_description_text",
+    "ekit_image_box_btn_text",
+    "ekit_image_box_image",
   ],
-  'jkit_team': [
-    'sg_member_image',
-    'sg_member_name',
-    'sg_member_description'
-  ],
-  'jkit_heading': [
-    'sg_title_text',
-    'sg_subtitle_heading',
-    'sg_description'
-  ],
-  'elementskit-image-box': [
-    'ekit_image_box_title_text', 
-    'ekit_image_box_description_text', 
-    'ekit_image_box_btn_text',
-    'ekit_image_box_image'
-  ],
-  'elementskit-accordion': ['ekit_accordion_items'],
-  
+  "elementskit-accordion": ["ekit_accordion_items"],
+
   // 更多 Elementor 基础组件
-  'divider': ['style', 'gap'],
-  'spacer': ['space'],
-  'google_maps': ['address', 'zoom'],
-  'icon': ['selected_icon'],
-  'image-box': ['title_text', 'description_text'],
-  'icon-box': ['title_text', 'description_text'],
-  'star-rating': ['rating'],
-  'image-carousel': ['carousel'],
-  'image-gallery': ['gallery'],
-  'testimonial': ['testimonial_content', 'testimonial_name', 'testimonial_job'],
-  'tabs': ['tabs'],
-  'slides': ['slides'],
+  divider: ["style", "gap"],
+  spacer: ["space"],
+  google_maps: ["address", "zoom"],
+  icon: ["selected_icon"],
+  "image-box": ["title_text", "description_text"],
+  "icon-box": ["title_text", "description_text"],
+  "star-rating": ["rating"],
+  "image-carousel": ["carousel"],
+  "image-gallery": ["gallery"],
+  testimonial: ["testimonial_content", "testimonial_name", "testimonial_job"],
+  tabs: ["tabs"],
+  slides: ["slides"],
   // Pro 组件
-  'call-to-action': ['title', 'description', 'button', 'bg_image'],
-  'flip-box': ['title_text_a', 'description_text_a', 'title_text_b', 'description_text_b', 'button_text'],
-  'gallery': ['gallery'],
-  'timeline-widget-addon': ['twae_list'],
-  'social-icons': ['social_icon_list'],
-  'alert': ['alert_title', 'alert_description'],
-  'audio': ['source_type'],
-  'shortcode': ['shortcode'],
-  'html': ['html'],
-  'menu-anchor': ['anchor'],
-  'sidebar': ['sidebar'],
-  'read-more': ['before_text', 'after_text'],
-  'progress': ['title', 'percent'],
-  'nav-menu': ['menu'],
-  'form': ['form_fields'],
+  "call-to-action": ["title", "description", "button", "bg_image"],
+  "flip-box": [
+    "title_text_a",
+    "description_text_a",
+    "title_text_b",
+    "description_text_b",
+    "button_text",
+  ],
+  gallery: ["gallery"],
+  "timeline-widget-addon": ["twae_list"],
+  "social-icons": ["social_icon_list"],
+  alert: ["alert_title", "alert_description"],
+  audio: ["source_type"],
+  shortcode: ["shortcode"],
+  html: ["html"],
+  "menu-anchor": ["anchor"],
+  sidebar: ["sidebar"],
+  "read-more": ["before_text", "after_text"],
+  progress: ["title", "percent"],
+  "nav-menu": ["menu"],
+  form: ["form_fields"],
+  // ElementsKit
+  "elementskit-team": ["ekit_team_image"],
+  "elementskit-progressbar": [
+    "ekit_progressbar_title",
+    "ekit_progressbar_percent",
+  ],
 };
 
 /**
@@ -101,7 +103,7 @@ export function extractEditableData(elementorData) {
 
   const DEFAULT_TEXT_EDITOR_HTML =
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattis, pulvinar dapibus leo.";
-  
+
   /**
    * 判断 __dynamic__ 是否包含实际动态配置
    * - 空数组 / 空对象视为「没有动态配置」
@@ -115,14 +117,14 @@ export function extractEditableData(elementorData) {
     }
 
     // 空对象
-    if (typeof dynamicValue === 'object') {
+    if (typeof dynamicValue === "object") {
       return Object.keys(dynamicValue).length > 0;
     }
 
     // 其他类型（字符串等）只要有值就认为有动态配置
     return true;
   }
-  
+
   /**
    * 检查节点是否应该被跳过处理
    * 1. 有 hide_desktop 属性的节点
@@ -130,10 +132,13 @@ export function extractEditableData(elementorData) {
    */
   function shouldSkipNode(node) {
     if (!node) return false;
-    
+
     // 检查 settings 中的 hide_desktop
     // 只要存在该属性（无论值为何），都视为「不参与编辑」
-    if (node.settings && Object.prototype.hasOwnProperty.call(node.settings, 'hide_desktop')) {
+    if (
+      node.settings &&
+      Object.prototype.hasOwnProperty.call(node.settings, "hide_desktop")
+    ) {
       return true;
     }
 
@@ -143,10 +148,10 @@ export function extractEditableData(elementorData) {
     if (hasRealDynamic(nodeDynamic) || hasRealDynamic(settingsDynamic)) {
       return true;
     }
-    
+
     return false;
   }
-  
+
   /**
    * 清理字段值，移除带有 __dynamic__ 的数组项
    * @param {any} value - 字段值
@@ -154,24 +159,24 @@ export function extractEditableData(elementorData) {
    */
   function cleanFieldValue(value) {
     if (!value) return value;
-    
+
     // 如果是数组，过滤掉带有 __dynamic__ 的项
     if (Array.isArray(value)) {
-      return value.filter(item => {
+      return value.filter((item) => {
         // 如果项是对象，检查是否有 __dynamic__ 属性
-        if (typeof item === 'object' && item !== null) {
+        if (typeof item === "object" && item !== null) {
           // 仅当存在「非空」动态配置时才过滤掉
           return !hasRealDynamic(item.__dynamic__);
         }
         return true;
       });
     }
-    
+
     // 如果是对象，递归清理嵌套的数组
-    if (typeof value === 'object' && value !== null) {
+    if (typeof value === "object" && value !== null) {
       const cleaned = {};
       for (const key in value) {
-        if (key === '__dynamic__') {
+        if (key === "__dynamic__") {
           // 跳过 __dynamic__ 键本身
           continue;
         }
@@ -179,16 +184,16 @@ export function extractEditableData(elementorData) {
       }
       return cleaned;
     }
-    
+
     return value;
   }
-  
+
   /**
    * 递归提取节点数据
    */
   function extractNode(node) {
     if (!node || !node.id) return;
-    
+
     // 如果节点应该被跳过（有 hide_desktop 或 __dynamic__ 属性），跳过整个子树
     if (shouldSkipNode(node)) {
       return;
@@ -198,7 +203,7 @@ export function extractEditableData(elementorData) {
     if (node.settings && Array.isArray(node.settings)) {
       node.settings = {};
     }
-    
+
     const widgetType = node.widgetType;
     const editableFields = EDITABLE_FIELDS_MAP[widgetType];
 
@@ -240,24 +245,24 @@ export function extractEditableData(elementorData) {
         if (bg.source === undefined) bg.source = "library";
       }
     }
-    
+
     // 如果这个组件类型有可编辑字段
     if (editableFields && node.settings) {
       const editableData = {
         id: node.id,
         widgetType: widgetType,
         elType: node.elType,
-        fields: {}
+        fields: {},
       };
-      
+
       // 提取可编辑字段
-      editableFields.forEach(field => {
+      editableFields.forEach((field) => {
         if (node.settings[field] !== undefined) {
           // 清理字段值，移除带有 __dynamic__ 的数组项
           editableData.fields[field] = cleanFieldValue(node.settings[field]);
         }
       });
-      
+
       // 只保存有实际数据的节点
       if (Object.keys(editableData.fields).length > 0) {
         editableMap.set(node.id, editableData);
@@ -288,11 +293,11 @@ export function extractEditableData(elementorData) {
         const overlayIsClassic =
           node.settings.background_overlay_background === "classic";
         const ovUrl = overlayIsClassic
-          ? (typeof ov === "string"
-              ? ov.trim()
-              : ov && typeof ov === "object"
-                ? String(ov.url || "").trim()
-                : "")
+          ? typeof ov === "string"
+            ? ov.trim()
+            : ov && typeof ov === "object"
+              ? String(ov.url || "").trim()
+              : ""
           : "";
 
         // 仅当有有效值时才记录该字段，透传原始值不做任何修改
@@ -310,20 +315,20 @@ export function extractEditableData(elementorData) {
         }
       }
     }
-    
+
     // 递归处理子元素
     if (node.elements && Array.isArray(node.elements)) {
-      node.elements.forEach(child => extractNode(child));
+      node.elements.forEach((child) => extractNode(child));
     }
   }
-  
+
   // 处理顶层数组
   if (Array.isArray(elementorData)) {
-    elementorData.forEach(part => {
+    elementorData.forEach((part) => {
       extractNode(part);
     });
   }
-  
+
   return editableMap;
 }
 
@@ -336,13 +341,13 @@ export function extractEditableData(elementorData) {
 export function syncDataToOriginal(originalData, editableMap) {
   // 深拷贝原始数据以避免直接修改
   const clonedData = JSON.parse(JSON.stringify(originalData));
-  
+
   /**
    * 递归查找并更新节点
    */
   function updateNode(node) {
     if (!node || !node.id) return;
-    
+
     // 如果这个节点有编辑数据
     if (editableMap.has(node.id)) {
       const editableData = editableMap.get(node.id);
@@ -354,16 +359,16 @@ export function syncDataToOriginal(originalData, editableMap) {
         node.settings[field] = editableData.fields[field];
       });
     }
-    
+
     // 递归处理子元素
     if (node.elements && Array.isArray(node.elements)) {
-      node.elements.forEach(child => updateNode(child));
+      node.elements.forEach((child) => updateNode(child));
     }
   }
-  
+
   // 处理顶层数组
   if (Array.isArray(clonedData)) {
-    clonedData.forEach(part => {
+    clonedData.forEach((part) => {
       updateNode(part);
     });
   }
