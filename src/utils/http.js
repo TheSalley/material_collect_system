@@ -117,6 +117,13 @@ export async function fetchWithAuth(url, options = {}) {
 
     const data = await res.json();
 
+    // 检查 HTTP 状态码是否成功
+    if (!res.ok) {
+      const msg = data?.msg || data?.message || `请求失败 (${res.status})`;
+      ElMessage.error(msg);
+      return { code: res.status, data, message: msg };
+    }
+
     if (res.status === 401 || data?.code === 401) {
       const globalStore = useGlobalStore();
       globalStore.clearUser();

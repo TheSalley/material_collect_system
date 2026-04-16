@@ -5,6 +5,7 @@ import pinia from "@/stores";
 import router from "@/router";
 
 import "quill/dist/quill.core.css";
+import "element-plus/dist/index.css";
 
 const app = createApp(App);
 

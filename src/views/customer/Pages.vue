@@ -359,17 +359,18 @@ async function handleSave() {
       return;
     }
 
-    console.log('保存数据:', finalData);
-
     const res = await updatePageById({
       site_id: websiteInfo.site_id,
       id: String(targetNode.state.moduleId),
       data: finalData,
     });
+
+    console.log('保存结果:', res);
+    
     if (res.code === 0) {
-      ElMessage({ message: "保存成功", type: "success" });
+      ElMessage({ message: res.message || "保存成功", type: "success" });
     } else {
-      ElMessage({ message: "保存失败", type: "error" });
+      ElMessage({ message: res.message || "保存失败", type: "error" });
     }
   } catch (error) {
     console.error('保存错误:', error);

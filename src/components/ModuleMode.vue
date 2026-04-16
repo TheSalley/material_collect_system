@@ -28,12 +28,19 @@
               </el-button>
             </div>
             <div class="preview-block-body">
-              <img
-                v-if="getModuleImage(part.id)"
-                :src="getModuleImage(part.id).file_url"
-                alt="截图预览"
-                class="preview-image"
-              />
+              <div v-if="getModuleImage(part.id)" class="preview-image-wrapper">
+                <el-image
+                  :src="getModuleImage(part.id).file_url"
+                  :preview-src-list="[getModuleImage(part.id).file_url]"
+                  fit="contain"
+                  class="preview-image"
+                  preview-teleported
+                />
+                <div class="preview-image-overlay">
+                  <el-icon size="24"><ZoomIn /></el-icon>
+                  <span>查看大图</span>
+                </div>
+              </div>
               <el-empty v-else description="未上传截图" :image-size="80" />
             </div>
           </div>
@@ -174,7 +181,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch, computed, provide } from "vue";
-import { Upload, Grid, Search, Picture, Check } from '@element-plus/icons-vue';
+import { Upload, Grid, Search, Picture, Check, ZoomIn } from '@element-plus/icons-vue';
 import { ElLoading, ElMessage } from "element-plus";
 import {
   getPageById,
@@ -230,22 +237,19 @@ function moduleImageKey(id) {
 }
 
 function buildPageMaterialsPayload() {
-  const rows = [];
-  visibleParts.value.forEach((part, idx) => {
+  // 按板块顺序返回数组，保证索引对应关系
+  return visibleParts.value.map((part) => {
     const key = String(part.id);
     const m = moduleImages.value[key];
-    if (!m?.id) return;
+    if (!m?.id || !m?.url) return null;
     const rawUrl = m.url || m.file_url;
-    if (!rawUrl) return;
-    const pageValue = m.page?.trim() || "";
-    rows.push({
+    return {
       id: m.id,
       demo: m.demo,
-      page: pageValue,
+      page: m.page || "",
       url: rawUrl.startsWith("http") ? rawUrl : getFileFullUrl(rawUrl),
-    });
+    };
   });
-  return rows;
 }
 
 /** 输出与 visibleParts 等长的尺寸数组，供 POST /api/page_config/save_sizes */
@@ -555,7 +559,7 @@ const customUpload = async (file) => {
       const k = moduleImageKey(mid);
       moduleImages.value[k] = {
         ...saved,
-        page: String(pi + 1),
+        page: String(mid), // 保存板块的 elementor id
         file_url: getFileFullUrl(saved.url || saved.file_url),
       };
       const pageId = String(props.pageId);
@@ -607,8 +611,7 @@ watch(
         const { materials = [], sizes = [] } = res2.data || {};
         const n = visibleParts.value.length;
         sectionSizes.value = Array.from({ length: n }, (_, idx) => {
-          const j = materials.findIndex((m) => String(m.page) === String(idx + 1));
-          const raw = j >= 0 && sizes[j] != null ? sizes[j] : sizes[idx];
+          const raw = sizes[idx];
           const o = raw && typeof raw === "object" ? raw : {};
           let w = o.width != null ? Number(o.width) : null;
           let h = o.height != null ? Number(o.height) : null;
@@ -616,15 +619,16 @@ watch(
           if (h != null && Number.isNaN(h)) h = null;
           return { width: w, height: h };
         });
+        // materials 按索引对应板块：索引 0 -> 板块 1，索引 1 -> 板块 2...
         visibleParts.value.forEach((part, idx) => {
           const key = String(part.id);
-          const found = materials.find((m) => m.page === String(idx + 1));
-          if (!found) return;
+          const found = materials[idx];
+          if (!found || !found.url) return;
           moduleImages.value[key] = {
             id: found.id,
             url: found.url,
             demo: found.demo,
-            page: String(idx + 1),
+            page: found.page,
             file_url: getFileFullUrl(found.url),
           };
         });
@@ -698,7 +702,7 @@ defineExpose({
 
 /* 左侧预览区域（与右侧同：editor-scroll + editor-content + section-block） */
 .preview-section {
-  flex: 0 0 45%;
+  flex: 0 0 55%;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -751,14 +755,50 @@ defineExpose({
   justify-content: center;
 }
 
+.preview-image-wrapper {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.preview-image-wrapper .el-image {
+  display: block;
+}
+
+.preview-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: white;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.preview-image-wrapper:hover .preview-image-overlay {
+  opacity: 1;
+}
+
 .preview-image {
   width: 100%;
   max-height: 320px;
   height: auto;
   object-fit: contain;
   display: block;
-  border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s;
+}
+
+.preview-image-wrapper:hover .preview-image {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* 右侧编辑区域 */

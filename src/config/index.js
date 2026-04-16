@@ -1,4 +1,4 @@
-const APP_VERSION = "0.1.8";
+const APP_VERSION = "0.1.9";
 
 /** 是否启用严格尺寸限制：开启后，选图后确定的尺寸即为唯一允许上传的尺寸 */
 const STRICT_IMAGE_DIMENSION_ENABLED = false;
@@ -6,9 +6,8 @@ const STRICT_IMAGE_DIMENSION_ENABLED = false;
 /** API 请求超时时间（毫秒） */
 const API_TIMEOUT = 30000;
 
-/** API 基础地址 */
-const API_BASE_URL = "https://apitest.yhct.site";
-// const API_BASE_URL = "http://127.0.0.1:3501";
+/** API 基础地址：开发环境用测试服务器，生产环境用相对路径 */
+const API_BASE_URL = import.meta.env.MODE === "production" ? "/" : "https://apitest.yhct.site";
 
 /**
  * HTTP 错误状态码对应的中文提示信息
