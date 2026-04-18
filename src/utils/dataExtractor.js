@@ -64,6 +64,9 @@ const EDITABLE_FIELDS_MAP = {
   tabs: ["tabs"],
   slides: ["slides"],
   // Pro 组件
+  "animated-headline": ["before_text", "highlighted_text"],
+
+
   "call-to-action": ["title", "description", "button", "bg_image"],
   "flip-box": [
     "title_text_a",
