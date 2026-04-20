@@ -49,3 +49,4 @@ const config = {
 7. 0.1.7 优化image 组件
 8. 0.1.8 优化icon-box、icon-list等组件
 9. 0.1.9 左侧截图增加大屏查看
+10 0.1.10 fix 媒体库

@@ -200,7 +200,7 @@ import {
 } from "@element-plus/icons-vue";
 import { getMediaByDemo, saveMedia } from "@/apis/media";
 
-const demo = ref("demo67");
+const demo = ref("");
 const loading = ref(false);
 const rows = ref([]);
 const searched = ref(false);
@@ -242,16 +242,12 @@ function formatDate(str) {
 
 async function loadMedia() {
   const d = (demo.value || "").trim();
-  if (!d) {
-    ElMessage.warning("请输入 Demo 名称");
-    return;
-  }
   loading.value = true;
   searched.value = true;
   try {
     const res = await getMediaByDemo(d);
     if (res.code === 0) {
-      const list = Array.isArray(res.data) ? res.data : [];
+      const list = Array.isArray(res.data.list) ? res.data.list : [];
       rows.value = list;
     } else {
       rows.value = [];
