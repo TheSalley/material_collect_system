@@ -1,0 +1,93 @@
+<script setup>
+import { Picture, View, Document } from "@element-plus/icons-vue";
+
+defineProps({
+  item: {
+    type: Object,
+    required: true,
+  },
+});
+
+const IMAGE_FIELDS = ["url", "src", "image", "img", "thumbnail", "cover"];
+
+function getImageUrl(item) {
+  if (!item || typeof item !== "object") return null;
+  for (const key of Object.keys(item)) {
+    if (IMAGE_FIELDS.some(f => key.toLowerCase().includes(f))) {
+      const val = item[key];
+      if (typeof val === "string" && /^https?:\/\//i.test(val)) return val;
+    }
+  }
+  return null;
+}
+
+function getImageExt(item) {
+  const url = getImageUrl(item);
+  if (!url) return "FILE";
+  const m = url.match(/\.([a-z0-9]+)(\?|$)/i);
+  return m ? m[1].toUpperCase() : "IMG";
+}
+
+function getField(item, key) {
+  if (!item || typeof item !== "object") return null;
+  return item[key] ?? item[key.replace(/_/g, "")] ?? null;
+}
+
+function formatDate(str) {
+  if (!str) return "-";
+  const d = new Date(str);
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+}
+</script>
+
+<template>
+  <div class="media-card group relative rounded-2xl overflow-hidden bg-white dark:bg-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-600">
+    <div class="relative aspect-[4/3] bg-gray-100 dark:bg-gray-600 overflow-hidden">
+      <template v-if="getImageUrl(item)">
+        <el-image
+          :src="getImageUrl(item)"
+          fit="cover"
+          class="w-full h-full transition-transform duration-500 group-hover:scale-105"
+          :preview-src-list="[getImageUrl(item)]"
+          preview-teleported
+        />
+      </template>
+      <template v-else>
+        <div class="w-full h-full flex items-center justify-center">
+          <el-icon class="text-5xl text-gray-300 dark:text-gray-500"><Document /></el-icon>
+        </div>
+      </template>
+
+      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+        <el-button
+          v-if="getImageUrl(item)"
+          circle
+          size="large"
+          type="primary"
+          :icon="View"
+        />
+      </div>
+
+      <div
+        v-if="getImageUrl(item)"
+        class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-black/50 text-white text-[10px] font-medium backdrop-blur-sm"
+      >
+        {{ getImageExt(item) }}
+      </div>
+    </div>
+
+    <div class="p-3">
+      <div class="flex flex-wrap gap-1">
+        <el-tag v-if="getField(item, 'demo')" size="small" type="info" effect="plain" class="!text-[10px]">
+          {{ getField(item, 'demo') }}
+        </el-tag>
+        <el-tag v-if="getField(item, 'page')" size="small" type="warning" effect="plain" class="!text-[10px]">
+          {{ getField(item, 'page') }}
+        </el-tag>
+        <el-tag v-if="getField(item, 'created_at')" size="small" type="info" effect="plain" class="!text-[10px]">
+          {{ formatDate(getField(item, 'created_at')) }}
+        </el-tag>
+      </div>
+    </div>
+  </div>
+</template>

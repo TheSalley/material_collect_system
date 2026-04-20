@@ -51,9 +51,6 @@ const EDITABLE_FIELDS_MAP = {
   "elementskit-accordion": ["ekit_accordion_items"],
 
   // 更多 Elementor 基础组件
-  divider: ["style", "gap"],
-  spacer: ["space"],
-  google_maps: ["address", "zoom"],
   icon: ["selected_icon"],
   "image-box": ["title_text", "description_text"],
   "icon-box": ["title_text", "description_text"],
