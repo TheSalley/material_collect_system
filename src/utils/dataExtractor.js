@@ -20,18 +20,22 @@ const EDITABLE_FIELDS_MAP = {
   counter: ["title", "ending_number", "suffix"],
   "icon-list": ["icon_list"],
 
-  // Jkit 组件
-  "elementskit-icon-box": [
-    "ekit_icon_box_title_text",
-    "ekit_icon_box_description_text",
-    "ekit_icon_box_btn_text",
-  ],
+  // JegElementorKit 组件
   jkit_icon_box: [
     "sg_icon_text",
     "sg_icon_description",
     "sg_readmore_button_label",
     "sg_badge_text",
   ],
+
+
+  // ElementsKit 组件
+  "elementskit-icon-box": [
+    "ekit_icon_box_title_text",
+    "ekit_icon_box_description_text",
+    "ekit_icon_box_btn_text",
+  ],
+  
   jkit_testimonials: ["sg_testimonials_list"],
   jkit_fun_fact: [
     "sg_content_number",

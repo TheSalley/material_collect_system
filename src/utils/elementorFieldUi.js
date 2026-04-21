@@ -1,14 +1,8 @@
-/**
- * Elementor 编辑区 UI：根数据形态与 Field 组件路径解析
- * - 模块/导出 JSON 常为单根对象；页面常为顶层数组
- * - widgetType 多为 snake_case，文件名多为 kebab-case（如 jkit_icon_box → jkit-icon-box.vue）
- */
-
 const FIELD_BASES = [
   "/src/components/Field/",
   "/src/components/Field/Basic/",
   "/src/components/Field/General/",
-  "/src/components/Field/Jkit/",
+  "/src/components/Field/JegElementorKit/",
   "/src/components/Field/Pro/",
   "/src/components/Field/Other/",
   "/src/components/Field/ElementsKit/",
