@@ -1,5 +1,5 @@
 <template>
-  <div class="__field-item">
+  <div class="__field-item" v-if="imageUrl">
     <div class="__field-group">
       <label class="__field-label">
         <el-icon><Picture /></el-icon>
@@ -135,20 +135,21 @@ const handleBeforeUpload = (file) => {
     background: "rgba(0, 0, 0, 0.5)",
   });
 
-  return handleImageUpload(
-    file,
-    (url, id) => {
+  handleImageUpload(file, (url, id) => {
+    loading.close();
+    console.log('123', url, id)
+    const imageData = {
+      ...props.fields.image,
+      url: url,
+      id: id,
+    };
+    props.onUpdate("image", imageData);
+  }, opts).then((ok) => {
+    if (ok === false) {
       loading.close();
-      if (!props.fields.image) {
-        props.fields.image = {};
-      }
-      props.fields.image.url = url;
-      props.fields.image.id = id;
-      props.onUpdate("image", props.fields.image);
-    },
-    opts,
-  );
+    }
+  });
+
+  return false;
 };
 </script>
-
-<style scoped></style>

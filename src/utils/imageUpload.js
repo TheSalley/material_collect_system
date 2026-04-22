@@ -190,14 +190,15 @@ export function validateImageFile(file, options = {}) {
  */
 export async function validateImageFileWithDimensions(file, options = {}) {
   if (!validateImageFile(file, options)) return false;
-  const { maxWidth, maxHeight, strictMatch, refDimensions } = options;
-  if (strictMatch && refDimensions && STRICT_IMAGE_DIMENSION_ENABLED) {
-    const dim = await getImageNaturalSizeFromFile(file);
-    return assertImageDimensionsMatch(dim, refDimensions);
-  }
-  if (maxWidth == null && maxHeight == null) return true;
-  const dim = await getImageNaturalSizeFromFile(file);
-  return assertImageDimensionsWithin(dim, { maxWidth, maxHeight });
+  return true;
+  // const { maxWidth, maxHeight, strictMatch, refDimensions } = options;
+  // if (strictMatch && refDimensions && STRICT_IMAGE_DIMENSION_ENABLED) {
+  //   const dim = await getImageNaturalSizeFromFile(file);
+  //   return assertImageDimensionsMatch(dim, refDimensions);
+  // }
+  // if (maxWidth == null && maxHeight == null) return true;
+  // const dim = await getImageNaturalSizeFromFile(file);
+  // return assertImageDimensionsWithin(dim, { maxWidth, maxHeight });
 }
 
 /**
@@ -232,9 +233,9 @@ export async function uploadImageFile(file) {
 /**
  * 处理图片上传（包含验证和上传）
  * @param {File} file - 要上传的文件
- * @param {Function} onSuccess - 成功回调函数，接收 (url, id) 参数
- * @param {Object} options - 选项，同 validateImageFileWithDimensions / IMAGE_UPLOAD_DEFAULTS
- * @returns {Promise<boolean>} - 是否应该阻止默认上传行为（用于 el-upload 的 before-upload）
+ * @param {Function} onSuccess - 成功回调，接收 (url, id)
+ * @param {Object} options
+ * @returns {Promise<boolean>}
  */
 export async function handleImageUpload(file, onSuccess, options = {}) {
   const ok = await validateImageFileWithDimensions(file, options);
@@ -244,6 +245,7 @@ export async function handleImageUpload(file, onSuccess, options = {}) {
 
   if (result && onSuccess) {
     onSuccess(result.url, result.id);
+    return true;
   }
 
   return false;

@@ -1,5 +1,5 @@
 <template>
-  <div class="__field-item">
+  <div class="__field-item" v-if="fields.text !== ''">
     <div class="__field-group">
       <label class="__field-label">
         <el-icon><Link /></el-icon>
@@ -34,5 +34,3 @@ const props = defineProps({
   },
 });
 </script>
-
-<style scoped></style>

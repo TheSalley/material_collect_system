@@ -122,14 +122,15 @@ const handleBeforeUpload = (file) => {
     const opts = naturalSizeInfo.value.dims
         ? { strictMatch: true, refDimensions: naturalSizeInfo.value.dims }
         : {};
-    return handleImageUpload(file, (url, id) => {
-        if (!props.fields.ekit_image_box_image) {
-            props.fields.ekit_image_box_image = {};
-        }
-        props.fields.ekit_image_box_image.url = url;
-        props.fields.ekit_image_box_image.id = id;
-        props.onUpdate('ekit_image_box_image', props.fields.ekit_image_box_image);
+    handleImageUpload(file, (url, id) => {
+        const imageData = {
+            ...props.fields.ekit_image_box_image,
+            url: url,
+            id: id,
+        };
+        props.onUpdate('ekit_image_box_image', imageData);
     }, opts);
+    return false;
 };
 </script>
 

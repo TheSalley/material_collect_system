@@ -94,14 +94,16 @@ function move(idx, dir) {
 }
 
 const handleBeforeUpload = (file) => {
-  return handleImageUpload(file, (url, id) => {
-    const next = carousel.value.slice();
-    next.push({
+  handleImageUpload(file, (url, id) => {
+    const imageData = {
       id: id ?? "",
       url: url || "",
-    });
+    };
+    const next = carousel.value.slice();
+    next.push(imageData);
     emitCarousel(next);
   }, uploadRuleOptions);
+  return false;
 };
 </script>
 

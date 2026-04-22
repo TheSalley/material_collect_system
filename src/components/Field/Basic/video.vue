@@ -1,9 +1,9 @@
 <template>
-  <div class="__field-item">
+  <div class="__field-item" v-if="fields.youtube_url !== ''">
     <div class="__field-group">
       <label class="__field-label">
         <el-icon><Link /></el-icon>
-        <span class="__field-label">视频链接：</span>
+        <span class="__field-label">Youtube 视频链接：</span>
         <FieldWidgetType :type="widgetType" />
       </label>
       <el-input

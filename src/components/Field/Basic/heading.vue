@@ -1,5 +1,5 @@
 <template>
-    <div class="__field-item">
+    <div class="__field-item" v-if="fields.title !== ''">
         <div class="__field-group">
             <label class="__field-label">
                 <el-icon>

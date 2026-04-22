@@ -8,12 +8,12 @@
  */
 const EDITABLE_FIELDS_MAP = {
   // Basic 组件
-  button: ["text", "link", "size"],
-  heading: ["title"],
+  "heading": ["title"],
   "text-editor": ["editor"],
-  video: ["youtube_url", "video_type"],
-  image: ["image", "caption", "link"],
+  "button": ["text"],
+  "video": ["youtube_url"],
 
+  image: ["image"],
   // General 组件
   toggle: ["tabs"],
   accordion: ["tabs"],
