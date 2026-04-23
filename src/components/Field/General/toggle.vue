@@ -58,6 +58,7 @@ import { computed, reactive } from "vue";
 import { Menu, Delete, ArrowDown } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 import QuillEditor from "@/components/QuillEditor.vue";
+import { genId } from "@/utils";
 
 const props = defineProps({
     widgetType: {
@@ -91,10 +92,6 @@ function toggleCollapse(index) {
 
 function emitItems(next) {
     props.onUpdate("tabs", next);
-}
-
-function genId() {
-    return Math.random().toString(36).substring(2, 10);
 }
 
 function addItem() {

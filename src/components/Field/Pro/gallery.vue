@@ -1,11 +1,18 @@
 <template>
   <div class="gallery-field">
+    <FieldWidgetType :type="widgetType" />
     <div class="gallery-header">
       <span class="__field-label">Gallery</span>
-      <p class="field-desc">多图片画廊展示，可上传或从媒体库选择 <code>gallery</code>（数组）。</p>
+      <p class="field-desc">
+        多图片画廊展示，可上传或从媒体库选择 <code>gallery</code>（数组）。
+      </p>
     </div>
 
-    <div class="gallery-body" v-loading="uploading" element-loading-text="正在上传…">
+    <div
+      class="gallery-body"
+      v-loading="uploading"
+      element-loading-text="正在上传…"
+    >
       <div v-if="displayImages.length > 0" class="gallery-grid">
         <div
           v-for="(item, index) in displayImages"
@@ -55,6 +62,8 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { Plus, Delete } from "@element-plus/icons-vue";
+
+import FieldWidgetType from "@/components/FieldWidgetType.vue";
 import {
   validateImageFileWithDimensions,
   uploadImageFile,
@@ -86,6 +95,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  widgetType: {
+    type: String,
+    required: true,
+  },
   fields: {
     type: Object,
     required: true,
@@ -101,27 +114,29 @@ const uploading = ref(false);
 const displayImages = computed(() => {
   const gallery = props.fields.gallery;
   if (!Array.isArray(gallery) || gallery.length === 0) return [];
-  return gallery.map((item) => {
-    if (!item || typeof item !== "object") return null;
-    const url = item.url;
-    let displayUrl = "";
-    if (url && typeof url === "string") {
-      const trimmed = url.trim();
-      if (trimmed) {
-        displayUrl =
-          trimmed.startsWith("http") || trimmed.startsWith("//")
-            ? trimmed.startsWith("//")
-              ? `https:${trimmed}`
-              : trimmed
-            : getFileFullUrl(trimmed);
+  return gallery
+    .map((item) => {
+      if (!item || typeof item !== "object") return null;
+      const url = item.url;
+      let displayUrl = "";
+      if (url && typeof url === "string") {
+        const trimmed = url.trim();
+        if (trimmed) {
+          displayUrl =
+            trimmed.startsWith("http") || trimmed.startsWith("//")
+              ? trimmed.startsWith("//")
+                ? `https:${trimmed}`
+                : trimmed
+              : getFileFullUrl(trimmed);
+        }
       }
-    }
-    return {
-      id: item.id,
-      url: item.url,
-      displayUrl,
-    };
-  }).filter(Boolean);
+      return {
+        id: item.id,
+        url: item.url,
+        displayUrl,
+      };
+    })
+    .filter(Boolean);
 });
 
 watch(
@@ -129,7 +144,7 @@ watch(
   () => {
     thumbDims.value = {};
   },
-  { deep: true }
+  { deep: true },
 );
 
 function patchGallery(newItems) {

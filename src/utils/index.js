@@ -9,3 +9,8 @@ export function addProtectedRoutes(role) {
 export function resetRoutes() {
   return Promise.resolve();
 }
+
+// 生成唯一ID
+export function genId() {
+  return Math.random().toString(36).substring(2, 10);
+}

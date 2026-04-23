@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from "vue";
 import { Menu, Delete, ArrowUp, ArrowDown, Plus, Document, Edit, CircleCheck } from "@element-plus/icons-vue";
+import { genId } from "@/utils";
 
 const props = defineProps({
   nodeId: {
@@ -51,10 +52,6 @@ function move(idx, dir) {
   const [it] = next.splice(idx, 1);
   next.splice(to, 0, it);
   emitItems(next);
-}
-
-function genId() {
-  return Math.random().toString(16).slice(2, 9);
 }
 
 function addItem() {

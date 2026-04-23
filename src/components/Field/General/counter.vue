@@ -6,27 +6,28 @@
         <span>数字变化</span>
         <FieldWidgetType :type="widgetType" />
       </label>
-      <div class="__field-group mt-3">
+      <div class="__field-group mt-3" v-if="fields.ending_number">
         <label class="__field-label">结束数字</label>
         <el-input
           v-model="fields.ending_number"
-          placeholder="例如：500"
+          type="number"
+          placeholder="例如：100"
           @input="onUpdate('ending_number', fields.ending_number)"
         />
       </div>
-      <div class="__field-group mt-3">
+      <div class="__field-group mt-3" v-if="fields.suffix && fields.suffix !== ''">
         <label class="__field-label">后缀</label>
         <el-input
           v-model="fields.suffix"
-          placeholder="例如：+ / % / 万"
+          placeholder="例如：+ / %"
           @input="onUpdate('suffix', fields.suffix)"
         />
       </div>
-      <div class="__field-group mt-3">
+      <div class="__field-group mt-3" v-if="fields.title !== ''">
         <label class="__field-label">标题</label>
         <el-input
           v-model="fields.title"
-          placeholder="请输入计数器标题，例如：Enterprise in China"
+          placeholder="请输入文本"
           @input="onUpdate('title', fields.title)"
         />
       </div>

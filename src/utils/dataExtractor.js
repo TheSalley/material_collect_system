@@ -12,14 +12,18 @@ const EDITABLE_FIELDS_MAP = {
   "text-editor": ["editor"],
   "button": ["text"],
   "video": ["youtube_url"],
-
-  image: ["image"],
+  "image": ["image"], // 可后续优化
   // General 组件
-  toggle: ["tabs"],
-  accordion: ["tabs"],
-  counter: ["title", "ending_number", "suffix"],
+  "counter": ["title", "ending_number", "suffix"],
   "icon-list": ["icon_list"],
 
+  toggle: ["tabs"],
+  accordion: ["tabs"],
+  
+  
+  // Pro 组件
+  "animated-headline": ["before_text", "highlighted_text"],
+  "testimonial-carousel": ["slides"],
   // JegElementorKit 组件
   jkit_icon_box: [
     "sg_icon_text",
@@ -30,12 +34,13 @@ const EDITABLE_FIELDS_MAP = {
 
 
   // ElementsKit 组件
+
+
   "elementskit-icon-box": [
     "ekit_icon_box_title_text",
     "ekit_icon_box_description_text",
     "ekit_icon_box_btn_text",
   ],
-  
   jkit_testimonials: ["sg_testimonials_list"],
   jkit_fun_fact: [
     "sg_content_number",
@@ -64,8 +69,7 @@ const EDITABLE_FIELDS_MAP = {
   testimonial: ["testimonial_content", "testimonial_name", "testimonial_job"],
   tabs: ["tabs"],
   slides: ["slides"],
-  // Pro 组件
-  "animated-headline": ["before_text", "highlighted_text"],
+  
 
 
   "call-to-action": ["title", "description", "button", "bg_image"],
@@ -78,18 +82,10 @@ const EDITABLE_FIELDS_MAP = {
   ],
   gallery: ["gallery"],
   "timeline-widget-addon": ["twae_list"],
-  "social-icons": ["social_icon_list"],
-  alert: ["alert_title", "alert_description"],
-  audio: ["source_type"],
-  shortcode: ["shortcode"],
-  html: ["html"],
-  "menu-anchor": ["anchor"],
-  sidebar: ["sidebar"],
-  "read-more": ["before_text", "after_text"],
   progress: ["title", "percent"],
-  "nav-menu": ["menu"],
-  form: ["form_fields"],
   // ElementsKit
+
+
   "elementskit-team": ["ekit_team_image"],
   "elementskit-progressbar": [
     "ekit_progressbar_title",
@@ -218,6 +214,11 @@ export function extractEditableData(elementorData) {
       !Object.prototype.hasOwnProperty.call(node.settings, "editor")
     ) {
       node.settings.editor = DEFAULT_TEXT_EDITOR_HTML;
+    }
+
+    if (widgetType === 'counter' && node.settings &&
+      !Object.prototype.hasOwnProperty.call(node.settings, "ending_number")) {
+      node.settings.ending_number = 100;
     }
 
     // call-to-action（Elementor Pro）：补全文案与 bg_image（媒体库结构）
