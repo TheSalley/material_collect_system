@@ -7,18 +7,16 @@
     :fields="editableNode.fields"
     :widgetType="editableNode.widgetType"
     :settings="settings"
-    :section-index="sectionIndex"
     :on-update="handleFieldUpdate" />
 
   <!-- 递归渲染子节点 -->
   <template v-if="originalNode?.elements?.length">
-    <div class="child-nodes">
+    <div class="child-nodes mb-2">
       <DataExtractor
         v-for="childNode in originalNode.elements"
         :key="childNode.id"
         :original-node="childNode"
         :editable-map="editableMap"
-        :section-index="sectionIndex"
         @update:field="emit('update:field', $event)" />
     </div>
   </template>
@@ -40,10 +38,6 @@ const props = defineProps({
   editableMap: {
     type: Map,
     required: true,
-  },
-  sectionIndex: {
-    type: Number,
-    default: undefined,
   },
   settings: {
     type: Object,

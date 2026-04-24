@@ -17,7 +17,7 @@
           @input="onUpdate('before_text', fields.before_text)"
         />
       </div>
-      <div class="__field-group" v-if="fields.before_text !== ''">
+      <div class="__field-group" v-if="fields.highlighted_text !== ''">
         <label class="__field-label">
           <el-icon>
             <Promotion />

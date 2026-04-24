@@ -1,11 +1,11 @@
 <template>
-  <div class="quill-editor-wrapper" ref="wrapperRef">
-    <div :id="editorId" class="quill-editor min-h-[120px]"></div>
+  <div class="quill-editor-wrapper">
+    <div ref="editorRef" class="quill-editor min-h-[120px]"></div>
   </div>
 </template>
 
 <script setup>
-import { nextTick, onMounted, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import Quill from "quill";
 import "quill/dist/quill.snow.css";
 
@@ -13,10 +13,6 @@ const props = defineProps({
   modelValue: {
     type: String,
     default: "",
-  },
-  nodeId: {
-    type: String,
-    required: true,
   },
   placeholder: {
     type: String,
@@ -26,18 +22,17 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
-const editorId = `quill-editor-${props.nodeId}`;
-
 let quill = null;
-const wrapperRef = ref(null);
+const editorRef = ref(null);
 
 onMounted(() => {
-  quill = new Quill(`#${editorId}`, {
+  if (!editorRef.value) return;
+
+  quill = new Quill(editorRef.value, {
     theme: "snow",
     modules: {
       toolbar: {
         container: [
-          // [{ header: [1, 2, 3, 4, 5, 6, false] }],
           ["bold", "italic", "underline", "link"],
           [{ color: [] }],
           [{ indent: "-1" }, { indent: "+1" }],
@@ -52,17 +47,22 @@ onMounted(() => {
 
   quill.on("text-change", () => {
     const content = quill.root.innerHTML;
-    emit("update:modelValue", content);
+    // 避免在内容相同时重复触发更新
+    if (content !== props.modelValue) {
+      emit("update:modelValue", content);
+    }
   });
 });
 
 // 监听外部值的变化，同步到编辑器
 watch(
   () => props.modelValue,
-  async (newVal) => {
+  (newVal) => {
     if (quill && newVal !== quill.root.innerHTML) {
-      await nextTick();
-      quill.root.innerHTML = newVal || "";
+      // 使用 Quill 的 API 来设置内容，而不是直接操作 innerHTML
+      // 这可以避免光标跳动的问题
+      const delta = quill.clipboard.convert(newVal || "");
+      quill.setContents(delta, 'silent');
     }
   },
 );

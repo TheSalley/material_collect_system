@@ -71,7 +71,9 @@
               <div class="collapse-title">
                 <el-icon class="collapse-icon"><Grid /></el-icon>
                 <span class="collapse-text">板块 {{ index + 1 }}</span>
-                <el-tag size="small" type="info">{{ part.elType || 'section' }}</el-tag>
+                <el-tag size="small" type="info">{{
+                  part.elType || "section"
+                }}</el-tag>
               </div>
             </template>
             <div class="collapse-content">
@@ -79,7 +81,6 @@
                 v-if="part?.id"
                 :original-node="part"
                 :editable-map="state.editableMap"
-                :section-index="index"
                 @update:field="handleFieldUpdate"
               />
             </div>
@@ -102,20 +103,26 @@
         <el-tab-pane label="本地上传" name="upload">
           <el-form label-position="top">
             <el-form-item label="页面标识">
-              <el-input v-model="uploadPageName" placeholder="手动填写页面标识" />
+              <el-input
+                v-model="uploadPageName"
+                placeholder="手动填写页面标识"
+              />
             </el-form-item>
           </el-form>
           <el-upload drag action="#" :before-upload="handleBeforeUpload">
             <el-icon class="el-icon--upload">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-                <path fill="currentColor"
-                  d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.87 239.87 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6z">
-                </path>
+                <path
+                  fill="currentColor"
+                  d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.87 239.87 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6z"
+                ></path>
               </svg>
             </el-icon>
             <div class="el-upload__text">拖动文件或<em>点击上传</em></div>
             <template #tip>
-              <div class="el-upload__tip">jpg/png/webp 图片，大小不超过 20MB</div>
+              <div class="el-upload__tip">
+                jpg/png/webp 图片，大小不超过 20MB
+              </div>
             </template>
           </el-upload>
         </el-tab-pane>
@@ -130,7 +137,9 @@
               class="media-search"
               @input="handleMediaSearch"
             >
-              <template #prefix><el-icon><Search /></el-icon></template>
+              <template #prefix
+                ><el-icon><Search /></el-icon
+              ></template>
             </el-input>
             <div v-if="mediaList.length === 0" class="media-empty">
               <el-empty description="媒体库为空，请先上传" />
@@ -154,15 +163,24 @@
                     </div>
                   </template>
                 </el-image>
-                <div class="media-item-name">{{ item.name || item.file_name || getFileName(item.file_url || item.url) }}</div>
-                <div v-if="selectedMediaId === item.id" class="media-item-check">
+                <div class="media-item-name">
+                  {{
+                    item.name ||
+                    item.file_name ||
+                    getFileName(item.file_url || item.url)
+                  }}
+                </div>
+                <div
+                  v-if="selectedMediaId === item.id"
+                  class="media-item-check"
+                >
                   <el-icon><Check /></el-icon>
                 </div>
               </div>
             </div>
             <div v-if="filteredMediaList.length > 0" class="media-footer">
               <span class="media-selected-tip">
-                {{ selectedMediaId ? '已选择 1 项' : '请选择一项' }}
+                {{ selectedMediaId ? "已选择 1 项" : "请选择一项" }}
               </span>
               <el-button
                 type="primary"
@@ -180,8 +198,23 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch, computed, provide } from "vue";
-import { Upload, Grid, Search, Picture, Check, ZoomIn } from '@element-plus/icons-vue';
+import {
+  ref,
+  reactive,
+  onMounted,
+  nextTick,
+  watch,
+  computed,
+  provide,
+} from "vue";
+import {
+  Upload,
+  Grid,
+  Search,
+  Picture,
+  Check,
+  ZoomIn,
+} from "@element-plus/icons-vue";
 import { ElLoading, ElMessage } from "element-plus";
 import {
   getPageById,
@@ -193,8 +226,15 @@ import {
 import { saveMedia, getMediaByDemo } from "@/apis/media.js";
 import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
-import { extractEditableData, updateField, mapToObject } from "@/utils/dataExtractor.js";
-import { normalizeElementorRoots, pickFieldModule } from "@/utils/elementorFieldUi.js";
+import {
+  extractEditableData,
+  updateField,
+  mapToObject,
+} from "@/utils/dataExtractor.js";
+import {
+  normalizeElementorRoots,
+  pickFieldModule,
+} from "@/utils/elementorFieldUi.js";
 
 const dialogVisible = ref(false);
 const uploading = ref(false);
@@ -223,8 +263,8 @@ const activeCollapseName = computed({
   },
 });
 const editorScrollRef = ref(null);
-/** 与左侧截图板块同序：每板块 { width, height }，供右侧上传校验与保存 save_sizes */
-const sectionSizes = ref([]);
+/** 按模块 elementor id 存尺寸配置，与 visibleParts 顺序无关、与右侧板块一一对应 */
+const sectionSizes = ref({});
 provide("sectionSizes", sectionSizes);
 
 /** 按模块 elementor id 存截图，与 visibleParts 顺序无关、与右侧板块一一对应 */
@@ -252,17 +292,31 @@ function buildPageMaterialsPayload() {
   });
 }
 
-/** 输出与 visibleParts 等长的尺寸数组，供 POST /api/page_config/save_sizes */
+/** 输出数组结构，供 POST /api/page_config/save_sizes */
 function buildPageSizesPayload() {
-  return visibleParts.value.map((_, idx) => {
-    const s = sectionSizes.value[idx] || {};
-    const w = Number(s.width);
-    const h = Number(s.height);
-    const out = {};
-    if (!Number.isNaN(w) && w > 0) out.width = Math.round(w);
-    if (!Number.isNaN(h) && h > 0) out.height = Math.round(h);
-    return out;
-  });
+  const sizes = sectionSizes.value;
+  if (!sizes) return [];
+
+  const result = Object.entries(sizes).reduce((acc, [moduleId, sizeInfo]) => {
+    const w = Number(sizeInfo?.width);
+    const h = Number(sizeInfo?.height);
+
+    // Only include if there is at least one valid size
+    if ((!Number.isNaN(w) && w > 0) || (!Number.isNaN(h) && h > 0)) {
+      const out = { module_id: moduleId };
+      if (!Number.isNaN(w) && w > 0) {
+        out.width = Math.round(w);
+      }
+      if (!Number.isNaN(h) && h > 0) {
+        out.height = Math.round(h);
+      }
+      acc.push(out);
+    }
+    return acc;
+  }, []);
+
+  console.log("buildPageSizesPayload result:", result);
+  return result;
 }
 
 async function saveSectionSizes() {
@@ -271,9 +325,16 @@ async function saveSectionSizes() {
     ElMessage.warning("缺少站点或页面信息");
     return;
   }
-  const loadingInstance = ElLoading.service({ fullscreen: true, text: "正在保存尺寸..." });
+  const loadingInstance = ElLoading.service({
+    fullscreen: true,
+    text: "正在保存尺寸...",
+  });
   try {
-    const res = await savePageSizes(site_id, String(props.pageId), buildPageSizesPayload());
+    const res = await savePageSizes(
+      site_id,
+      String(props.pageId),
+      buildPageSizesPayload(),
+    );
     if (res?.code === 0) {
       ElMessage.success(res.message || "尺寸保存成功");
     } else {
@@ -317,7 +378,9 @@ function mediaDemoName() {
 
 // ── 与 PageMode 相同的 visibleParts：左右列共用，保证一一对应 ────────────────
 
-const fieldModules = import.meta.glob("/src/components/Field/**/*.vue", { eager: true });
+const fieldModules = import.meta.glob("/src/components/Field/**/*.vue", {
+  eager: true,
+});
 function hasFieldComponent(widgetType) {
   return pickFieldModule(fieldModules, widgetType) != null;
 }
@@ -342,7 +405,7 @@ const visibleParts = computed(() => {
   const editableMap = state.editableMap;
   if (!editableMap) return [];
   return parts.filter(
-    (part) => part && hasRenderableEditableInTree(part, editableMap)
+    (part) => part && hasRenderableEditableInTree(part, editableMap),
   );
 });
 
@@ -355,7 +418,8 @@ function updateNodeInOriginalData(data, nodeId, fieldName, value) {
 
   if (Array.isArray(data)) {
     for (let i = 0; i < data.length; i++) {
-      if (updateNodeInOriginalData(data[i], nodeId, fieldName, value)) return true;
+      if (updateNodeInOriginalData(data[i], nodeId, fieldName, value))
+        return true;
     }
     return false;
   }
@@ -383,7 +447,7 @@ function handleFieldUpdate(payload) {
     updateNodeInOriginalData(state.pageData, nodeId, fieldName, value);
     updateNodeInOriginalData(state.originData, nodeId, fieldName, value);
   } catch (error) {
-    console.error('更新字段时出错:', error);
+    console.error("更新字段时出错:", error);
   }
 }
 
@@ -409,7 +473,7 @@ function applyBulkFieldUpdates(updates = []) {
 
 function getFinalData() {
   if (!state.pageData) {
-    console.warn('[ModuleMode] getFinalData: pageData 为 null', {
+    console.warn("[ModuleMode] getFinalData: pageData 为 null", {
       moduleId: state.moduleId,
       meta_id: state.meta_id,
       editableMapSize: state.editableMap?.size,
@@ -421,10 +485,10 @@ function getFinalData() {
 // ── 提取可编辑数据 ───────────────────────────────────────────────────────────
 
 function extractData(data) {
-  console.log('开始提取可编辑数据...');
+  console.log("开始提取可编辑数据...");
   const editableMap = extractEditableData(data);
-  console.log('提取完成，可编辑节点数量:', editableMap.size);
-  console.log('可编辑数据:', mapToObject(editableMap));
+  console.log("提取完成，可编辑节点数量:", editableMap.size);
+  console.log("可编辑数据:", mapToObject(editableMap));
   return editableMap;
 }
 
@@ -525,8 +589,14 @@ function handlePreviewClick(index) {
 function handleBeforeUpload(file) {
   const isImage = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
   const isLt20M = file.size / 1024 / 1024 < 20;
-  if (!isImage) { ElMessage.error("仅支持上传 jpg/png/webp 格式的图片！"); return false; }
-  if (!isLt20M) { ElMessage.error("图片大小不能超过 20MB!"); return false; }
+  if (!isImage) {
+    ElMessage.error("仅支持上传 jpg/png/webp 格式的图片！");
+    return false;
+  }
+  if (!isLt20M) {
+    ElMessage.error("图片大小不能超过 20MB!");
+    return false;
+  }
   customUpload(file);
   return false;
 }
@@ -535,7 +605,10 @@ const customUpload = async (file) => {
   uploading.value = true;
   try {
     const site_id = websiteInfo?.site_id;
-    if (!site_id) { ElMessage.error("未选择站点"); return; }
+    if (!site_id) {
+      ElMessage.error("未选择站点");
+      return;
+    }
     const demo = mediaDemoName();
     if (!demo) {
       ElMessage.error("当前站点未配置 Demo 名称，无法上传到媒体库");
@@ -595,30 +668,36 @@ watch(
         state.originData = parsedData;
         state.editableMap = extractData(parsedData);
       } catch (error) {
-        console.error('JSON 解析错误:', error);
+        console.error("JSON 解析错误:", error);
         state.pageData = null;
         state.originData = null;
         state.editableMap = null;
-        ElMessage.error('数据格式错误，无法解析 JSON');
+        ElMessage.error("数据格式错误，无法解析 JSON");
       }
     }
 
     moduleImages.value = {};
-    sectionSizes.value = [];
+    sectionSizes.value = {};
     if (site_id && newId) {
       const res2 = await getPageConfig(site_id, newId);
       if (res2?.code === 0) {
         const { materials = [], sizes = [] } = res2.data || {};
-        const n = visibleParts.value.length;
-        sectionSizes.value = Array.from({ length: n }, (_, idx) => {
-          const raw = sizes[idx];
-          const o = raw && typeof raw === "object" ? raw : {};
-          let w = o.width != null ? Number(o.width) : null;
-          let h = o.height != null ? Number(o.height) : null;
-          if (w != null && Number.isNaN(w)) w = null;
-          if (h != null && Number.isNaN(h)) h = null;
-          return { width: w, height: h };
-        });
+        // sizes from API contains module_id, so we map by ID instead of index.
+        sectionSizes.value = {}; // Reset before populating
+        if (Array.isArray(sizes)) {
+          for (const s of sizes) {
+            if (s && s.module_id) {
+              const key = String(s.module_id);
+              let w = s.width != null ? Number(s.width) : null;
+              let h = s.height != null ? Number(s.height) : null;
+              if (w != null && Number.isNaN(w)) w = null;
+              if (h != null && Number.isNaN(h)) h = null;
+              if (w !== null || h !== null) {
+                sectionSizes.value[key] = { width: w, height: h };
+              }
+            }
+          }
+        }
         // materials 按索引对应板块：索引 0 -> 板块 1，索引 1 -> 板块 2...
         visibleParts.value.forEach((part, idx) => {
           const key = String(part.id);
@@ -635,9 +714,11 @@ watch(
       }
     }
 
-    nextTick(() => { loadingInstance.close(); });
+    nextTick(() => {
+      loadingInstance.close();
+    });
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // ── 监听高亮索引：展开后滚动（等折叠动画/layout 稳定再滚，避免错位） ────────────
@@ -646,7 +727,7 @@ function scrollEditorToActivePart(index) {
   if (index == null) return;
   const scrollEl = editorScrollRef.value;
   const itemEl = scrollEl?.querySelector(
-    `.module-parts-collapse > .el-collapse-item:nth-child(${index + 1})`
+    `.module-parts-collapse > .el-collapse-item:nth-child(${index + 1})`,
   );
   if (!scrollEl || !itemEl) return;
   const se = scrollEl.getBoundingClientRect();
@@ -678,7 +759,7 @@ watch(
   (index) => {
     scheduleScrollToActivePart(index);
   },
-  { flush: "post" }
+  { flush: "post" },
 );
 
 defineExpose({
@@ -848,7 +929,9 @@ defineExpose({
   border-left: 4px solid #409eff;
   box-shadow: 0 4px 18px rgba(64, 158, 255, 0.16);
   background: linear-gradient(90deg, rgba(236, 245, 255, 0.75) 0%, #fff 42%);
-  transition: box-shadow 0.2s ease, background 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .collapse-title {
@@ -889,8 +972,14 @@ defineExpose({
   scrollbar-color: #cbd5e1 #f1f5f9;
 }
 
-.pretty-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-.pretty-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 6px; }
+.pretty-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.pretty-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
 .pretty-scroll::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
   border-radius: 6px;
@@ -926,20 +1015,33 @@ defineExpose({
   line-height: 1.5;
   transition: background 0.2s ease;
 }
-:deep(.module-parts-collapse > .module-section-card.is-active-part .el-collapse-item__header) {
+:deep(
+  .module-parts-collapse
+    > .module-section-card.is-active-part
+    .el-collapse-item__header
+) {
   background: linear-gradient(90deg, rgba(236, 245, 255, 0.95) 0%, #fff 50%);
   box-shadow: inset 4px 0 0 #409eff;
 }
-:deep(.module-parts-collapse .el-collapse-item__wrap) { border: none; background: #fafbfc; }
-:deep(.module-parts-collapse .el-collapse-item__content) { padding: 0; }
+:deep(.module-parts-collapse .el-collapse-item__wrap) {
+  border: none;
+  background: #fafbfc;
+}
+:deep(.module-parts-collapse .el-collapse-item__content) {
+  padding: 0;
+}
 
 .upload-dialog-content {
   min-height: 300px;
 }
 
 /* 媒体库 */
-:deep(.upload-tabs) { margin-top: -8px; }
-:deep(.upload-tabs .el-tabs__header) { margin-bottom: 16px; }
+:deep(.upload-tabs) {
+  margin-top: -8px;
+}
+:deep(.upload-tabs .el-tabs__header) {
+  margin-bottom: 16px;
+}
 
 .media-library {
   display: flex;
@@ -971,7 +1073,9 @@ defineExpose({
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   background: #fafbfc;
 }
 

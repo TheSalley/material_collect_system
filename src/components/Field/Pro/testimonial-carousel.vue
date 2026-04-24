@@ -3,14 +3,14 @@
     <div class="flex items-center justify-between mb-3">
       <label class="__field-label">
         <el-icon><Promotion /></el-icon>
-        <span>列表</span>
+        <span>评论列表</span>
         <FieldWidgetType :type="widgetType" />
       </label>
       <el-button size="small" @click="addItem">新增</el-button>
     </div>
 
     <div
-      v-for="(item, index) in iconList"
+      v-for="(item, index) in list"
       :key="item?._id || index"
       class="border border-gray-200 rounded-lg mb-3 overflow-hidden"
     >
@@ -42,49 +42,45 @@
       </div>
 
       <div v-show="!collapsedItems.has(index)" class="p-3 pb-3">
-        <div class="__field-group mt-3">
+        <div class="__field-group">
           <label class="__field-label">标题</label>
           <el-input
-            v-model="item.title"
+            :model-value="item.title"
             placeholder="请输入标题"
-            @input="setItemField(index, 'title', item.title)"
+            @update:model-value="v => setItemField(index, 'title', v)"
           />
         </div>
-        <div class="__field-group mt-3">
-          <label class="__field-label">标题</label>
+        <div class="__field-group">
+          <label class="__field-label">姓名</label>
           <el-input
-            v-model="item.name"
+            :model-value="item.name"
             placeholder="请输入姓名"
-            @input="setItemField(index, 'name', item.name)"
+            @update:model-value="v => setItemField(index, 'name', v)"
           />
         </div>
-        <div class="__field-group mt-3">
-          <label class="__field-label">标题</label>
+        <div class="__field-group">
+          <label class="__field-label">内容</label>
           <el-input
-            v-model="item.content"
+            :model-value="item.content"
             placeholder="请输入内容"
-            @input="setItemField(index, 'content', item.content)"
+            @update:model-value="v => setItemField(index, 'content', v)"
           />
         </div>
-        <div class="__field-group mt-3">
+        <div class="__field-group">
           <label class="__field-label">图片</label>
-          <div v-if="item?.image?.url" class="w-full max-w-[100px] mb-3">
-            <img :src="item.image.url" alt="预览图" />
-          </div>
-          <!-- <el-upload
-            action="#"
-            :before-upload="handleBeforeUpload"
-            :show-file-list="false"
-            :accept="IMAGE_UPLOAD_DEFAULTS.accept"
-          >
-            <el-button type="primary" :icon="Upload">上传图片</el-button>
-          </el-upload> -->
+          <ImageWp
+            :model-value="item.image"
+            :node-id="nodeId"
+            :show-size-config="true"
+            :width="100"
+            @update:model-value="(newValue) => setItemField(index, 'image', newValue)"
+          />
         </div>
       </div>
     </div>
 
     <el-empty
-      v-if="!iconList.length"
+      v-if="!list.length"
       description="暂无列表内容"
       :image-size="60"
     />
@@ -92,12 +88,17 @@
 </template>
 
 <script setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, inject } from "vue";
 import { Promotion, Delete, ArrowDown } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 import { genId } from "@/utils";
+import ImageWp from "@/components/Common/imageWp.vue";
 
 const props = defineProps({
+  nodeId: {
+    type: String,
+    required: true,
+  },
   widgetType: {
     type: String,
     required: true,
@@ -112,19 +113,12 @@ const props = defineProps({
   },
 });
 
-const iconList = computed(() => {
-  const v = props.fields?.slides;
-  return Array.isArray(v) ? v : [];
-});
+const list = computed(() => (Array.isArray(props.fields?.slides) ? props.fields.slides : []));
 
 const collapsedItems = reactive(new Set());
 
 function toggleCollapse(index) {
-  if (collapsedItems.has(index)) {
-    collapsedItems.delete(index);
-  } else {
-    collapsedItems.add(index);
-  }
+  collapsedItems.has(index) ? collapsedItems.delete(index) : collapsedItems.add(index);
 }
 
 function emitItems(next) {
@@ -132,27 +126,20 @@ function emitItems(next) {
 }
 
 function addItem() {
-  const next = iconList.value.slice();
-  next.push({
-    title: "",
-    name: "",
-    content: "",
-    _id: genId(),
-  });
-  emitItems(next);
+  emitItems([
+    ...list.value,
+    { title: "", name: "", content: "", _id: genId() },
+  ]);
 }
 
 function removeItem(index) {
-  const next = iconList.value.filter((_, i) => i !== index);
-  emitItems(next);
+  emitItems(list.value.filter((_, i) => i !== index));
 }
 
 function setItemField(index, key, value) {
-  const next = iconList.value.slice();
-  const cur =
-    next[index] && typeof next[index] === "object" ? { ...next[index] } : {};
-  cur[key] = value;
-  next[index] = cur;
+  const next = list.value.map((item, i) =>
+    i === index ? { ...item, [key]: value } : item
+  );
   emitItems(next);
 }
 </script>

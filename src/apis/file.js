@@ -78,9 +78,12 @@ export const savePageConfig = async (site_id, pageId, materialsData = []) => {
 };
 
 /**
- * 保存页面截图目标尺寸（与 get 接口 materials 同序，按板块 index 1..n 对应）
+ * 保存页面截图目标尺寸
  * POST /api/page_config/save_sizes
- * body: { site_id, data: { [page_id]: [{ width, height }, ...] } }
+ * body: { site_id, data: { [page_id]: [{ module_id, width, height }, ...] } }
+ * @param {string} site_id - 站点 ID
+ * @param {string} pageId - 页面 ID
+ * @param {Array} sizesData - 尺寸数据数组，每个元素包含 { module_id, width, height }
  */
 export const savePageSizes = async (site_id, pageId, sizesData = []) => {
   const payload = {

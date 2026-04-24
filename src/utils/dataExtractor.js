@@ -12,7 +12,8 @@ const EDITABLE_FIELDS_MAP = {
   "text-editor": ["editor"],
   "button": ["text"],
   "video": ["youtube_url"],
-  "image": ["image"], // 可后续优化
+  "image": ["image"],
+  "divider": ["text", "look"],
   // General 组件
   "counter": ["title", "ending_number", "suffix"],
   "icon-list": ["icon_list"],
@@ -25,10 +26,15 @@ const EDITABLE_FIELDS_MAP = {
   "animated-headline": ["before_text", "highlighted_text"],
   "testimonial-carousel": ["slides"],
   // JegElementorKit 组件
+  "elementskit-funfact": ["ekit_funfact_number", "ekit_funfact_number_suffix", "ekit_funfact_title_text"],
+
+  // Jeg Elementor Kit
   jkit_icon_box: [
     "sg_icon_text",
     "sg_icon_description",
+    "sg_readmore_enable_button",
     "sg_readmore_button_label",
+    "sg_badge_show",
     "sg_badge_text",
   ],
 
