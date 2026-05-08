@@ -1,29 +1,105 @@
+<template>
+  <div v-if="hasCarouselField" class="__field-item space-y-3">
+    <label class="__field-label">
+      <el-icon><Picture /></el-icon>
+      <span>轮播图片</span>
+      <FieldWidgetType :type="widgetType" />
+    </label>
+
+    <div v-if="carouselItems.length" class="space-y-2">
+      <div
+        v-for="image in carouselItems"
+        :key="image.key"
+        class="grid grid-cols-[92px_1fr_auto] items-center gap-3 rounded-lg border border-[var(--el-border-color-lighter)] bg-white p-2.5"
+      >
+        <div
+          class="relative flex h-16 w-[92px] items-center justify-center overflow-hidden rounded-md border border-[var(--el-border-color-lighter)] bg-[var(--el-fill-color-lighter)]"
+        >
+          <img
+            v-if="image.url"
+            :src="image.url"
+            alt="carousel"
+            class="block h-full w-full object-cover"
+            @load="setThumbDim($event, image.key)"
+          />
+          <span v-else class="text-xs text-[var(--el-text-color-secondary)]">无 URL</span>
+          <span
+            v-if="thumbDims[image.key]"
+            class="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55 px-0.5 py-px text-center text-[9px] leading-tight text-white"
+          >
+            {{ thumbDims[image.key] }}
+          </span>
+        </div>
+
+        <div class="min-w-0">
+          <div
+            class="truncate text-sm font-semibold text-[var(--el-text-color-primary)]"
+            :title="image.title"
+          >
+            {{ image.title }}
+          </div>
+        </div>
+
+        <div class="flex gap-1.5">
+          <el-button
+            :disabled="image.index === 0"
+            :icon="ArrowUp"
+            size="small"
+            @click="move(image.index, -1)"
+          />
+          <el-button
+            :disabled="image.index === carouselItems.length - 1"
+            :icon="ArrowDown"
+            size="small"
+            @click="move(image.index, 1)"
+          />
+          <el-button
+            :icon="Delete"
+            size="small"
+            type="danger"
+            @click="removeAt(image.index)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <el-empty v-else description="暂无轮播图片" :image-size="72" />
+
+    <el-upload
+      action="#"
+      class="w-full [&_.el-upload]:w-full"
+      :before-upload="handleBeforeUpload"
+      :show-file-list="false"
+    >
+      <el-button class="w-full" type="primary" :icon="Upload">
+        上传并追加
+      </el-button>
+    </el-upload>
+
+    <p class="text-xs leading-relaxed text-[var(--el-text-color-secondary)]">
+      {{ uploadTip }}
+    </p>
+  </div>
+</template>
+
 <script setup>
-import { computed, ref, watch } from "vue";
-import { Picture, Upload, Delete, ArrowUp, ArrowDown } from "@element-plus/icons-vue";
+import { computed, shallowRef, watch } from "vue";
+import { ArrowDown, ArrowUp, Delete, Picture, Upload } from "@element-plus/icons-vue";
+import { ElLoading } from "element-plus";
+import FieldWidgetType from "@/components/FieldWidgetType.vue";
+import { getFileFullUrl } from "@/apis";
 import {
+  buildImageUploadTip,
   handleImageUpload,
   IMAGE_UPLOAD_DEFAULTS,
-  buildImageUploadTip,
 } from "@/utils/imageUpload";
-import { getFileFullUrl } from "@/apis";
-
-const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
-const uploadTip = `每次上传追加 1 张。${buildImageUploadTip(uploadRuleOptions)}`;
-const thumbDims = ref({});
-
-function onThumbLoad(e, idx) {
-  const img = e.target;
-  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-    thumbDims.value = {
-      ...thumbDims.value,
-      [idx]: `${img.naturalWidth}×${img.naturalHeight}px`,
-    };
-  }
-}
 
 const props = defineProps({
   nodeId: {
+    type: String,
+    required: true,
+  },
+  widgetType: {
     type: String,
     required: true,
   },
@@ -37,260 +113,120 @@ const props = defineProps({
   },
 });
 
+const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
+const uploadTip = `每次上传追加 1 张。${buildImageUploadTip(uploadRuleOptions)}`;
+const thumbDims = shallowRef({});
+
+const hasCarouselField = computed(() =>
+  Object.prototype.hasOwnProperty.call(props.fields, "carousel")
+);
+
 const carousel = computed(() => {
-  const v = props.fields?.carousel;
-  return Array.isArray(v) ? v : [];
+  const value = props.fields.carousel;
+  return Array.isArray(value) ? value : [];
 });
 
-watch(carousel, () => {
-  thumbDims.value = {};
-}, { deep: true });
+const carouselItems = computed(() =>
+  carousel.value.map((item, index) => ({
+    item,
+    index,
+    key: `${item?.id || item?.url || "image"}-${index}`,
+    title: getItemTitle(item, index),
+    url: toDisplayUrl(item?.url),
+  }))
+);
+
+watch(
+  carousel,
+  () => {
+    thumbDims.value = {};
+  },
+  { deep: true }
+);
 
 function toDisplayUrl(raw) {
-  if (!raw || typeof raw !== "string") return "";
-  const t = raw.trim();
-  if (!t) return "";
-  if (t.startsWith("http://") || t.startsWith("https://") || t.startsWith("//")) {
-    return t.startsWith("//") ? `https:${t}` : t;
-  }
-  return getFileFullUrl(t);
+  const value = typeof raw === "string" ? raw.trim() : "";
+
+  if (!value) return "";
+  if (value.startsWith("//")) return `https:${value}`;
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+
+  return getFileFullUrl(value);
 }
 
-function titleFromItem(item, idx) {
-  const t = typeof item?.title === "string" ? item.title.trim() : "";
-  if (t) return t;
-  const rawUrl = typeof item?.url === "string" ? item.url.trim() : "";
-  if (rawUrl) {
-    const noQuery = rawUrl.split("?")[0];
-    const parts = noQuery.split("/");
-    const last = parts[parts.length - 1] || "";
-    if (last) {
-      try {
-        return decodeURIComponent(last);
-      } catch {
-        return last;
-      }
-    }
+function getItemTitle(item, index) {
+  const title = typeof item?.title === "string" ? item.title.trim() : "";
+  if (title) return title;
+
+  const filename = getFilename(item?.url);
+  return filename || `图片 ${index + 1}`;
+}
+
+function getFilename(rawUrl) {
+  const value = typeof rawUrl === "string" ? rawUrl.trim() : "";
+  if (!value) return "";
+
+  const filename = value.split("?")[0].split("/").pop() || "";
+  try {
+    return decodeURIComponent(filename);
+  } catch {
+    return filename;
   }
-  return `图片 ${idx + 1}`;
+}
+
+function setThumbDim(event, key) {
+  const { naturalWidth, naturalHeight } = event.target;
+  if (!naturalWidth || !naturalHeight) return;
+
+  thumbDims.value = {
+    ...thumbDims.value,
+    [key]: `${naturalWidth}x${naturalHeight}px`,
+  };
 }
 
 function emitCarousel(next) {
   props.onUpdate("carousel", next);
 }
 
-function removeAt(idx) {
-  const next = carousel.value.filter((_, i) => i !== idx);
-  emitCarousel(next);
+function removeAt(index) {
+  emitCarousel(carousel.value.filter((_, currentIndex) => currentIndex !== index));
 }
 
-function move(idx, dir) {
+function move(index, direction) {
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= carousel.value.length) return;
+
   const next = carousel.value.slice();
-  const to = idx + dir;
-  if (to < 0 || to >= next.length) return;
-  const [item] = next.splice(idx, 1);
-  next.splice(to, 0, item);
+  const [item] = next.splice(index, 1);
+  next.splice(nextIndex, 0, item);
   emitCarousel(next);
 }
 
-const handleBeforeUpload = (file) => {
-  handleImageUpload(file, (url, id) => {
-    const imageData = {
-      id: id ?? "",
-      url: url || "",
-    };
-    const next = carousel.value.slice();
-    next.push(imageData);
-    emitCarousel(next);
-  }, uploadRuleOptions);
+function handleBeforeUpload(file) {
+  const loading = ElLoading.service({
+    fullscreen: true,
+    lock: true,
+    text: "上传中...",
+  });
+
+  handleImageUpload(
+    file,
+    (url, id) => {
+      emitCarousel([
+        ...carousel.value,
+        {
+          id: id ?? "",
+          url: url || "",
+        },
+      ]);
+    },
+    uploadRuleOptions
+  )
+    .catch(() => {})
+    .finally(() => {
+      loading.close();
+    });
+
   return false;
-};
+}
 </script>
-
-<template>
-  <div class="__field-item">
-    <label class="__field-label">
-      <el-icon><Picture /></el-icon>
-      轮播图片
-    </label>
-
-    <div v-if="carousel.length" class="carousel-list">
-      <div v-for="(item, idx) in carousel" :key="`${item?.id ?? ''}-${idx}`" class="carousel-row">
-        <div class="thumb">
-          <img
-            v-if="toDisplayUrl(item?.url)"
-            :src="toDisplayUrl(item?.url)"
-            alt="carousel"
-            @load="onThumbLoad($event, idx)"
-          />
-          <div v-else class="thumb-empty">无URL</div>
-          <div v-if="thumbDims[idx]" class="thumb-dim">{{ thumbDims[idx] }}</div>
-        </div>
-
-        <div class="meta">
-          <div class="title" :title="titleFromItem(item, idx)">{{ titleFromItem(item, idx) }}</div>
-        </div>
-
-        <div class="actions">
-          <el-button
-            size="small"
-            :icon="ArrowUp"
-            :disabled="idx === 0"
-            @click="move(idx, -1)"
-          />
-          <el-button
-            size="small"
-            :icon="ArrowDown"
-            :disabled="idx === carousel.length - 1"
-            @click="move(idx, 1)"
-          />
-          <el-button size="small" type="danger" :icon="Delete" @click="removeAt(idx)" />
-        </div>
-      </div>
-    </div>
-    <div v-else class="empty">
-      <el-empty description="暂无轮播图片" :image-size="72" />
-    </div>
-
-    <el-upload
-      action="#"
-      :before-upload="handleBeforeUpload"
-      :show-file-list="false"
-      class="upload-wrapper"
-    >
-      <el-button type="primary" :icon="Upload">上传并追加</el-button>
-    </el-upload>
-    <div class="field-upload-hints">
-      <p class="hint-line">{{ uploadTip }}</p>
-    </div>
-  </div>
-</template>
-
-<style scoped>
-.__field-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.__field-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #303133;
-  margin: 0;
-}
-
-.__field-label .el-icon {
-  color: var(--el-color-primary);
-  font-size: 1.1rem;
-}
-
-.carousel-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.carousel-row {
-  display: grid;
-  grid-template-columns: 92px 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 10px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.thumb {
-  position: relative;
-  width: 92px;
-  height: 64px;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid var(--el-border-color-lighter);
-  background: var(--el-fill-color-lighter);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.thumb-dim {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 1px 2px;
-  font-size: 9px;
-  line-height: 1.15;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.55);
-  text-align: center;
-  pointer-events: none;
-}
-
-.thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.thumb-empty {
-  font-size: 0.75rem;
-  color: #909399;
-}
-
-.meta {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #303133;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.actions {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.upload-wrapper {
-  width: 100%;
-}
-
-.upload-wrapper :deep(.el-upload) {
-  width: 100%;
-}
-
-.upload-wrapper :deep(.el-button) {
-  width: 100%;
-}
-
-.field-upload-hints {
-  margin-top: 0.5rem;
-}
-
-.field-upload-hints .hint-line {
-  margin: 0;
-  font-size: 0.75rem;
-  color: #909399;
-  line-height: 1.45;
-}
-
-.empty {
-  padding: 0.25rem 0;
-}
-</style>
-

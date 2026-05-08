@@ -1,42 +1,42 @@
 <template>
-  <div class="__field-item">
-    <FieldWidgetType :type="widgetType" />
+  <div v-if="visibleFields.length" class="__field-item">
     <div class="__field-group">
       <label class="__field-label">
         <el-icon>
           <Promotion />
         </el-icon>
-        <span>标题</span>
+        <span>图标盒子</span>
+        <FieldWidgetType :type="widgetType" />
       </label>
-      <el-input
-        v-model="fields.title_text"
-        @input="onUpdate('title_text', fields.title_text)"
-        placeholder="请输入标题"
-      />
-    </div>
-    <div class="__field-group">
-      <label class="__field-label">
-        <el-icon>
-          <Promotion />
-        </el-icon>
-        <span>描述</span>
-      </label>
-      <el-input
-        v-model="fields.description_text"
-        :rows="2"
-        type="textarea"
-        @input="onUpdate('description_text', fields.description_text)"
-        placeholder="请输入描述"
-      />
+
+      <div
+        v-for="field in visibleFields"
+        :key="field.key"
+        class="__field-group"
+      >
+        <label class="__field-label">{{ field.label }}</label>
+        <el-input
+          :model-value="fields[field.key]"
+          :type="field.type"
+          :rows="field.rows"
+          :placeholder="field.placeholder"
+          @update:model-value="(value) => updateField(field.key, value)"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from "vue";
 import { Promotion } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 
 const props = defineProps({
+  nodeId: {
+    type: String,
+    required: true,
+  },
   widgetType: {
     type: String,
     required: true,
@@ -50,7 +50,32 @@ const props = defineProps({
     required: true,
   },
 });
-</script>
 
-<style scoped>
-</style>
+const fieldOptions = [
+  {
+    key: "title_text",
+    label: "标题",
+    placeholder: "请输入标题",
+  },
+  {
+    key: "description_text",
+    label: "描述",
+    type: "textarea",
+    rows: 2,
+    placeholder: "请输入描述",
+  },
+];
+
+const visibleFields = computed(() =>
+  fieldOptions.filter((field) => hasFieldContent(field.key))
+);
+
+function hasFieldContent(key) {
+  const value = props.fields[key];
+  return value !== undefined && value !== null && value !== "";
+}
+
+function updateField(key, value) {
+  props.onUpdate(key, value);
+}
+</script>

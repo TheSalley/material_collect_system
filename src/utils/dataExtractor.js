@@ -1,9 +1,4 @@
 /**
- * Elementor 数据提取和同步工具
- * 用于从大型 Elementor JSON 中提取核心可编辑数据，并在编辑后同步回原数据
- */
-
-/**
  * 定义各个组件类型需要提取的字段
  */
 const EDITABLE_FIELDS_MAP = {
@@ -17,16 +12,28 @@ const EDITABLE_FIELDS_MAP = {
   // General 组件
   "counter": ["title", "ending_number", "suffix"],
   "icon-list": ["icon_list"],
-
-  toggle: ["tabs"],
-  accordion: ["tabs"],
-  
-  
+  "icon-box": ["title_text", "description_text"],
+  "accordion": ["tabs"],
+  "toggle": ["tabs"],
+  "image-box": ["image", "title_text", "description_text"],
+  "image-carousel": ["carousel"],
   // Pro 组件
   "animated-headline": ["before_text", "highlighted_text"],
   "testimonial-carousel": ["slides"],
+  "flip-box": [
+    "title_text_a",
+    "description_text_a",
+    "title_text_b",
+    "description_text_b",
+    "button_text",
+  ],
+  "call-to-action": [ "bg_image", "title", "description", "button",],
   // JegElementorKit 组件
-  "elementskit-funfact": ["ekit_funfact_number", "ekit_funfact_number_suffix", "ekit_funfact_title_text"],
+  "elementskit-funfact": [
+    "ekit_funfact_number",
+    "ekit_funfact_number_suffix",
+    "ekit_funfact_title_text",
+  ],
 
   // Jeg Elementor Kit
   jkit_icon_box: [
@@ -38,9 +45,7 @@ const EDITABLE_FIELDS_MAP = {
     "sg_badge_text",
   ],
 
-
   // ElementsKit 组件
-
 
   "elementskit-icon-box": [
     "ekit_icon_box_title_text",
@@ -67,30 +72,21 @@ const EDITABLE_FIELDS_MAP = {
 
   // 更多 Elementor 基础组件
   icon: ["selected_icon"],
-  "image-box": ["title_text", "description_text"],
-  "icon-box": ["title_text", "description_text"],
+  
+  
   "star-rating": ["rating"],
-  "image-carousel": ["carousel"],
+  
   "image-gallery": ["gallery"],
   testimonial: ["testimonial_content", "testimonial_name", "testimonial_job"],
   tabs: ["tabs"],
   slides: ["slides"],
-  
 
+ 
 
-  "call-to-action": ["title", "description", "button", "bg_image"],
-  "flip-box": [
-    "title_text_a",
-    "description_text_a",
-    "title_text_b",
-    "description_text_b",
-    "button_text",
-  ],
   gallery: ["gallery"],
   "timeline-widget-addon": ["twae_list"],
   progress: ["title", "percent"],
   // ElementsKit
-
 
   "elementskit-team": ["ekit_team_image"],
   "elementskit-progressbar": [
@@ -222,8 +218,11 @@ export function extractEditableData(elementorData) {
       node.settings.editor = DEFAULT_TEXT_EDITOR_HTML;
     }
 
-    if (widgetType === 'counter' && node.settings &&
-      !Object.prototype.hasOwnProperty.call(node.settings, "ending_number")) {
+    if (
+      widgetType === "counter" &&
+      node.settings &&
+      !Object.prototype.hasOwnProperty.call(node.settings, "ending_number")
+    ) {
       node.settings.ending_number = 100;
     }
 
