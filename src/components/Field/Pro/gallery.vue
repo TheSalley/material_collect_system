@@ -1,94 +1,86 @@
 <template>
-  <div class="gallery-field">
-    <FieldWidgetType :type="widgetType" />
-    <div class="gallery-header">
-      <span class="__field-label">Gallery</span>
-      <p class="field-desc">
-        多图片画廊展示，可上传或从媒体库选择 <code>gallery</code>（数组）。
-      </p>
+  <div v-if="hasGalleryField" class="__field-item space-y-3">
+    <div class="flex items-center justify-between">
+      <label class="__field-label">
+        <el-icon><Picture /></el-icon>
+        <span>图片画廊</span>
+        <FieldWidgetType :type="widgetType" />
+      </label>
+      <el-tag type="info">{{ gallery.length }} 张图片</el-tag>
     </div>
 
     <div
-      class="gallery-body"
-      v-loading="uploading"
-      element-loading-text="正在上传…"
+      v-if="galleryItems.length"
+      class="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-3"
     >
-      <div v-if="displayImages.length > 0" class="gallery-grid">
+      <div
+        v-for="image in galleryItems"
+        :key="image.key"
+        class="group relative aspect-square overflow-hidden rounded-lg border border-[var(--el-border-color-lighter)] bg-[var(--el-fill-color-lighter)]"
+      >
+        <img
+          v-if="image.url"
+          :src="image.url"
+          :alt="image.title"
+          class="block h-full w-full object-cover"
+          @load="setThumbDim($event, image.key)"
+        />
         <div
-          v-for="(item, index) in displayImages"
-          :key="item.id || index"
-          class="gallery-item"
+          v-else
+          class="flex h-full items-center justify-center text-xs text-[var(--el-text-color-secondary)]"
         >
-          <div class="gallery-item-inner">
-            <img
-              :src="item.displayUrl"
-              :alt="`图片 ${index + 1}`"
-              @load="onThumbLoad($event, thumbKey(item, index))"
-            />
-            <div v-if="thumbDims[thumbKey(item, index)]" class="thumb-dim">
-              {{ thumbDims[thumbKey(item, index)] }}
-            </div>
-            <div class="gallery-item-actions">
-              <el-button
-                type="primary"
-                :icon="Delete"
-                circle
-                size="small"
-                @click="removeImage(index)"
-              />
-            </div>
-          </div>
+          无 URL
         </div>
-      </div>
 
-      <div class="gallery-upload">
-        <el-upload
-          action="#"
-          :before-upload="handleImageUpload"
-          :show-file-list="false"
-          multiple
-          class="upload-wrapper"
+        <span
+          v-if="thumbDims[image.key]"
+          class="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55 px-1 py-0.5 text-center text-[10px] leading-tight text-white"
         >
-          <el-button type="primary" :icon="Plus" plain>添加图片</el-button>
-        </el-upload>
-        <div class="field-upload-hints">
-          <p class="hint-line">{{ uploadTip }}</p>
-        </div>
+          {{ thumbDims[image.key] }}
+        </span>
+
+        <el-button
+          class="!absolute right-1 top-1 opacity-0 transition-opacity group-hover:opacity-100"
+          :icon="Delete"
+          circle
+          size="small"
+          type="danger"
+          @click="removeImage(image.index)"
+        />
       </div>
     </div>
+
+    <el-empty v-else description="暂无画廊图片" :image-size="72" />
+
+    <el-upload
+      action="#"
+      class="w-full [&_.el-upload]:w-full"
+      :before-upload="handleBeforeUpload"
+      :show-file-list="false"
+      multiple
+    >
+      <el-button class="w-full" type="primary" :icon="Plus">
+        添加图片
+      </el-button>
+    </el-upload>
+
+    <p class="text-xs leading-relaxed text-[var(--el-text-color-secondary)]">
+      {{ uploadTip }}
+    </p>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
-import { Plus, Delete } from "@element-plus/icons-vue";
-
+import { computed, shallowRef, watch } from "vue";
+import { Delete, Picture, Plus } from "@element-plus/icons-vue";
+import { ElLoading } from "element-plus";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
-import {
-  validateImageFileWithDimensions,
-  uploadImageFile,
-  IMAGE_UPLOAD_DEFAULTS,
-  buildImageUploadTip,
-} from "@/utils/imageUpload";
 import { getFileFullUrl } from "@/apis";
-
-const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
-const uploadTip = buildImageUploadTip(uploadRuleOptions);
-const thumbDims = ref({});
-
-function thumbKey(item, index) {
-  return `${item?.id ?? "noid"}-${index}`;
-}
-
-function onThumbLoad(e, key) {
-  const img = e.target;
-  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-    thumbDims.value = {
-      ...thumbDims.value,
-      [key]: `${img.naturalWidth}×${img.naturalHeight}px`,
-    };
-  }
-}
+import {
+  buildImageUploadTip,
+  handleImageUpload,
+  IMAGE_UPLOAD_DEFAULTS,
+} from "@/utils/imageUpload";
 
 const props = defineProps({
   nodeId: {
@@ -109,184 +101,118 @@ const props = defineProps({
   },
 });
 
-const uploading = ref(false);
+const uploadRuleOptions = { ...IMAGE_UPLOAD_DEFAULTS };
+const uploadTip = buildImageUploadTip(uploadRuleOptions);
+const thumbDims = shallowRef({});
 
-const displayImages = computed(() => {
-  const gallery = props.fields.gallery;
-  if (!Array.isArray(gallery) || gallery.length === 0) return [];
-  return gallery
-    .map((item) => {
-      if (!item || typeof item !== "object") return null;
-      const url = item.url;
-      let displayUrl = "";
-      if (url && typeof url === "string") {
-        const trimmed = url.trim();
-        if (trimmed) {
-          displayUrl =
-            trimmed.startsWith("http") || trimmed.startsWith("//")
-              ? trimmed.startsWith("//")
-                ? `https:${trimmed}`
-                : trimmed
-              : getFileFullUrl(trimmed);
-        }
-      }
-      return {
-        id: item.id,
-        url: item.url,
-        displayUrl,
-      };
-    })
-    .filter(Boolean);
+const hasGalleryField = computed(() =>
+  Object.prototype.hasOwnProperty.call(props.fields, "gallery")
+);
+
+const gallery = computed(() => {
+  const value = props.fields.gallery;
+  return Array.isArray(value) ? value : [];
 });
 
+const galleryItems = computed(() =>
+  gallery.value
+    .map((item, index) => {
+      if (!item || typeof item !== "object") return null;
+
+      const url = toDisplayUrl(item.url);
+      return {
+        ...item,
+        index,
+        key: `${item.id || item.url || "gallery"}-${index}`,
+        title: getImageTitle(item, index),
+        url,
+      };
+    })
+    .filter(Boolean)
+);
+
 watch(
-  displayImages,
+  gallery,
   () => {
     thumbDims.value = {};
   },
-  { deep: true },
+  { deep: true }
 );
 
-function patchGallery(newItems) {
-  const cur = props.fields.gallery;
-  const base = Array.isArray(cur) ? [...cur] : [];
-  props.onUpdate("gallery", [...base, ...newItems]);
+function toDisplayUrl(raw) {
+  const value = typeof raw === "string" ? raw.trim() : "";
+
+  if (!value) return "";
+  if (value.startsWith("//")) return `https:${value}`;
+  if (value.startsWith("http://") || value.startsWith("https://")) return value;
+
+  return getFileFullUrl(value);
 }
 
-async function handleImageUpload(file) {
-  const ok = await validateImageFileWithDimensions(file, uploadRuleOptions);
-  if (!ok) return false;
-  uploading.value = true;
+function getImageTitle(item, index) {
+  const title = typeof item.title === "string" ? item.title.trim() : "";
+  if (title) return title;
+
+  const filename = getFilename(item.url);
+  return filename || `图片 ${index + 1}`;
+}
+
+function getFilename(rawUrl) {
+  const value = typeof rawUrl === "string" ? rawUrl.trim() : "";
+  if (!value) return "";
+
+  const filename = value.split("?")[0].split("/").pop() || "";
   try {
-    const result = await uploadImageFile(file);
-    if (result) {
-      const newItem = {
-        id: result.id || Date.now(),
-        url: result.url || "",
-      };
-      patchGallery([newItem]);
-    }
-  } finally {
-    uploading.value = false;
+    return decodeURIComponent(filename);
+  } catch {
+    return filename;
   }
-  return false;
+}
+
+function setThumbDim(event, key) {
+  const { naturalWidth, naturalHeight } = event.target;
+  if (!naturalWidth || !naturalHeight) return;
+
+  thumbDims.value = {
+    ...thumbDims.value,
+    [key]: `${naturalWidth}x${naturalHeight}px`,
+  };
+}
+
+function emitGallery(next) {
+  props.onUpdate("gallery", next);
+}
+
+function appendImage(image) {
+  emitGallery([...gallery.value, image]);
 }
 
 function removeImage(index) {
-  const cur = props.fields.gallery;
-  if (!Array.isArray(cur) || index < 0 || index >= cur.length) return;
-  const updated = cur.filter((_, i) => i !== index);
-  props.onUpdate("gallery", updated);
+  emitGallery(gallery.value.filter((_, currentIndex) => currentIndex !== index));
+}
+
+function handleBeforeUpload(file) {
+  const loading = ElLoading.service({
+    fullscreen: true,
+    lock: true,
+    text: "上传中...",
+  });
+
+  handleImageUpload(
+    file,
+    (url, id) => {
+      appendImage({
+        id: id ?? "",
+        url: url || "",
+      });
+    },
+    uploadRuleOptions
+  )
+    .catch(() => {})
+    .finally(() => {
+      loading.close();
+    });
+
+  return false;
 }
 </script>
-
-<style scoped>
-.gallery-field {
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  padding: 16px 18px 14px;
-  background: #f9fafb;
-}
-
-.gallery-header {
-  margin-bottom: 10px;
-}
-
-.__field-label {
-  font-size: 13px;
-  color: #374151;
-  font-weight: 600;
-}
-
-.field-desc {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: #6b7280;
-  line-height: 1.45;
-}
-
-.field-desc code {
-  font-size: 11px;
-  padding: 1px 4px;
-  border-radius: 4px;
-  background: #eef2ff;
-  color: #4338ca;
-}
-
-.gallery-body {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 12px 14px 6px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
-.gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.gallery-item {
-  position: relative;
-}
-
-.gallery-item-inner {
-  position: relative;
-  aspect-ratio: 1;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid var(--el-border-color-lighter);
-}
-
-.gallery-item-inner img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.gallery-item-actions {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.gallery-item-inner:hover .gallery-item-actions {
-  opacity: 1;
-}
-
-.thumb-dim {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 2px 4px;
-  font-size: 10px;
-  line-height: 1.2;
-  color: #fff;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
-  text-align: center;
-  pointer-events: none;
-}
-
-.gallery-upload {
-  padding-top: 8px;
-}
-
-.upload-wrapper :deep(.el-upload) {
-  width: 100%;
-}
-
-.field-upload-hints {
-  margin-top: 0.35rem;
-}
-
-.field-upload-hints .hint-line {
-  margin: 0;
-  font-size: 0.75rem;
-  color: #909399;
-  line-height: 1.45;
-}
-</style>

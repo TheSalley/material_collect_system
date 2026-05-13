@@ -1,14 +1,14 @@
 <template>
-  <div v-if="hasListField" class="__field-item">
+  <div v-if="hasSlidesField" class="__field-item">
     <div class="mb-3 flex items-center justify-between gap-3">
       <label class="__field-label">
-        <el-icon><Clock /></el-icon>
-        <span>时间轴事件</span>
+        <el-icon><ChatDotRound /></el-icon>
+        <span>评论列表</span>
         <FieldWidgetType :type="widgetType" />
       </label>
 
       <el-button size="small" type="primary" plain @click="addItem">
-        添加事件
+        新增
       </el-button>
     </div>
 
@@ -28,14 +28,8 @@
             {{ index + 1 }}
           </span>
           <span class="truncate font-medium text-[var(--field-label-color)]">
-            {{ item.twae_story_title || "未命名" }}
+            {{ item.name || item.title || "未命名" }}
           </span>
-          <el-tag v-if="item.twae_date_label" size="small" type="success">
-            {{ item.twae_date_label }}
-          </el-tag>
-          <el-tag v-if="item.twae_year" size="small" type="warning">
-            {{ item.twae_year }}
-          </el-tag>
         </div>
 
         <div class="flex shrink-0 items-center gap-3">
@@ -56,15 +50,23 @@
       </div>
 
       <div v-show="!collapsedItems.has(index)" class="space-y-3 p-3">
+        <div v-if="hasItemField(item, 'image')" class="__field-group">
+          <label class="__field-label">图片</label>
+          <ImageWp
+            :model-value="item.image"
+            :node-id="nodeId"
+            :show-size-config="true"
+            :width="120"
+            @update:model-value="(value) => setItemField(index, 'image', value)"
+          />
+        </div>
+
         <div
           v-for="field in getVisibleTextFields(item)"
           :key="field.key"
           class="__field-group"
         >
-          <label class="__field-label">
-            <el-icon><component :is="field.icon" /></el-icon>
-            <span>{{ field.label }}</span>
-          </label>
+          <label class="__field-label">{{ field.label }}</label>
           <el-input
             :model-value="item[field.key]"
             :placeholder="field.placeholder"
@@ -74,26 +76,12 @@
             @update:model-value="(value) => setItemField(index, field.key, value)"
           />
         </div>
-
-        <div v-if="hasField(item, 'twae_image')" class="__field-group">
-          <label class="__field-label">
-            <el-icon><Picture /></el-icon>
-            <span>图片</span>
-          </label>
-          <ImageWp
-            :model-value="item.twae_image"
-            :node-id="nodeId"
-            :show-size-config="true"
-            :width="160"
-            @update:model-value="(value) => setItemField(index, 'twae_image', value)"
-          />
-        </div>
       </div>
     </div>
 
     <el-empty
       v-if="!items.length"
-      description="暂无时间轴事件"
+      description="暂无评论内容"
       :image-size="60"
     />
   </div>
@@ -101,15 +89,7 @@
 
 <script setup>
 import { computed, reactive } from "vue";
-import {
-  ArrowDown,
-  Calendar,
-  Clock,
-  Delete,
-  Document,
-  Picture,
-  Promotion,
-} from "@element-plus/icons-vue";
+import { ArrowDown, ChatDotRound, Delete } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 import ImageWp from "@/components/Common/imageWp.vue";
 import { genId } from "@/utils";
@@ -127,10 +107,6 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  settings: {
-    type: Object,
-    default: () => ({}),
-  },
   onUpdate: {
     type: Function,
     required: true,
@@ -141,51 +117,40 @@ const collapsedItems = reactive(new Set());
 
 const textFields = [
   {
-    key: "twae_story_title",
-    label: "故事标题",
-    icon: Promotion,
+    key: "name",
+    label: "姓名",
     type: "text",
     rows: undefined,
-    placeholder: "请输入故事标题",
+    placeholder: "请输入姓名",
   },
   {
-    key: "twae_description",
-    label: "描述",
-    icon: Document,
+    key: "title",
+    label: "标题",
+    type: "text",
+    rows: undefined,
+    placeholder: "请输入标题",
+  },
+  {
+    key: "content",
+    label: "内容",
     type: "textarea",
     rows: 4,
-    placeholder: "请输入事件描述",
-  },
-  {
-    key: "twae_year",
-    label: "年份",
-    icon: Calendar,
-    type: "text",
-    rows: undefined,
-    placeholder: "请输入年份，如：2022",
-  },
-  {
-    key: "twae_date_label",
-    label: "日期标签",
-    icon: Calendar,
-    type: "text",
-    rows: undefined,
-    placeholder: "请输入日期标签",
+    placeholder: "请输入评论内容",
   },
 ];
 
-const hasListField = computed(() => hasField(props.fields, "twae_list"));
+const hasSlidesField = computed(() => hasItemField(props.fields, "slides"));
 
 const items = computed(() =>
-  Array.isArray(props.fields?.twae_list) ? props.fields.twae_list : []
+  Array.isArray(props.fields?.slides) ? props.fields.slides : []
 );
 
-function hasField(target, key) {
+function hasItemField(target, key) {
   return Object.prototype.hasOwnProperty.call(target || {}, key);
 }
 
 function getVisibleTextFields(item) {
-  return textFields.filter(({ key }) => hasField(item, key));
+  return textFields.filter(({ key }) => hasItemField(item, key));
 }
 
 function toggleCollapse(index) {
@@ -195,21 +160,11 @@ function toggleCollapse(index) {
 }
 
 function emitItems(next) {
-  props.onUpdate("twae_list", next);
+  props.onUpdate("slides", next);
 }
 
 function addItem() {
-  emitItems([
-    ...items.value,
-    {
-      _id: genId(),
-      twae_story_title: "",
-      twae_description: "",
-      twae_date_label: "",
-      twae_year: "",
-      twae_image: { id: "", url: "" },
-    },
-  ]);
+  emitItems([...items.value, createReviewItem()]);
 }
 
 function removeItem(index) {
@@ -223,5 +178,28 @@ function setItemField(index, key, value) {
       itemIndex === index ? { ...item, [key]: value } : item
     )
   );
+}
+
+function createReviewItem() {
+  return {
+    content: "",
+    name: "",
+    title: "",
+    image: {
+      url: "",
+    },
+    _id: genId(),
+    rating: "",
+    selected_social_icon: {
+      value: "fab fa-twitter",
+      library: "fa-brands",
+    },
+    link: {
+      url: "",
+      is_external: "",
+      nofollow: "",
+      custom_attributes: "",
+    },
+  };
 }
 </script>

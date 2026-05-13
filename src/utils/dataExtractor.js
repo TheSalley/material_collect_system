@@ -28,12 +28,34 @@ const EDITABLE_FIELDS_MAP = {
     "button_text",
   ],
   "call-to-action": [ "bg_image", "title", "description", "button",],
+  "slides": ["slides"],
+  "gallery": ["gallery"],
+  "hotspot": ["image", "hotspot"],
+  "reviews": ["slides"],
+  "testimonial": ["testimonial_image", "testimonial_name", "testimonial_job", "testimonial_content",],
   // JegElementorKit 组件
   "elementskit-funfact": [
     "ekit_funfact_number",
     "ekit_funfact_number_suffix",
     "ekit_funfact_title_text",
   ],
+  // ElementsKit 组件
+  "elementskit-icon-box": [
+    "ekit_icon_box_enable_header_icon",
+    "ekit_icon_box_header_image",
+    "ekit_icon_box_title_text",
+    "ekit_icon_box_description_text",
+    "ekit_icon_box_enable_btn",
+    "ekit_icon_box_btn_text",
+    "ekit_icon_box_btn_url",
+    "ekit_icon_box_global_link",
+    "ekit_icon_box_badge_control",
+    "ekit_icon_box_badge_title"
+  ],
+  // Other 组件
+  "timeline-widget-addon": ["twae_list"],
+
+  // 上方为已适配
 
   // Jeg Elementor Kit
   jkit_icon_box: [
@@ -45,13 +67,9 @@ const EDITABLE_FIELDS_MAP = {
     "sg_badge_text",
   ],
 
-  // ElementsKit 组件
+  
 
-  "elementskit-icon-box": [
-    "ekit_icon_box_title_text",
-    "ekit_icon_box_description_text",
-    "ekit_icon_box_btn_text",
-  ],
+  
   jkit_testimonials: ["sg_testimonials_list"],
   jkit_fun_fact: [
     "sg_content_number",
@@ -69,23 +87,6 @@ const EDITABLE_FIELDS_MAP = {
     "ekit_image_box_image",
   ],
   "elementskit-accordion": ["ekit_accordion_items"],
-
-  // 更多 Elementor 基础组件
-  icon: ["selected_icon"],
-  
-  
-  "star-rating": ["rating"],
-  
-  "image-gallery": ["gallery"],
-  testimonial: ["testimonial_content", "testimonial_name", "testimonial_job"],
-  tabs: ["tabs"],
-  slides: ["slides"],
-
- 
-
-  gallery: ["gallery"],
-  "timeline-widget-addon": ["twae_list"],
-  progress: ["title", "percent"],
   // ElementsKit
 
   "elementskit-team": ["ekit_team_image"],
@@ -93,6 +94,7 @@ const EDITABLE_FIELDS_MAP = {
     "ekit_progressbar_title",
     "ekit_progressbar_percent",
   ],
+  
 };
 
 /**
