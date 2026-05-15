@@ -214,6 +214,13 @@
             clearable
           />
         </el-form-item>
+        <el-form-item label="站点 URL" prop="site_url">
+          <el-input
+            v-model="addForm.site_url"
+            placeholder="请输入站点 URL"
+            clearable
+          />
+        </el-form-item>
       </el-form>
     </template>
     <template #footer>
@@ -229,7 +236,7 @@
 </template>
 <script setup>
 import { ref, reactive, onMounted, computed, nextTick } from "vue";
-import { getSiteList, createSite, deleteSite } from "@/apis/index.js";
+import { getSiteList, createSite, deleteSite, bindSiteUrl } from "@/apis/index.js";
 import { ElMessage, ElMessageBox } from "element-plus";
 import "element-plus/theme-chalk/el-message-box.css";
 import { useRouter } from "vue-router";
@@ -259,6 +266,7 @@ const addSaving = ref(false);
 const addForm = reactive({
   site_name: "",
   demo_site: "",
+  site_url: "",
 });
 
 const addFormRules = {
@@ -269,6 +277,10 @@ const addFormRules = {
   demo_site: [
     { required: true, message: "请输入 Demo 名称", trigger: "blur" },
     { min: 1, message: "Demo 名称不能为空", trigger: "blur" },
+  ],
+  site_url: [
+    { required: true, message: "请输入站点 URL", trigger: "blur" },
+    { type: 'url', message: "请输入有效的 URL 地址", trigger: "blur" },
   ],
 };
 
@@ -362,7 +374,16 @@ async function onAddSubmit() {
         demo_site: addForm.demo_site,
       });
       if (res.code === 0) {
-        ElMessage.success(res.message || "创建成功");
+        const bindRes = await bindSiteUrl({
+          site_id: res.data.site_id,
+          site_url: addForm.site_url,
+          plugin_token: res.data.plugin_token,
+        });
+        if (bindRes.code === 0) {
+          ElMessage.success(res.message || "创建成功");
+        } else {
+          ElMessage.error(bindRes.message || "绑定站点 URL 失败");
+        }
         addDrawer.value = false;
         await fetchList();
       } else {
