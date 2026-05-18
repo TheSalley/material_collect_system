@@ -17,3 +17,7 @@
 13. 0.1.13 对general 里的组件进行部分修改
 14. 0.1.14 适配Pro 的hotspot、reviews 组件
 15. 0.1.15 适配ElementKit 的icon box 组件
+16. 0.1.16 增加站点一键绑定功能
+17. 0.1.17 适配ElementKit 的button 组件
+18. 0.1.18 对Jeg Elementot Kit 的组件进行适配
+19. 0.1.19 对本地上传截图添加限制以及修复截图预览

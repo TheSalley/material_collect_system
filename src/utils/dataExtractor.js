@@ -6,95 +6,64 @@ const EDITABLE_FIELDS_MAP = {
   "heading": ["title"],
   "text-editor": ["editor"],
   "button": ["text"],
-  "video": ["youtube_url"],
   "image": ["image"],
+  "video": ["youtube_url"],
   "divider": ["text", "look"],
   // General 组件
-  "counter": ["title", "ending_number", "suffix"],
-  "icon-list": ["icon_list"],
   "icon-box": ["title_text", "description_text"],
-  "accordion": ["tabs"],
-  "toggle": ["tabs"],
+  "icon-list": ["icon_list"],
+  "counter": ["title", "ending_number", "suffix"],
   "image-box": ["image", "title_text", "description_text"],
   "image-carousel": ["carousel"],
+  "accordion": ["tabs"],
+  "toggle": ["tabs"],
+  "testimonial": ["testimonial_image", "testimonial_name", "testimonial_job", "testimonial_content",],
+  "tabs": ["tabs"],
+  "image-gallery": ["wp_gallery"],
+  "progress": ["title", "inner_text", "display_percentage", "percent"],
   // Pro 组件
-  "animated-headline": ["before_text", "highlighted_text"],
-  "testimonial-carousel": ["slides"],
-  "flip-box": [
-    "title_text_a",
-    "description_text_a",
-    "title_text_b",
-    "description_text_b",
-    "button_text",
-  ],
-  "call-to-action": [ "bg_image", "title", "description", "button",],
   "slides": ["slides"],
   "gallery": ["gallery"],
+  "animated-headline": ["before_text", "highlighted_text"],
   "hotspot": ["image", "hotspot"],
+  "flip-box": ["title_text_a", "description_text_a", "title_text_b", "description_text_b", "button_text"],
+  "call-to-action": [ "bg_image", "title", "description", "button",],
+  "testimonial-carousel": ["slides"],
   "reviews": ["slides"],
-  "testimonial": ["testimonial_image", "testimonial_name", "testimonial_job", "testimonial_content",],
   // JegElementorKit 组件
-  "elementskit-funfact": [
-    "ekit_funfact_number",
-    "ekit_funfact_number_suffix",
-    "ekit_funfact_title_text",
-  ],
+  "jkit_heading": ["sg_title_before", "sg_title_focused", "sg_title_after", "sg_subtitle_enable", "sg_subtitle_heading", "sg_description_enable", "sg_description", "sg_shadow_enable", "sg_shadow_content"],
+  "jkit_button": ["sg_content_label"],
+  "jkit_video_button": ["sg_video_url"],
+  "jkit_icon_box": ["sg_icon_text", "sg_icon_description", "sg_readmore_enable_button", "sg_readmore_button_label", "sg_badge_show", "sg_badge_text", "sg_icon_type", "sg_icon_image"],
+  "jkit_image_box": ["sg_image_choose", "sg_body_title", "sg_body_description", "sg_button_enable", "sg_button_label"],
+  "jkit_fun_fact": ["sg_content_number_prefix", "sg_content_number", "sg_content_number_suffix", "sg_content_title", "sg_icon_type", "sg_icon_image"],
+  "jkit_progress_bar": ["sg_progress_title", "sg_progress_percentage"],
+  "jkit_client_logo": ["sg_logo_list"],
+  "jkit_testimonials": ["sg_testimonials_list"],
+  "jkit_accordion": ["sg_accordion_list"],
+  "jkit_gallery": ["sg_filter_list", "sg_gallery_list"],
+  "jkit_team": ["sg_member_image", "sg_member_name", "sg_member_description"],
+  "jkit_portfolio_gallery": ["sg_gallery_list"],
+  "jkit_feature_list": ["sg_setting_list"],
   // ElementsKit 组件
-  "elementskit-icon-box": [
-    "ekit_icon_box_enable_header_icon",
-    "ekit_icon_box_header_image",
-    "ekit_icon_box_title_text",
-    "ekit_icon_box_description_text",
-    "ekit_icon_box_enable_btn",
-    "ekit_icon_box_btn_text",
-    "ekit_icon_box_btn_url",
-    "ekit_icon_box_global_link",
-    "ekit_icon_box_badge_control",
-    "ekit_icon_box_badge_title"
-  ],
+  "elementskit-image-accordion": ["ekit_img_accordion_items"],
+  "elementskit-accordion": ["ekit_accordion_items"],
+  "elementskit-button": ["ekit_btn_text"],
+  "elementskit-heading": ["ekit_heading_title", "ekit_heading_sub_title_show", "ekit_heading_sub_title", "ekit_heading_section_extra_title_show", "ekit_heading_extra_title", "show_shadow_text", "shadow_text_content"],
+  "elementskit-icon-box": ["ekit_icon_box_enable_header_icon", "ekit_icon_box_header_image", "ekit_icon_box_title_text", "ekit_icon_box_description_text", "ekit_icon_box_enable_btn", "ekit_icon_box_btn_text", "ekit_icon_box_badge_control", "ekit_icon_box_badge_title"],
+  "elementskit-image-box": [ "ekit_image_box_image", "ekit_image_box_title_text", "ekit_image_box_description_text", "ekit_image_box_enable_btn", "ekit_image_box_btn_text",],
+  "elementskit-client-logo": ["ekit_client_logo_repiter"],
+  "elementskit-faq": ["ekit_faq_content_items"],
+  "elementskit-funfact": ["ekit_funfact_number", "ekit_funfact_number_suffix", "ekit_funfact_title_text",],
+  "elementskit-testimonial": ["ekit_testimonial_data"],
+  "elementskit-team": ["ekit_team_image", "ekit_team_name", "ekit_team_position", "ekit_team_show_short_description", "ekit_team_short_description"],
+  "elementskit-progressbar": ["ekit_progressbar_title", "ekit_progressbar_percentage", "ekit_progressbar_percentage_show"],
+  // Essential Addons
+  "eael-feature-list": ["eael_feature_list"],
   // Other 组件
   "timeline-widget-addon": ["twae_list"],
 
   // 上方为已适配
-
-  // Jeg Elementor Kit
-  jkit_icon_box: [
-    "sg_icon_text",
-    "sg_icon_description",
-    "sg_readmore_enable_button",
-    "sg_readmore_button_label",
-    "sg_badge_show",
-    "sg_badge_text",
-  ],
-
-  
-
-  
-  jkit_testimonials: ["sg_testimonials_list"],
-  jkit_fun_fact: [
-    "sg_content_number",
-    "sg_content_number_prefix",
-    "sg_content_number_suffix",
-    "sg_content_super",
-    "sg_content_title",
-  ],
-  jkit_team: ["sg_member_image", "sg_member_name", "sg_member_description"],
-  jkit_heading: ["sg_title_text", "sg_subtitle_heading", "sg_description"],
-  "elementskit-image-box": [
-    "ekit_image_box_title_text",
-    "ekit_image_box_description_text",
-    "ekit_image_box_btn_text",
-    "ekit_image_box_image",
-  ],
-  "elementskit-accordion": ["ekit_accordion_items"],
-  // ElementsKit
-
-  "elementskit-team": ["ekit_team_image"],
-  "elementskit-progressbar": [
-    "ekit_progressbar_title",
-    "ekit_progressbar_percent",
-  ],
-  
 };
 
 /**

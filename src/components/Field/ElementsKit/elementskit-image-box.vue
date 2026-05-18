@@ -3,11 +3,11 @@
     <div v-if="hasImageField" class="__field-group">
       <label class="__field-label">
         <el-icon><Picture /></el-icon>
-        <span>团队图片</span>
+        <span>图文</span>
         <FieldWidgetType :type="widgetType" />
       </label>
       <ImageWp
-        :model-value="fields.ekit_team_image"
+        :model-value="fields.ekit_image_box_image"
         :node-id="nodeId"
         :show-size-config="true"
         @update:model-value="handleImageUpdate"
@@ -15,7 +15,7 @@
     </div>
 
     <div
-      v-for="field in visibleFields"
+      v-for="field in visibleTextFields"
       :key="field.key"
       class="__field-group"
     >
@@ -25,11 +25,11 @@
       </label>
       <el-input
         :model-value="fields[field.key]"
-        :type="field.type"
-        :rows="field.rows"
         :placeholder="field.placeholder"
+        :rows="field.rows"
+        :type="field.type"
         show-word-limit
-        @update:model-value="(value) => updateField(field.key, value)"
+        @update:model-value="handleTextUpdate(field.key, $event)"
       />
     </div>
   </div>
@@ -37,7 +37,12 @@
 
 <script setup>
 import { computed } from "vue";
-import { Document, Picture, Promotion, User } from "@element-plus/icons-vue";
+import {
+  Document,
+  Link,
+  Picture,
+  Promotion,
+} from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 import ImageWp from "@/components/Common/imageWp.vue";
 
@@ -60,44 +65,45 @@ const props = defineProps({
   },
 });
 
-const fieldOptions = [
+const textFields = [
   {
-    key: "ekit_team_name",
-    label: "姓名",
-    icon: User,
-    type: "text",
-    placeholder: "请输入姓名",
-    visible: () => hasField("ekit_team_name"),
-  },
-  {
-    key: "ekit_team_position",
-    label: "职位",
+    key: "ekit_image_box_title_text",
+    label: "标题",
     icon: Promotion,
-    type: "text",
-    placeholder: "请输入职位",
-    visible: () => hasField("ekit_team_position"),
+    type: "textarea",
+    rows: 2,
+    placeholder: "请输入标题",
+    visible: () => hasField("ekit_image_box_title_text"),
   },
   {
-    key: "ekit_team_short_description",
-    label: "简介",
+    key: "ekit_image_box_description_text",
+    label: "描述",
     icon: Document,
     type: "textarea",
-    rows: 4,
-    placeholder: "请输入简介",
+    rows: 3,
+    placeholder: "请输入描述",
+    visible: () => hasField("ekit_image_box_description_text"),
+  },
+  {
+    key: "ekit_image_box_btn_text",
+    label: "按钮文本",
+    icon: Link,
+    type: "text",
+    placeholder: "请输入按钮文本",
     visible: () =>
-      hasField("ekit_team_short_description") &&
-      props.fields.ekit_team_show_short_description === "yes",
+      hasField("ekit_image_box_btn_text") &&
+      props.fields.ekit_image_box_enable_btn !== "",
   },
 ];
 
-const hasImageField = computed(() => hasField("ekit_team_image"));
+const hasImageField = computed(() => hasField("ekit_image_box_image"));
 
-const visibleFields = computed(() =>
-  fieldOptions.filter((field) => field.visible()),
+const visibleTextFields = computed(() =>
+  textFields.filter((field) => field.visible()),
 );
 
 const shouldShowField = computed(
-  () => hasImageField.value || visibleFields.value.length > 0,
+  () => hasImageField.value || visibleTextFields.value.length > 0,
 );
 
 function hasField(key) {
@@ -105,10 +111,10 @@ function hasField(key) {
 }
 
 function handleImageUpdate(imageData) {
-  props.onUpdate("ekit_team_image", imageData);
+  props.onUpdate("ekit_image_box_image", imageData);
 }
 
-function updateField(key, value) {
+function handleTextUpdate(key, value) {
   props.onUpdate(key, value);
 }
 </script>

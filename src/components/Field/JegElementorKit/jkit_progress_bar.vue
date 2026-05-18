@@ -6,36 +6,30 @@
         <span>进度条</span>
         <FieldWidgetType :type="widgetType" />
       </label>
-      <div v-if="hasField('title')" class="__field-group mt-3">
+
+      <div v-if="hasField('sg_progress_title')" class="__field-group mt-3">
         <label class="__field-label">标题</label>
         <el-input
-          :model-value="fields.title"
+          :model-value="fields.sg_progress_title"
           placeholder="请输入标题"
           show-word-limit
-          @update:model-value="(value) => updateField('title', value)"
+          @update:model-value="(value) => updateField('sg_progress_title', value)"
         />
       </div>
 
-      <div v-if="hasField('inner_text')" class="__field-group mt-3">
-        <label class="__field-label">进度文字</label>
-        <el-input
-          :model-value="fields.inner_text"
-          placeholder="请输入进度文字"
-          show-word-limit
-          @update:model-value="(value) => updateField('inner_text', value)"
-        />
-      </div>
-
-      <div v-if="hasField('percent')" class="__field-group mt-3">
+      <div
+        v-if="hasField('sg_progress_percentage')"
+        class="__field-group mt-3"
+      >
         <label class="__field-label">百分比</label>
         <div class="flex items-center gap-2">
           <el-input-number
-            :model-value="percentSize"
+            :model-value="progressSize"
             :min="0"
             :max="100"
-            @update:model-value="updatePercentSize"
+            @update:model-value="updateProgressSize"
           />
-          <span>{{ percentUnit }}</span>
+          <span>%</span>
         </div>
       </div>
     </div>
@@ -48,6 +42,10 @@ import { DataAnalysis } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 
 const props = defineProps({
+  nodeId: {
+    type: String,
+    required: true,
+  },
   widgetType: {
     type: String,
     required: true,
@@ -62,29 +60,22 @@ const props = defineProps({
   },
 });
 
-const percentObject = computed(() => {
-  const value = props.fields.percent;
+const progressObject = computed(() => {
+  const value = props.fields.sg_progress_percentage;
 
   if (value && typeof value === "object" && !Array.isArray(value)) {
     return value;
   }
 
   return {
-    unit: "%",
     size: Number(value) || 0,
-    sizes: [],
   };
 });
 
-const percentSize = computed(() => Number(percentObject.value.size) || 0);
-
-const percentUnit = computed(() => percentObject.value.unit || "%");
+const progressSize = computed(() => Number(progressObject.value.size) || 0);
 
 const shouldShowField = computed(
-  () =>
-    hasField("title") ||
-    hasField("inner_text") ||
-    hasField("percent"),
+  () => hasField("sg_progress_title") || hasField("sg_progress_percentage"),
 );
 
 function hasField(key) {
@@ -95,9 +86,9 @@ function updateField(key, value) {
   props.onUpdate(key, value);
 }
 
-function updatePercentSize(value) {
-  props.onUpdate("percent", {
-    ...percentObject.value,
+function updateProgressSize(value) {
+  props.onUpdate("sg_progress_percentage", {
+    ...progressObject.value,
     size: Number(value) || 0,
   });
 }

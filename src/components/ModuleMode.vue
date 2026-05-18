@@ -109,7 +109,12 @@
               />
             </el-form-item>
           </el-form>
-          <el-upload drag action="#" :before-upload="handleBeforeUpload">
+          <el-upload
+            drag
+            action="#"
+            :before-upload="handleBeforeUpload"
+            :disabled="!hasUploadPageName"
+          >
             <el-icon class="el-icon--upload">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
                 <path
@@ -244,6 +249,7 @@ const mediaList = ref([]);
 const mediaKeyword = ref("");
 const uploadPageName = ref("");
 const selectedMediaId = ref(null);
+const hasUploadPageName = computed(() => uploadPageName.value.trim().length > 0);
 /** 同步高亮：点击左侧截图或与右侧手风琴联动 */
 const activePartIndex = ref(null);
 /** 与 el-collapse 双向同步（单源：仍以 activePartIndex 为准） */
@@ -587,6 +593,10 @@ function handlePreviewClick(index) {
 }
 
 function handleBeforeUpload(file) {
+  if (!hasUploadPageName.value) {
+    ElMessage.warning("璇峰厛濉啓椤甸潰鏍囪瘑鍐嶄笂浼犲浘鐗?");
+    return false;
+  }
   const isImage = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
   const isLt20M = file.size / 1024 / 1024 < 20;
   if (!isImage) {

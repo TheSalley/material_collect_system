@@ -46,24 +46,6 @@
           @update:model-value="(value) => updateField(field.key, value)"
         />
       </div>
-
-      <div
-        v-for="field in visibleLinkFields"
-        :key="field.key"
-        class="__field-group"
-      >
-        <label class="__field-label">
-          <el-icon>
-            <Link />
-          </el-icon>
-          <span>{{ field.label }}</span>
-        </label>
-        <el-input
-          :model-value="fields[field.key]?.url"
-          :placeholder="field.placeholder"
-          @update:model-value="(value) => updateLinkField(field.key, value)"
-        />
-      </div>
     </div>
   </div>
 </template>
@@ -129,27 +111,8 @@ const textFieldOptions = [
   },
 ];
 
-const linkFieldOptions = [
-  {
-    key: "ekit_icon_box_btn_url",
-    label: "按钮链接",
-    placeholder: "请输入按钮链接",
-  },
-  {
-    key: "ekit_icon_box_global_link",
-    label: "全局链接",
-    placeholder: "请输入全局链接",
-  },
-];
-
 const visibleTextFields = computed(() =>
   textFieldOptions.filter((field) => shouldShowTextField(field)),
-);
-
-const visibleLinkFields = computed(() =>
-  linkFieldOptions.filter(
-    (field) => isButtonEnabled.value && hasLinkContent(field.key),
-  ),
 );
 
 const showHeaderImage = computed(() => {
@@ -166,10 +129,7 @@ const isBadgeEnabled = computed(
 );
 
 const shouldShowField = computed(
-  () =>
-    showHeaderImage.value ||
-    visibleTextFields.value.length > 0 ||
-    visibleLinkFields.value.length > 0,
+  () => showHeaderImage.value || visibleTextFields.value.length > 0,
 );
 
 function hasFieldContent(key) {
@@ -180,12 +140,6 @@ function hasFieldContent(key) {
 function hasObjectField(key) {
   const value = props.fields[key];
   return value && typeof value === "object" && !Array.isArray(value);
-}
-
-function hasLinkContent(key) {
-  if (!hasObjectField(key)) return false;
-  const url = props.fields[key]?.url;
-  return url !== undefined && url !== null && url !== "";
 }
 
 function shouldShowTextField(field) {
@@ -202,12 +156,5 @@ function shouldShowTextField(field) {
 
 function updateField(key, value) {
   props.onUpdate(key, value);
-}
-
-function updateLinkField(key, url) {
-  props.onUpdate(key, {
-    ...props.fields[key],
-    url,
-  });
 }
 </script>

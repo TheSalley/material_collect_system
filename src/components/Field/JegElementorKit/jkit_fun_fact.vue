@@ -2,8 +2,8 @@
   <div v-if="shouldShowField" class="__field-item">
     <div class="__field-group">
       <label class="__field-label">
-        <el-icon><Promotion /></el-icon>
-        <span>图标框</span>
+        <el-icon><DataAnalysis /></el-icon>
+        <span>数字统计</span>
         <FieldWidgetType :type="widgetType" />
       </label>
 
@@ -45,7 +45,12 @@
 
 <script setup>
 import { computed } from "vue";
-import { Link, Picture, PriceTag, Promotion } from "@element-plus/icons-vue";
+import {
+  DataAnalysis,
+  Picture,
+  PriceTag,
+  Promotion,
+} from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 import ImageWp from "@/components/Common/imageWp.vue";
 
@@ -70,21 +75,36 @@ const props = defineProps({
 
 const fieldOptions = [
   {
-    key: "sg_icon_text",
-    label: "标题",
-    icon: Promotion,
+    key: "sg_content_number_prefix",
+    label: "数字前缀",
+    icon: PriceTag,
     type: "text",
-    placeholder: "请输入标题",
-    visible: () => hasField("sg_icon_text"),
+    placeholder: "请输入数字前缀",
+    visible: () => hasField("sg_content_number_prefix"),
   },
   {
-    key: "sg_icon_description",
-    label: "描述",
+    key: "sg_content_number",
+    label: "数字",
+    icon: DataAnalysis,
+    type: "text",
+    placeholder: "请输入数字",
+    visible: () => hasField("sg_content_number"),
+  },
+  {
+    key: "sg_content_number_suffix",
+    label: "数字后缀",
+    icon: PriceTag,
+    type: "text",
+    placeholder: "请输入数字后缀",
+    visible: () => hasField("sg_content_number_suffix"),
+  },
+  {
+    key: "sg_content_title",
+    label: "标题文本",
     icon: Promotion,
-    type: "textarea",
-    rows: 3,
-    placeholder: "请输入描述",
-    visible: () => hasField("sg_icon_description"),
+    type: "text",
+    placeholder: "请输入标题文本",
+    visible: () => hasField("sg_content_title"),
   },
   {
     key: "sg_icon_type",
@@ -93,26 +113,6 @@ const fieldOptions = [
     type: "text",
     placeholder: "请输入图标类型",
     visible: () => hasField("sg_icon_type"),
-  },
-  {
-    key: "sg_readmore_button_label",
-    label: "按钮文本",
-    icon: Link,
-    type: "text",
-    placeholder: "请输入按钮文本",
-    visible: () =>
-      hasField("sg_readmore_button_label") &&
-      props.fields.sg_readmore_enable_button === "yes",
-  },
-  {
-    key: "sg_badge_text",
-    label: "徽章文本",
-    icon: PriceTag,
-    type: "text",
-    placeholder: "请输入徽章文本",
-    visible: () =>
-      hasField("sg_badge_text") &&
-      props.fields.sg_badge_show === "yes",
   },
 ];
 

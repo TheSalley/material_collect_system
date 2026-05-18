@@ -3,11 +3,11 @@
     <div v-if="hasImageField" class="__field-group">
       <label class="__field-label">
         <el-icon><Picture /></el-icon>
-        <span>团队图片</span>
+        <span>成员图片</span>
         <FieldWidgetType :type="widgetType" />
       </label>
       <ImageWp
-        :model-value="fields.ekit_team_image"
+        :model-value="fields.sg_member_image"
         :node-id="nodeId"
         :show-size-config="true"
         @update:model-value="handleImageUpdate"
@@ -37,7 +37,7 @@
 
 <script setup>
 import { computed } from "vue";
-import { Document, Picture, Promotion, User } from "@element-plus/icons-vue";
+import { Document, Picture, User } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 import ImageWp from "@/components/Common/imageWp.vue";
 
@@ -62,35 +62,25 @@ const props = defineProps({
 
 const fieldOptions = [
   {
-    key: "ekit_team_name",
-    label: "姓名",
+    key: "sg_member_name",
+    label: "成员名称",
     icon: User,
     type: "text",
-    placeholder: "请输入姓名",
-    visible: () => hasField("ekit_team_name"),
+    placeholder: "请输入成员名称",
+    visible: () => hasField("sg_member_name"),
   },
   {
-    key: "ekit_team_position",
-    label: "职位",
-    icon: Promotion,
-    type: "text",
-    placeholder: "请输入职位",
-    visible: () => hasField("ekit_team_position"),
-  },
-  {
-    key: "ekit_team_short_description",
-    label: "简介",
+    key: "sg_member_description",
+    label: "成员描述",
     icon: Document,
     type: "textarea",
     rows: 4,
-    placeholder: "请输入简介",
-    visible: () =>
-      hasField("ekit_team_short_description") &&
-      props.fields.ekit_team_show_short_description === "yes",
+    placeholder: "请输入成员描述",
+    visible: () => hasField("sg_member_description"),
   },
 ];
 
-const hasImageField = computed(() => hasField("ekit_team_image"));
+const hasImageField = computed(() => hasField("sg_member_image"));
 
 const visibleFields = computed(() =>
   fieldOptions.filter((field) => field.visible()),
@@ -105,7 +95,7 @@ function hasField(key) {
 }
 
 function handleImageUpdate(imageData) {
-  props.onUpdate("ekit_team_image", imageData);
+  props.onUpdate("sg_member_image", imageData);
 }
 
 function updateField(key, value) {

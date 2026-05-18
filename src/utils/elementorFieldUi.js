@@ -6,6 +6,7 @@ const FIELD_BASES = [
   "/src/components/Field/Pro/",
   "/src/components/Field/Other/",
   "/src/components/Field/ElementsKit/",
+  "/src/components/Field/EssentialAddons/"
 ];
 
 /**

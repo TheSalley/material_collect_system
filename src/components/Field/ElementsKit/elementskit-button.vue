@@ -1,34 +1,34 @@
 <template>
-  <div v-if="visibleFields.length" class="__field-item">
+  <div v-if="shouldShowField" class="__field-item">
     <div class="__field-group">
       <label class="__field-label">
         <el-icon>
-          <DataAnalysis />
+          <Link />
         </el-icon>
-        <span>数字变化</span>
+        <span>按钮</span>
         <FieldWidgetType :type="widgetType" />
       </label>
 
       <div
-        v-for="field in visibleFields"
+        v-for="field in visibleTextFields"
         :key="field.key"
         class="__field-group"
       >
         <label class="__field-label">{{ field.label }}</label>
         <el-input
           :model-value="fields[field.key]"
-          :type="field.type"
           :placeholder="field.placeholder"
           @update:model-value="(value) => updateField(field.key, value)"
         />
       </div>
+
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from "vue";
-import { DataAnalysis } from "@element-plus/icons-vue";
+import { Link } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 
 const props = defineProps({
@@ -46,28 +46,19 @@ const props = defineProps({
   },
 });
 
-const fieldOptions = [
+const textFieldOptions = [
   {
-    key: "ekit_funfact_number",
-    label: "结束数字",
-    type: "number",
-    placeholder: "例如：100",
-  },
-  {
-    key: "ekit_funfact_number_suffix",
-    label: "后缀",
-    placeholder: "例如：+ / %",
-  },
-  {
-    key: "ekit_funfact_title_text",
-    label: "标题",
-    placeholder: "请输入标题",
+    key: "ekit_btn_text",
+    label: "按钮文本",
+    placeholder: "请输入按钮文本",
   },
 ];
 
-const visibleFields = computed(() =>
-  fieldOptions.filter((field) => hasFieldContent(field.key)),
+const visibleTextFields = computed(() =>
+  textFieldOptions.filter((field) => hasFieldContent(field.key)),
 );
+
+const shouldShowField = computed(() => visibleTextFields.value.length > 0);
 
 function hasFieldContent(key) {
   const value = props.fields[key];

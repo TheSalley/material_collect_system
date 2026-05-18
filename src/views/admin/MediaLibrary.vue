@@ -70,7 +70,12 @@
       </div>
 
       <div v-else-if="rows.length > 0" class="grid gap-4 media-grid">
-        <MediaCard v-for="(item, idx) in rows" :key="idx" :item="item" />
+        <MediaCard
+          v-for="(item, idx) in rows"
+          :key="idx"
+          :item="item"
+          @preview="handlePreview"
+        />
       </div>
     </div>
   </div>
@@ -158,6 +163,12 @@ function handleFileChange(file) {
 
 function handleFileRemove() {
   uploadFile.value = null;
+}
+
+function handlePreview(url) {
+  if (!url) return;
+  previewUrl.value = url;
+  previewVisible.value = true;
 }
 
 async function handleUpload() {

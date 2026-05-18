@@ -1,12 +1,14 @@
 <script setup>
 import { Picture, View, Document } from "@element-plus/icons-vue";
 
-defineProps({
+const props = defineProps({
   item: {
     type: Object,
     required: true,
   },
 });
+
+const emit = defineEmits(["preview"]);
 
 const IMAGE_FIELDS = ["url", "src", "image", "img", "thumbnail", "cover"];
 
@@ -38,18 +40,26 @@ function formatDate(str) {
   const d = new Date(str);
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 }
+
+function openPreview() {
+  const imageUrl = getImageUrl(props.item);
+  if (!imageUrl) return;
+  emit("preview", imageUrl);
+}
 </script>
 
 <template>
   <div class="media-card group relative rounded-2xl overflow-hidden bg-white dark:bg-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-600">
-    <div class="relative aspect-[4/3] bg-gray-100 dark:bg-gray-600 overflow-hidden">
+    <div
+      class="relative aspect-[4/3] bg-gray-100 dark:bg-gray-600 overflow-hidden"
+      :class="{ 'cursor-zoom-in': getImageUrl(item) }"
+      @click="openPreview"
+    >
       <template v-if="getImageUrl(item)">
         <el-image
           :src="getImageUrl(item)"
           fit="cover"
           class="w-full h-full transition-transform duration-500 group-hover:scale-105"
-          :preview-src-list="[getImageUrl(item)]"
-          preview-teleported
         />
       </template>
       <template v-else>
@@ -58,13 +68,15 @@ function formatDate(str) {
         </div>
       </template>
 
-      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+      <div class="pointer-events-none absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
         <el-button
           v-if="getImageUrl(item)"
+          class="pointer-events-auto"
           circle
           size="large"
           type="primary"
           :icon="View"
+          @click.stop="openPreview"
         />
       </div>
 
