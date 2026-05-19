@@ -412,8 +412,8 @@ async function fetchList() {
     const params = searchValue.value ? { keyword: searchValue.value } : {};
     const res = await getSiteList(params);
     if (res.code === 0) {
-      tableData.length = 0;
-      const list = res.data || [];
+      tableData.length = res.data.total;
+      const list = res.data.list || [];
       // 根据 API 文档，站点列表返回的字段是 site_id, site_name, site_status, wp_base_url 等
       tableData.push(...list);
     }

@@ -4,6 +4,7 @@ import { getMediaByDemo, saveMedia } from "@/apis/media";
 
 export function useMedia() {
   const queryDemo = ref("");
+  const page_name = ref("");
   const loading = ref(false);
   const rows = ref([]);
   const page = ref(1);
@@ -19,6 +20,7 @@ export function useMedia() {
     try {
       const res = await getMediaByDemo({
         demo: queryDemo.value.trim(),
+        page_name: page_name.value.trim(),
         page: page.value,
         pageSize: pageSize.value,
       });
@@ -68,6 +70,7 @@ export function useMedia() {
 
   return {
     queryDemo,
+    page_name,
     loading,
     rows,
     page,

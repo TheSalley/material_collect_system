@@ -4,11 +4,12 @@ import { ElMessage } from "element-plus";
 
 /**
  * 管理员查询素材列表
- * GET /api/media/get?demo=demo67&page=1&page_size=10
+ * GET /api/media/get?demo=demo67&page_name=xxx&page=1&page_size=10
  */
-export const getMediaByDemo = async ({ demo = "", page = 1, pageSize = 10 } = {}) => {
+export const getMediaByDemo = async ({ demo = "", page_name = "", page = 1, pageSize = 10 } = {}) => {
   const q = new URLSearchParams();
   if (demo) q.set("demo", demo);
+  if (page_name) q.set("page_name", page_name);
   q.set("page", page);
   q.set("page_size", pageSize);
   return await fetchWithAuth(`${config.baseUrl}/api/media/get?${q.toString()}`, {
