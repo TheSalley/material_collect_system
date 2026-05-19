@@ -141,6 +141,15 @@
             <template #default="scope">
               <div class="flex gap-2 justify-center">
                 <el-button
+                  type="primary"
+                  size="small"
+                  :icon="Setting"
+                  link
+                  @click="openEditDrawer(scope.row)"
+                >
+                  编辑
+                </el-button>
+                <el-button
                   type="success"
                   size="small"
                   :icon="Setting"
@@ -233,10 +242,64 @@
     </template>
   </el-drawer>
 
+  <el-drawer
+    v-model="editDrawer"
+    title="编辑站点"
+    direction="rtl"
+    size="500px"
+    :close-on-click-modal="false"
+  >
+    <template #header>
+      <div class="flex items-center gap-3">
+        <el-icon class="text-blue-500 text-xl"><Setting /></el-icon>
+        <span class="text-lg font-semibold text-gray-900 dark:text-white">编辑站点</span>
+      </div>
+    </template>
+    <template #default>
+      <el-form
+        ref="editFormRef"
+        :model="editForm"
+        :rules="editFormRules"
+        label-width="100px"
+        class="py-5"
+        label-position="left"
+      >
+        <el-form-item label="站点名称" prop="site_name">
+          <el-input
+            v-model="editForm.site_name"
+            placeholder="请输入站点名称"
+            clearable
+          />
+        </el-form-item>
+        <el-form-item label="Demo 名称" prop="demo_site">
+          <el-input
+            v-model="editForm.demo_site"
+            placeholder="请输入 Demo 名称"
+            clearable
+          />
+        </el-form-item>
+      </el-form>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-3 pt-5 border-t border-gray-200 dark:border-gray-600">
+        <el-button @click="editDrawer = false" size="large">取消</el-button>
+        <el-button
+          type="primary"
+          @click="onEditSubmit"
+          size="large"
+          :icon="Check"
+          :loading="editSaving"
+        >
+          保存修改
+        </el-button>
+      </div>
+    </template>
+  </el-drawer>
+
 </template>
 <script setup>
 import { ref, reactive, onMounted, computed, nextTick } from "vue";
-import { getSiteList, createSite, deleteSite, bindSiteUrl } from "@/apis/index.js";
+import { getSiteList, createSite, updateSite, deleteSite, bindSiteUrl } from "@/apis/index.js";
 import { ElMessage, ElMessageBox } from "element-plus";
 import "element-plus/theme-chalk/el-message-box.css";
 import { useRouter } from "vue-router";
@@ -262,11 +325,20 @@ let pageList = reactive([]);
 const addDrawer = ref(false);
 const addFormRef = ref(null);
 const addSaving = ref(false);
+const editDrawer = ref(false);
+const editFormRef = ref(null);
+const editSaving = ref(false);
 
 const addForm = reactive({
   site_name: "",
   demo_site: "",
   site_url: "",
+});
+
+const editForm = reactive({
+  site_id: "",
+  site_name: "",
+  demo_site: "",
 });
 
 const addFormRules = {
@@ -363,6 +435,16 @@ function openAddDrawer() {
   });
 }
 
+function openEditDrawer(row) {
+  editForm.site_id = row.site_id;
+  editForm.site_name = row.site_name;
+  editForm.demo_site = row.demo_site;
+  editDrawer.value = true;
+  nextTick(() => {
+    editFormRef.value?.clearValidate();
+  });
+}
+
 async function onAddSubmit() {
   if (!addFormRef.value) return;
   await addFormRef.value.validate(async (valid) => {
@@ -393,6 +475,33 @@ async function onAddSubmit() {
       ElMessage.error("创建失败：" + (error.message || "网络错误"));
     } finally {
       addSaving.value = false;
+    }
+  });
+}
+
+
+async function onEditSubmit() {
+  if (!editFormRef.value) return;
+  await editFormRef.value.validate(async (valid) => {
+    if (!valid) return;
+    editSaving.value = true;
+    try {
+      const res = await updateSite({
+        site_id: editForm.site_id,
+        site_name: editForm.site_name,
+        demo_site: editForm.demo_site,
+      });
+      if (res.code === 0) {
+        ElMessage.success(res.message || "更新成功");
+        editDrawer.value = false;
+        await fetchList();
+      } else {
+        ElMessage.error(res.message || "更新失败");
+      }
+    } catch (error) {
+      ElMessage.error("更新失败：" + (error.message || "网络错误"));
+    } finally {
+      editSaving.value = false;
     }
   });
 }

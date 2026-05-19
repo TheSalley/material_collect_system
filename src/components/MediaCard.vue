@@ -1,5 +1,8 @@
 <script setup>
-import { Picture, View, Document } from "@element-plus/icons-vue";
+import { shallowRef } from "vue";
+import { Picture, View, Document, Delete } from "@element-plus/icons-vue";
+import { ElLoading, ElMessage, ElMessageBox } from "element-plus";
+import { deleteMedia } from "@/apis/media";
 
 const props = defineProps({
   item: {
@@ -8,7 +11,8 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["preview"]);
+const emit = defineEmits(["preview", "deleted"]);
+const deleting = shallowRef(false);
 
 const IMAGE_FIELDS = ["url", "src", "image", "img", "thumbnail", "cover"];
 
@@ -35,6 +39,10 @@ function getField(item, key) {
   return item[key] ?? item[key.replace(/_/g, "")] ?? null;
 }
 
+function getMediaId(item) {
+  return getField(item, "id");
+}
+
 function formatDate(str) {
   if (!str) return "-";
   const d = new Date(str);
@@ -45,6 +53,49 @@ function openPreview() {
   const imageUrl = getImageUrl(props.item);
   if (!imageUrl) return;
   emit("preview", imageUrl);
+}
+
+async function handleDelete() {
+  const id = getMediaId(props.item);
+  if (id == null || id === "") {
+    ElMessage.warning("缺少素材 ID，无法删除");
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm("确定要删除该素材吗？此操作不可恢复。", "删除素材", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+      closeOnClickModal: false,
+    });
+  } catch (error) {
+    if (error !== "cancel" && error !== "close") {
+      ElMessage.error("删除失败：" + (error?.message || ""));
+    }
+    return;
+  }
+
+  deleting.value = true;
+  const loadingInstance = ElLoading.service({
+    fullscreen: true,
+    lock: true,
+    text: "正在删除素材...",
+  });
+  try {
+    const res = await deleteMedia({ id });
+    if (res?.code === 0) {
+      ElMessage.success(res.message || "删除成功");
+      emit("deleted", props.item);
+    } else {
+      ElMessage.error(res?.message || res?.msg || "删除失败");
+    }
+  } catch (error) {
+    ElMessage.error("删除失败：" + (error?.message || ""));
+  } finally {
+    loadingInstance.close();
+    deleting.value = false;
+  }
 }
 </script>
 
@@ -77,6 +128,15 @@ function openPreview() {
           type="primary"
           :icon="View"
           @click.stop="openPreview"
+        />
+        <el-button
+          class="pointer-events-auto"
+          circle
+          size="large"
+          type="danger"
+          :icon="Delete"
+          :loading="deleting"
+          @click.stop="handleDelete"
         />
       </div>
 

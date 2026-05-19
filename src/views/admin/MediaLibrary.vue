@@ -75,6 +75,7 @@
           :key="idx"
           :item="item"
           @preview="handlePreview"
+          @deleted="loadMedia"
         />
       </div>
     </div>

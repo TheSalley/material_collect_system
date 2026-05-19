@@ -40,6 +40,16 @@
                   <el-icon size="24"><ZoomIn /></el-icon>
                   <span>查看大图</span>
                 </div>
+                <el-button
+                  v-if="isAdmin"
+                  class="preview-image-remove"
+                  :icon="Delete"
+                  :loading="removingImageKey === moduleImageKey(part.id)"
+                  circle
+                  size="small"
+                  type="danger"
+                  @click.stop="removeModuleImage(part.id)"
+                />
               </div>
               <el-empty v-else description="未上传截图" :image-size="80" />
             </div>
@@ -219,8 +229,9 @@ import {
   Picture,
   Check,
   ZoomIn,
+  Delete,
 } from "@element-plus/icons-vue";
-import { ElLoading, ElMessage } from "element-plus";
+import { ElLoading, ElMessage, ElMessageBox } from "element-plus";
 import {
   getPageById,
   getPageConfig,
@@ -275,6 +286,7 @@ provide("sectionSizes", sectionSizes);
 
 /** 按模块 elementor id 存截图，与 visibleParts 顺序无关、与右侧板块一一对应 */
 const moduleImages = ref({});
+const removingImageKey = ref(null);
 let currentUploadModuleId = null;
 let currentUploadPartIndex = null;
 
@@ -356,6 +368,56 @@ async function saveSectionSizes() {
 function getModuleImage(id) {
   const k = moduleImageKey(id);
   return k ? moduleImages.value[k] : null;
+}
+
+async function removeModuleImage(moduleId) {
+  const key = moduleImageKey(moduleId);
+  if (!key || !moduleImages.value[key]) return;
+
+  try {
+    await ElMessageBox.confirm("确定要移除该板块截图吗？", "移除截图", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+      closeOnClickModal: false,
+    });
+  } catch (error) {
+    if (error !== "cancel" && error !== "close") {
+      ElMessage.error("移除截图失败：" + (error?.message || ""));
+    }
+    return;
+  }
+
+  const site_id = websiteInfo?.site_id;
+  if (!site_id || !props.pageId) {
+    ElMessage.warning("缺少站点或页面信息");
+    return;
+  }
+
+  const previousImages = moduleImages.value;
+  const nextImages = { ...previousImages };
+  delete nextImages[key];
+  moduleImages.value = nextImages;
+  removingImageKey.value = key;
+
+  try {
+    const res = await savePageConfig(
+      site_id,
+      String(props.pageId),
+      buildPageMaterialsPayload(),
+    );
+    if (res?.code === 0) {
+      ElMessage.success(res.message || "截图已移除");
+    } else {
+      moduleImages.value = previousImages;
+      ElMessage.error(res?.message || "移除截图失败");
+    }
+  } catch (error) {
+    moduleImages.value = previousImages;
+    ElMessage.error("移除截图失败：" + (error?.message || ""));
+  } finally {
+    removingImageKey.value = null;
+  }
 }
 
 const props = defineProps({
@@ -874,7 +936,21 @@ defineExpose({
   pointer-events: none;
 }
 
+.preview-image-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
 .preview-image-wrapper:hover .preview-image-overlay {
+  opacity: 1;
+}
+
+.preview-image-wrapper:hover .preview-image-remove,
+.preview-image-remove.is-loading {
   opacity: 1;
 }
 

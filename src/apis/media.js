@@ -45,7 +45,7 @@ export const saveMedia = async ({ file, demo, page }) => {
 
     const data = await res.json();
 
-    if (!res.ok || data?.code >= 400) {
+    if (data.code !== 0) {
       ElMessage.error(data?.msg || data?.message || "上传失败");
       return data;
     }
@@ -56,5 +56,42 @@ export const saveMedia = async ({ file, demo, page }) => {
     console.error("图片上传失败:", error);
     ElMessage.error("图片上传失败");
     return { code: -1, message: "上传失败" };
+  }
+};
+
+/**
+ * 管理员删除素材
+ * DELETE /api/media/delete
+ */
+export const deleteMedia = async ({ id }) => {
+  const globalStore = useGlobalStore();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), config.timeout);
+
+  try {
+    const res = await fetch(`${config.baseUrl}/api/media/delete`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${globalStore.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    const data = await res.json();
+
+    if (data.code !== 0) {
+      ElMessage.error(data?.msg || data?.message || "删除失败");
+      return data;
+    }
+
+    return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error("素材删除失败:", error);
+    ElMessage.error("素材删除失败");
+    return { code: -1, message: "删除失败" };
   }
 };

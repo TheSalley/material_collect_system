@@ -27,6 +27,14 @@ export const bindSiteUrl = async (payload) => {
   });
 };
 
+export const updateSite = async (payload) => {
+  return await fetchWithAuth(config.baseUrl + "/api/site/update", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+};
+
 /**
  * 4.3 删除站点
  * POST /api/site/delete
