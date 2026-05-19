@@ -226,7 +226,7 @@
         <el-form-item label="站点 URL" prop="site_url">
           <el-input
             v-model="addForm.site_url"
-            placeholder="请输入站点 URL"
+            placeholder="请输入站点 URL，无需后面加/"
             clearable
           />
         </el-form-item>
