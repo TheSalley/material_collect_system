@@ -42,7 +42,7 @@ const EDITABLE_FIELDS_MAP = {
   "jkit_testimonials": ["sg_testimonials_list"],
   "jkit_accordion": ["sg_accordion_list"],
   "jkit_gallery": ["sg_filter_list", "sg_gallery_list"],
-  "jkit_team": ["sg_member_image", "sg_member_name", "sg_member_description"],
+  "jkit_team": ["sg_member_image", "sg_member_name", "sg_member_show_description", "sg_member_description"],
   "jkit_portfolio_gallery": ["sg_gallery_list"],
   "jkit_feature_list": ["sg_setting_list"],
   // ElementsKit 组件
@@ -260,9 +260,11 @@ export function extractEditableData(elementorData) {
       isLayoutBgNode &&
       node.settings &&
       !node.settings.hide_desktop &&
-      node.settings.background_background === "classic"
+      (node.settings.background_background === "classic" ||
+        node.settings.background_background === "slideshow")
     ) {
       if (!editableMap.has(node.id)) {
+        const backgroundType = node.settings.background_background;
         const bg = node.settings.background_image;
         const bgUrl =
           typeof bg === "string"
@@ -283,8 +285,21 @@ export function extractEditableData(elementorData) {
 
         // 仅当有有效值时才记录该字段，透传原始值不做任何修改
         const fields = {};
-        if (bgUrl) fields.background_image = bg;
+        if (backgroundType === "classic" && bgUrl) {
+          fields.background_image = bg;
+        }
         if (overlayIsClassic && ovUrl) fields.background_overlay_image = ov;
+        if (backgroundType === "slideshow") {
+          const slideshowGallery = cleanFieldValue(
+            node.settings.background_slideshow_gallery
+          );
+          if (
+            Array.isArray(slideshowGallery) &&
+            slideshowGallery.length > 0
+          ) {
+            fields.background_slideshow_gallery = slideshowGallery;
+          }
+        }
 
         if (Object.keys(fields).length > 0) {
           editableMap.set(node.id, {

@@ -4,12 +4,8 @@
       <el-icon><PictureFilled /></el-icon>
       背景图
     </label>
-    <!-- 主背景图：仅当数据里已有主背景时才渲染（与 WP 一致，不在此凭空补空块） -->
-    <div
-      v-if="hasMainBg"
-      class="bg-block"
-      element-loading-text="正在上传…"
-    >
+
+    <div v-if="hasMainBg" class="bg-block">
       <div class="bg-block__title">主背景图</div>
       <ImageWp
         :model-value="fields.background_image"
@@ -19,12 +15,7 @@
       />
     </div>
 
-    <!-- 叠加层图：仅当数据里已有叠加层图时才渲染 -->
-    <div
-      v-if="hasOverlayBg"
-      class="bg-block"
-      element-loading-text="正在上传…"
-    >
+    <div v-if="hasOverlayBg" class="bg-block">
       <div class="bg-block__title">叠加层图</div>
       <ImageWp
         :model-value="fields.background_overlay_image"
@@ -33,21 +24,51 @@
         @update:model-value="(newImageData) => onUpdate('background_overlay_image', newImageData)"
       />
     </div>
+
+    <div v-if="hasSlideshowGalleryField" class="bg-block">
+      <div class="bg-block__header">
+        <div class="bg-block__title mb-0">轮播背景图库</div>
+        <el-button size="small" type="primary" plain :icon="Plus" @click="addSlideshowImage">
+          新增图片
+        </el-button>
+      </div>
+
+      <div v-if="slideshowGallery.length" class="slideshow-list">
+        <div
+          v-for="(image, index) in slideshowGallery"
+          :key="getSlideshowItemKey(image, index)"
+          class="slideshow-item"
+        >
+          <div class="slideshow-item__header">
+            <span class="slideshow-item__title">图片 {{ index + 1 }}</span>
+            <el-button
+              size="small"
+              type="danger"
+              plain
+              :icon="Delete"
+              @click="removeSlideshowImage(index)"
+            >
+              删除
+            </el-button>
+          </div>
+
+          <ImageWp
+            :model-value="normalizeGalleryItem(image)"
+            :node-id="nodeId"
+            :show-size-config="true"
+            @update:model-value="(value) => updateSlideshowImage(index, value)"
+          />
+        </div>
+      </div>
+
+      <el-empty v-else description="暂无轮播背景图片" :image-size="60" />
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
-import { PictureFilled } from "@element-plus/icons-vue";
-import {
-  getImageNaturalSizeFromUrl,
-  formatNaturalSizeLabel,
-} from "@/utils/imageUpload";
-import { getFileFullUrl } from "@/apis";
-import { useGlobalStore } from "@/stores/global";
-import { resolveAttachmentPreviewUrl } from "@/utils/mediaResolve";
-
-
+import { computed } from "vue";
+import { Delete, PictureFilled, Plus } from "@element-plus/icons-vue";
 import ImageWp from "@/components/Common/imageWp.vue";
 
 const props = defineProps({
@@ -59,7 +80,8 @@ const props = defineProps({
 function pickRawImageUrl(val) {
   if (val == null) return "";
   if (typeof val === "string") return val.trim();
-  if (typeof val !== "object") return "";
+  if (typeof val !== "object" || Array.isArray(val)) return "";
+
   const candidates = [
     val.url,
     val.src,
@@ -71,71 +93,131 @@ function pickRawImageUrl(val) {
     val.sizes?.large?.url,
     val.sizes?.medium?.url,
   ];
-  for (const u of candidates) {
-    if (typeof u === "string" && u.trim()) {
-      const t = u.trim();
-      if (t.includes("elementor-placeholder")) continue;
-      return t;
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      const value = candidate.trim();
+      if (!value.includes("elementor-placeholder")) return value;
     }
-    if (Array.isArray(u) && typeof u[0] === "string" && u[0].trim()) {
-      const t = u[0].trim();
-      if (t.includes("elementor-placeholder")) continue;
-      return t;
+
+    if (
+      Array.isArray(candidate) &&
+      typeof candidate[0] === "string" &&
+      candidate[0].trim()
+    ) {
+      const value = candidate[0].trim();
+      if (!value.includes("elementor-placeholder")) return value;
     }
   }
+
   return "";
 }
 
-function toDisplayUrl(raw) {
-  if (!raw) return "";
-  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("//")) {
-    return raw.startsWith("//") ? `https:${raw}` : raw;
-  }
-  return getFileFullUrl(raw);
-}
+function hasImageData(value) {
+  if (value == null || value === "") return false;
+  if (typeof value === "string") return value.trim().length > 0;
 
-const globalStore = useGlobalStore();
+  if (typeof value === "object" && !Array.isArray(value)) {
+    if (pickRawImageUrl(value)) return true;
 
-function useMaybeResolveImage(fieldKey) {
-  const resolvedUrl = ref("");
-  const resolveLoading = ref(false);
-  const resolveFailed = ref(false);
-  let resolveSeq = 0;
-
-  const directUrl = computed(() =>
-    toDisplayUrl(pickRawImageUrl(props.fields?.[fieldKey]))
-  );
-  const imageUrl = computed(() => directUrl.value || resolvedUrl.value);
-
-  const attachmentIdFromVal = (v) => {
-    if (!v || typeof v !== "object" || Array.isArray(v)) return "";
-    const id = v.id;
-    if (id == null || id === "") return "";
-    const s = String(id).trim();
-    return s && s !== "0" ? s : "";
-  };
-
-  const onImgError = () => { resolvedUrl.value = ""; };
-
-  return { imageUrl, resolveLoading, resolveFailed, onImgError };
-}
-
-function hasData(v) {
-  if (v == null || v === "") return false;
-  if (typeof v === "string") return v.trim().length > 0;
-  if (typeof v === "object" && !Array.isArray(v)) {
-    if (pickRawImageUrl(v)) return true;
-    const id = v.id;
+    const id = value.id;
     if (id == null || id === "") return false;
-    const s = String(id).trim();
-    return s.length > 0 && s !== "0";
+
+    const normalizedId = String(id).trim();
+    return normalizedId.length > 0 && normalizedId !== "0";
   }
+
   return false;
 }
 
-const hasMainBg = computed(() => hasData(props.fields?.background_image));
-const hasOverlayBg = computed(() => hasData(props.fields?.background_overlay_image));
-const shouldShowSection = computed(() => hasMainBg.value || hasOverlayBg.value);
+function createEmptyGalleryItem() {
+  return {
+    url: "",
+    id: "",
+    size: "",
+    alt: "",
+    source: "library",
+  };
+}
+
+function normalizeGalleryItem(item) {
+  if (typeof item === "string") {
+    return {
+      ...createEmptyGalleryItem(),
+      url: item.trim(),
+    };
+  }
+
+  if (item && typeof item === "object" && !Array.isArray(item)) {
+    return {
+      ...createEmptyGalleryItem(),
+      ...item,
+    };
+  }
+
+  return createEmptyGalleryItem();
+}
+
+function getSlideshowItemKey(item, index) {
+  if (item && typeof item === "object" && !Array.isArray(item)) {
+    return `${item.id || item.url || "slideshow"}-${index}`;
+  }
+
+  if (typeof item === "string" && item.trim()) {
+    return `${item.trim()}-${index}`;
+  }
+
+  return `slideshow-${index}`;
+}
+
+const hasMainBg = computed(() => hasImageData(props.fields?.background_image));
+const hasOverlayBg = computed(() =>
+  hasImageData(props.fields?.background_overlay_image)
+);
+const hasSlideshowGalleryField = computed(() =>
+  Object.prototype.hasOwnProperty.call(
+    props.fields || {},
+    "background_slideshow_gallery"
+  )
+);
+const slideshowGallery = computed(() =>
+  Array.isArray(props.fields?.background_slideshow_gallery)
+    ? props.fields.background_slideshow_gallery
+    : []
+);
+const shouldShowSection = computed(
+  () =>
+    hasMainBg.value ||
+    hasOverlayBg.value ||
+    hasSlideshowGalleryField.value
+);
+
+function emitSlideshowGallery(next) {
+  props.onUpdate("background_slideshow_gallery", next);
+}
+
+function addSlideshowImage() {
+  emitSlideshowGallery([...slideshowGallery.value, createEmptyGalleryItem()]);
+}
+
+function removeSlideshowImage(index) {
+  emitSlideshowGallery(
+    slideshowGallery.value.filter((_, currentIndex) => currentIndex !== index)
+  );
+}
+
+function updateSlideshowImage(index, value) {
+  emitSlideshowGallery(
+    slideshowGallery.value.map((item, currentIndex) =>
+      currentIndex === index
+        ? {
+            ...normalizeGalleryItem(item),
+            ...(value && typeof value === "object" ? value : {}),
+          }
+        : item
+    )
+  );
+}
 </script>
 
 <style scoped>
@@ -175,7 +257,14 @@ const shouldShowSection = computed(() => hasMainBg.value || hasOverlayBg.value);
   border-radius: 8px;
   padding: 10px;
   background: #fff;
-  position: relative;
+}
+
+.bg-block__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .bg-block__title {
@@ -185,158 +274,34 @@ const shouldShowSection = computed(() => hasMainBg.value || hasOverlayBg.value);
   margin-bottom: 0.5rem;
 }
 
-.image-preview {
-  width: 100%;
-  max-width: 400px;
+.slideshow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.image-preview img {
-  width: 100%;
-  height: auto;
-  display: block;
-  max-height: 200px;
-  object-fit: contain;
-  border-radius: 4px;
+.slideshow-item {
   border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--el-fill-color-blank);
 }
 
-.upload-wrapper {
-  width: 100%;
+.slideshow-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
-.upload-wrapper :deep(.el-upload) {
-  width: 100%;
+.slideshow-item__title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #606266;
 }
 
-.upload-wrapper :deep(.el-button) {
-  width: 100%;
-}
-
-.field-upload-hints {
-  margin-top: 0.5rem;
-}
-
-.field-upload-hints .hint-line {
-  margin: 0 0 0.35rem;
-  font-size: 0.75rem;
-  color: #909399;
-  line-height: 1.45;
-}
-
-.field-upload-hints .hint-line:last-child {
+.mb-0 {
   margin-bottom: 0;
-}
-
-/* 截图目标尺寸：内嵌在同一行提示里 */
-.target-size-hint {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-  padding: 5px 8px;
-  border-radius: 5px;
-  background: linear-gradient(
-    135deg,
-    var(--el-color-primary-light-9) 0%,
-    rgba(255, 255, 255, 0.92) 100%
-  );
-  border: 1px solid var(--el-color-primary-light-5);
-}
-
-.target-size-hint__label {
-  font-weight: 600;
-  color: var(--el-color-primary);
-  font-size: 0.75rem;
-}
-
-.target-size-hint__sep {
-  color: #606266;
-  font-size: 0.75rem;
-}
-
-.target-size-hint__value {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--el-color-primary-dark-2);
-  font-variant-numeric: tabular-nums;
-}
-
-.target-size-hint__input {
-  width: 80px;
-}
-
-.target-size-hint__x,
-.target-size-hint__unit {
-  font-size: 0.75rem;
-  color: #909399;
-}
-
-.resolve-loading,
-.resolve-failed {
-  margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.resolve-loading {
-  color: var(--el-color-primary);
-}
-
-.resolve-failed {
-  color: var(--el-color-warning);
-}
-
-.size-config-row {
-  margin-top: 0.5rem;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background: var(--el-fill-color-light);
-  border: 1px dashed var(--el-border-color);
-}
-
-/* 截图目标尺寸：内嵌在同一行提示里 */
-.target-size-hint {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-  padding: 5px 8px;
-  border-radius: 5px;
-  background: linear-gradient(
-    135deg,
-    var(--el-color-primary-light-9) 0%,
-    rgba(255, 255, 255, 0.92) 100%
-  );
-  border: 1px solid var(--el-color-primary-light-5);
-}
-
-.target-size-hint__label {
-  font-weight: 600;
-  color: var(--el-color-primary);
-  font-size: 0.75rem;
-}
-
-.target-size-hint__sep {
-  color: #606266;
-  font-size: 0.75rem;
-}
-
-.target-size-hint__value {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--el-color-primary-dark-2);
-  font-variant-numeric: tabular-nums;
-}
-
-.target-size-hint__input {
-  width: 80px;
-}
-
-.target-size-hint__x,
-.target-size-hint__unit {
-  font-size: 0.75rem;
-  color: #909399;
 }
 </style>

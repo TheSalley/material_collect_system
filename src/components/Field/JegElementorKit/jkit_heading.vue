@@ -65,7 +65,7 @@ const fieldOptions = [
     icon: Promotion,
     type: "text",
     placeholder: "请输入前置标题",
-    visible: () => hasField("sg_title_before"),
+    visible: () => hasMeaningfulValue("sg_title_before"),
   },
   {
     key: "sg_title_focused",
@@ -73,7 +73,7 @@ const fieldOptions = [
     icon: Discount,
     type: "text",
     placeholder: "请输入高亮标题",
-    visible: () => hasField("sg_title_focused"),
+    visible: () => hasMeaningfulValue("sg_title_focused"),
   },
   {
     key: "sg_title_after",
@@ -81,7 +81,7 @@ const fieldOptions = [
     icon: Promotion,
     type: "text",
     placeholder: "请输入后置标题",
-    visible: () => hasField("sg_title_after"),
+    visible: () => hasMeaningfulValue("sg_title_after"),
   },
   {
     key: "sg_subtitle_heading",
@@ -90,7 +90,7 @@ const fieldOptions = [
     type: "text",
     placeholder: "请输入副标题",
     visible: () =>
-      hasField("sg_subtitle_heading") &&
+      hasMeaningfulValue("sg_subtitle_heading") &&
       props.fields.sg_subtitle_enable === "yes",
   },
   {
@@ -101,7 +101,7 @@ const fieldOptions = [
     rows: 4,
     placeholder: "请输入描述",
     visible: () =>
-      hasField("sg_description") &&
+      hasMeaningfulValue("sg_description") &&
       props.fields.sg_description_enable === "yes",
   },
   {
@@ -111,7 +111,7 @@ const fieldOptions = [
     type: "text",
     placeholder: "请输入阴影文字",
     visible: () =>
-      hasField("sg_shadow_content") &&
+      hasMeaningfulValue("sg_shadow_content") &&
       props.fields.sg_shadow_enable === "yes",
   },
 ];
@@ -122,6 +122,21 @@ const visibleFields = computed(() =>
 
 function hasField(key) {
   return Object.prototype.hasOwnProperty.call(props.fields, key);
+}
+
+function hasMeaningfulValue(key) {
+  if (!hasField(key)) return false;
+
+  const value = props.fields?.[key];
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  return value !== undefined && value !== null && value !== "";
 }
 
 function updateField(key, value) {

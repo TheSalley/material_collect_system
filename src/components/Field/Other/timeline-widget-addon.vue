@@ -30,11 +30,12 @@
           <span class="truncate font-medium text-[var(--field-label-color)]">
             {{ item.twae_story_title || "未命名" }}
           </span>
-          <el-tag v-if="item.twae_date_label" size="small" type="success">
+          <el-tag
+            v-if="hasMeaningfulText(item.twae_date_label)"
+            size="small"
+            type="success"
+          >
             {{ item.twae_date_label }}
-          </el-tag>
-          <el-tag v-if="item.twae_year" size="small" type="warning">
-            {{ item.twae_year }}
           </el-tag>
         </div>
 
@@ -75,7 +76,23 @@
           />
         </div>
 
-        <div v-if="hasField(item, 'twae_image')" class="__field-group">
+        <div
+          v-if="hasMeaningfulRichText(item.twae_description)"
+          class="__field-group"
+        >
+          <label class="__field-label">
+            <el-icon><Document /></el-icon>
+            <span>描述</span>
+          </label>
+          <QuillEditor
+            :node-id="editorNodeId(index)"
+            :model-value="item.twae_description || ''"
+            placeholder="请输入事件描述..."
+            @update:model-value="(value) => setItemField(index, 'twae_description', value)"
+          />
+        </div>
+
+        <div v-if="hasMeaningfulImage(item.twae_image)" class="__field-group">
           <label class="__field-label">
             <el-icon><Picture /></el-icon>
             <span>图片</span>
@@ -112,6 +129,7 @@ import {
 } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
 import ImageWp from "@/components/Common/imageWp.vue";
+import QuillEditor from "@/components/QuillEditor.vue";
 import { genId } from "@/utils";
 
 const props = defineProps({
@@ -149,22 +167,6 @@ const textFields = [
     placeholder: "请输入故事标题",
   },
   {
-    key: "twae_description",
-    label: "描述",
-    icon: Document,
-    type: "textarea",
-    rows: 4,
-    placeholder: "请输入事件描述",
-  },
-  {
-    key: "twae_year",
-    label: "年份",
-    icon: Calendar,
-    type: "text",
-    rows: undefined,
-    placeholder: "请输入年份，如：2022",
-  },
-  {
     key: "twae_date_label",
     label: "日期标签",
     icon: Calendar,
@@ -185,7 +187,67 @@ function hasField(target, key) {
 }
 
 function getVisibleTextFields(item) {
-  return textFields.filter(({ key }) => hasField(item, key));
+  return textFields.filter(({ key }) => hasMeaningfulText(item?.[key]));
+}
+
+function hasMeaningfulText(value) {
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+
+  return value !== undefined && value !== null && value !== "";
+}
+
+function hasMeaningfulRichText(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const plainText = value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .trim();
+
+  return plainText.length > 0;
+}
+
+function hasMeaningfulImage(value) {
+  if (!value) return false;
+
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+
+  if (typeof value === "object" && !Array.isArray(value)) {
+    const urlCandidates = [
+      value.url,
+      value.src,
+      value.path,
+      value.link,
+      value.thumb,
+      value.image?.url,
+      value.sizes?.full?.url,
+      value.sizes?.large?.url,
+      value.sizes?.medium?.url,
+    ];
+
+    if (
+      urlCandidates.some(
+        (candidate) =>
+          typeof candidate === "string" && candidate.trim().length > 0
+      )
+    ) {
+      return true;
+    }
+
+    const id = value.id;
+    if (id === undefined || id === null) return false;
+
+    const normalizedId = String(id).trim();
+    return normalizedId !== "" && normalizedId !== "0";
+  }
+
+  return false;
 }
 
 function toggleCollapse(index) {
@@ -206,7 +268,6 @@ function addItem() {
       twae_story_title: "",
       twae_description: "",
       twae_date_label: "",
-      twae_year: "",
       twae_image: { id: "", url: "" },
     },
   ]);
@@ -223,5 +284,9 @@ function setItemField(index, key, value) {
       itemIndex === index ? { ...item, [key]: value } : item
     )
   );
+}
+
+function editorNodeId(index) {
+  return `${props.nodeId || props.widgetType}_timeline_${index}`;
 }
 </script>
