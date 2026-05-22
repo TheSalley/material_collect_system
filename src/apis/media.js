@@ -31,7 +31,9 @@ export const saveMedia = async ({ file, demo, page }) => {
 
   const globalStore = useGlobalStore();
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), config.timeout);
+  // 上传文件单独使用 120s 超时，避免大图/慢网速下被截断
+  const UPLOAD_TIMEOUT = 120000;
+  const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT);
 
   try {
     const res = await fetch(`${config.baseUrl}/api/media/save`, {

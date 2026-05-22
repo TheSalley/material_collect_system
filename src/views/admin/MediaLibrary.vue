@@ -94,16 +94,18 @@
           ref="uploadRef"
           class="w-full"
           drag
+          multiple
           :auto-upload="false"
-          :limit="1"
+          :limit="30"
           accept="image/*"
           :on-change="handleFileChange"
           :on-remove="handleFileRemove"
+          :file-list="uploadFiles"
         >
           <el-icon class="el-icon--upload text-4xl text-blue-400 mb-2"><UploadFilled /></el-icon>
           <div class="el-upload__text">拖拽文件到此处，或 <em>点击上传</em></div>
           <template #tip>
-            <div class="el-upload__tip">支持 jpg / png / gif / webp 等图片格式</div>
+            <div class="el-upload__tip">支持 jpg / png / gif / webp 等图片格式，可批量选择多张</div>
           </template>
         </el-upload>
       </el-form-item>
@@ -123,7 +125,8 @@
 
 <script setup>
 import { nextTick, onMounted, reactive, ref } from "vue";
-import { Picture, Search, Upload, UploadFilled, Loading } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import { Picture, Search, Upload, UploadFilled, Loading, Delete } from "@element-plus/icons-vue";
 import MediaCard from "@/components/MediaCard.vue";
 import { useMedia } from "@/composables/useMedia";
 
@@ -135,7 +138,8 @@ const {
 const uploadDrawerVisible = ref(false);
 const uploading = ref(false);
 const uploadFormRef = ref(null);
-const uploadFile = ref(null);
+const uploadRef = ref(null);
+const uploadFiles = ref([]);
 const previewVisible = ref(false);
 const previewUrl = ref("");
 
@@ -149,9 +153,12 @@ const uploadFormRules = {
 function openUploadDrawer() {
   uploadForm.demo = queryDemo.value;
   uploadForm.page = "";
-  uploadFile.value = null;
+  uploadFiles.value = [];
   uploadDrawerVisible.value = true;
-  nextTick(() => uploadFormRef.value?.clearValidate());
+  nextTick(() => {
+    uploadFormRef.value?.clearValidate();
+    uploadRef.value?.clearFiles();
+  });
 }
 
 function closeUploadDrawer() {
@@ -159,11 +166,24 @@ function closeUploadDrawer() {
 }
 
 function handleFileChange(file) {
-  uploadFile.value = file.raw;
+  // 避免重复添加（on-change 在某些情况下可能重复触发）
+  if (!uploadFiles.value.some((f) => f.uid === file.uid)) {
+    uploadFiles.value.push(file);
+  }
 }
 
-function handleFileRemove() {
-  uploadFile.value = null;
+function handleFileRemove(file) {
+  uploadFiles.value = uploadFiles.value.filter((f) => f.uid !== file.uid);
+}
+
+function removeFileByUid(uid) {
+  uploadFiles.value = uploadFiles.value.filter((f) => f.uid !== uid);
+  // 同步清除 el-upload 内部的文件记录
+  const uploadInstance = uploadRef.value;
+  if (uploadInstance) {
+    const target = uploadInstance.uploadFiles.find((f) => f.uid === uid);
+    if (target) uploadInstance.handleRemove(target);
+  }
 }
 
 function handlePreview(url) {
@@ -176,15 +196,39 @@ async function handleUpload() {
   if (!uploadFormRef.value) return;
   await uploadFormRef.value.validate(async (valid) => {
     if (!valid) return;
-    if (!uploadFile.value) return;
+    const files = uploadFiles.value;
+    if (files.length === 0) {
+      ElMessage.warning("请选择要上传的文件");
+      return;
+    }
     uploading.value = true;
-    const success = await doUpload({
-      file: uploadFile.value,
-      demo: uploadForm.demo,
-      page: uploadForm.page,
-    });
-    if (success) closeUploadDrawer();
+    const CONCURRENCY = 5; // 同时并发上传 5 个文件
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < files.length; i += CONCURRENCY) {
+      const batch = files.slice(i, i + CONCURRENCY);
+      const results = await Promise.allSettled(
+        batch.map((f) =>
+          doUpload({
+            file: f.raw,
+            demo: uploadForm.demo,
+            page: uploadForm.page,
+          })
+        )
+      );
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value === true) successCount++;
+        else failCount++;
+      }
+    }
     uploading.value = false;
+    if (successCount > 0) {
+      ElMessage.success(`上传完成：成功 ${successCount} 张${failCount > 0 ? `，失败 ${failCount} 张` : ""}`);
+      closeUploadDrawer();
+    } else {
+      ElMessage.error("全部上传失败，请重试");
+    }
   });
 }
 

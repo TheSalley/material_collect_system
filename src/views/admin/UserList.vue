@@ -488,8 +488,8 @@ async function fetchSiteList() {
   siteListLoading.value = true;
   try {
     const res = await getSiteList();
-    if (res.code === 0 && Array.isArray(res.data)) {
-      siteList.value = res.data;
+    if (res.code === 0 && Array.isArray(res.data?.list)) {
+      siteList.value = res.data.list;
     } else {
       siteList.value = [];
     }
