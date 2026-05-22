@@ -2,6 +2,7 @@ const FIELD_BASES = [
   "/src/components/Field/",
   "/src/components/Field/Basic/",
   "/src/components/Field/General/",
+  "/src/components/Field/PremiumAddons/",
   "/src/components/Field/JegElementorKit/",
   "/src/components/Field/Pro/",
   "/src/components/Field/Other/",

@@ -60,6 +60,8 @@ const EDITABLE_FIELDS_MAP = {
   "elementskit-progressbar": ["ekit_progressbar_title", "ekit_progressbar_percentage", "ekit_progressbar_percentage_show"],
   // Essential Addons
   "eael-feature-list": ["eael_feature_list"],
+  // Premium Addons
+  "premium-counter": ["premium_counter_title", "premium_counter_desc", "premium_counter_end_value", "premium_counter_suffix"],
   // Other 组件
   "timeline-widget-addon": ["twae_list"],
 
