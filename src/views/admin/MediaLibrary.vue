@@ -101,6 +101,7 @@
           :on-change="handleFileChange"
           :on-remove="handleFileRemove"
           :file-list="uploadFiles"
+          list-type="picture"
         >
           <el-icon class="el-icon--upload text-4xl text-blue-400 mb-2"><UploadFilled /></el-icon>
           <div class="el-upload__text">拖拽文件到此处，或 <em>点击上传</em></div>

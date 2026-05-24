@@ -82,17 +82,15 @@
             <el-icon><Document /></el-icon>
             <span>内容</span>
           </label>
-          <el-input
+          <QuillEditor
+            :node-id="editorNodeId(index)"
             :model-value="item?.acc_content || ''"
-            type="textarea"
-            :rows="5"
             placeholder="请输入内容..."
             @update:model-value="
               (value) => setItemField(index, 'acc_content', value)
             "
           />
         </div>
-
       </div>
     </div>
 
@@ -115,6 +113,7 @@ import {
   Menu,
 } from "@element-plus/icons-vue";
 import FieldWidgetType from "@/components/FieldWidgetType.vue";
+import QuillEditor from "@/components/QuillEditor.vue";
 import { genId } from "@/utils";
 
 const props = defineProps({
@@ -154,7 +153,7 @@ function emitItems(next) {
 function safeTitle(item, index) {
   const title =
     typeof item?.acc_title === "string" ? item.acc_title.trim() : "";
-  return title || `手风琴 ${index + 1}`;
+  return title || `手风琴${index + 1}`;
 }
 
 function toggleCollapse(index) {
@@ -195,5 +194,9 @@ function addItem() {
       acc_content: "",
     },
   ]);
+}
+
+function editorNodeId(index) {
+  return `${props.nodeId || props.widgetType}_accordion_${index}`;
 }
 </script>
