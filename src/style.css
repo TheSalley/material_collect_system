@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --color-primary: #2b7cee;
+    --color-background-light: #f6f7f8;
+    --color-background-dark: #101822;
+  }
+
 :root {
   --field-label-color: #606266;
   --field-border-color: #dcdfe6;

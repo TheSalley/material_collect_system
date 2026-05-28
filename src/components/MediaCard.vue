@@ -1,5 +1,5 @@
 <script setup>
-import { shallowRef } from "vue";
+import { computed, onBeforeUnmount, shallowRef, watch } from "vue";
 import { Picture, View, Document, Delete } from "@element-plus/icons-vue";
 import { ElLoading, ElMessage, ElMessageBox } from "element-plus";
 import { deleteMedia } from "@/apis/media";
@@ -13,8 +13,23 @@ const props = defineProps({
 
 const emit = defineEmits(["preview", "deleted"]);
 const deleting = shallowRef(false);
+const runtimeMeta = shallowRef({
+  dimensions: null,
+  fileSize: null,
+});
+let currentMetaTaskId = 0;
 
 const IMAGE_FIELDS = ["url", "src", "image", "img", "thumbnail", "cover"];
+const DIMENSION_STRING_FIELDS = ["size", "dimensions", "resolution"];
+const FILE_SIZE_FIELDS = [
+  "filesize",
+  "file_size",
+  "size_bytes",
+  "bytes",
+  "byte",
+  "content_length",
+  "contentlength",
+];
 
 function getImageUrl(item) {
   if (!item || typeof item !== "object") return null;
@@ -34,6 +49,244 @@ function getImageExt(item) {
   return m ? m[1].toUpperCase() : "IMG";
 }
 
+function loadImageDimensions(url) {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve(null);
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      resolve(formatDimensions(img.naturalWidth, img.naturalHeight));
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
+async function loadImageFileSizeFromUrl(url) {
+  if (!url) return null;
+
+  try {
+    const headResponse = await fetch(url, { method: "HEAD" });
+    const contentLength = headResponse.headers.get("content-length");
+    const formatted = formatFileSize(contentLength);
+    if (formatted) return formatted;
+  } catch {
+    // Ignore and fall back to GET below.
+  }
+
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return formatFileSize(blob.size);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeObjectKey(key) {
+  return String(key).toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function formatFileSize(bytes) {
+  const size = Number(bytes);
+  if (!Number.isFinite(size) || size <= 0) return null;
+
+  if (size < 1024) return `${Math.round(size)} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(size < 10 * 1024 ? 1 : 0)} KB`;
+  if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(size < 10 * 1024 * 1024 ? 1 : 0)} MB`;
+  return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+function parseFileSizeValue(value) {
+  if (value == null) return null;
+
+  if (typeof value === "number") {
+    return formatFileSize(value);
+  }
+
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const compact = trimmed.replace(/,/g, "");
+
+  if (/^\d+(\.\d+)?$/.test(compact)) {
+    return formatFileSize(compact);
+  }
+
+  const bytesMatch = compact.match(/^(\d+(?:\.\d+)?)\s*bytes?$/i);
+  if (bytesMatch) {
+    return formatFileSize(bytesMatch[1]);
+  }
+
+  const unitMatch = compact.match(/(\d+(?:\.\d+)?)\s*(b|kb|mb|gb|tb)\b/i);
+  if (!unitMatch) return null;
+
+  const num = Number(unitMatch[1]);
+  if (!Number.isFinite(num) || num <= 0) return null;
+
+  return `${num % 1 === 0 ? num.toFixed(0) : num.toFixed(1)} ${unitMatch[2].toUpperCase()}`;
+}
+
+function resolveFileSize(source, visited = new WeakSet()) {
+  if (!source || typeof source !== "object") return null;
+  if (visited.has(source)) return null;
+  visited.add(source);
+
+  for (const [key, value] of Object.entries(source)) {
+    const normalizedKey = normalizeObjectKey(key);
+    const isLikelyFileSizeKey =
+      FILE_SIZE_FIELDS.some(field => normalizedKey.includes(field)) ||
+      (normalizedKey === "size" && !parseDimensionString(value));
+
+    if (!isLikelyFileSizeKey) continue;
+
+    const formatted = parseFileSizeValue(value);
+    if (formatted) return formatted;
+  }
+
+  for (const value of Object.values(source)) {
+    if (!value || typeof value !== "object") continue;
+    const nested = resolveFileSize(value, visited);
+    if (nested) return nested;
+  }
+
+  return null;
+}
+
+function getImageFileSize(item) {
+  if (!item || typeof item !== "object") return null;
+
+  const sources = [
+    item,
+    item.media_details,
+    item.dimensions,
+    item.metadata,
+    item.attachment_metadata,
+    item.image_meta,
+    item.file_meta,
+    item.file,
+  ];
+
+  for (const source of sources) {
+    const formatted = resolveFileSize(source);
+    if (formatted) return formatted;
+  }
+
+  for (const value of Object.values(item)) {
+    if (!value || typeof value !== "object") continue;
+    const formatted = resolveFileSize(value);
+    if (formatted) return formatted;
+  }
+
+  return null;
+}
+
+function toPositiveNumber(value) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? Math.round(num) : null;
+}
+
+function formatDimensions(width, height) {
+  return width && height ? `${width} x ${height} px` : null;
+}
+
+function parseDimensionString(value) {
+  if (typeof value !== "string") return null;
+  const match = value.match(/(\d+(?:\.\d+)?)\s*(?:x|\u00D7)\s*(\d+(?:\.\d+)?)/i);
+  if (!match) return null;
+
+  const width = toPositiveNumber(match[1]);
+  const height = toPositiveNumber(match[2]);
+  return formatDimensions(width, height);
+}
+
+function resolveDimensions(source) {
+  if (!source || typeof source !== "object") return null;
+
+  const width = toPositiveNumber(source.width ?? source.image_width ?? source.img_width ?? source.w);
+  const height = toPositiveNumber(source.height ?? source.image_height ?? source.img_height ?? source.h);
+  const directDimensions = formatDimensions(width, height);
+  if (directDimensions) return directDimensions;
+
+  for (const key of Object.keys(source)) {
+    if (!DIMENSION_STRING_FIELDS.some(field => key.toLowerCase().includes(field))) {
+      continue;
+    }
+
+    const parsed = parseDimensionString(source[key]);
+    if (parsed) return parsed;
+  }
+
+  return null;
+}
+
+function getImageSize(item) {
+  if (!item || typeof item !== "object") return null;
+
+  const sources = [
+    item,
+    item.media_details,
+    item.dimensions,
+    item.metadata,
+    item.attachment_metadata,
+    item.image_meta,
+    item.file_meta,
+  ];
+
+  for (const source of sources) {
+    const dimensions = resolveDimensions(source);
+    if (dimensions) return dimensions;
+  }
+
+  for (const value of Object.values(item)) {
+    if (!value || typeof value !== "object") continue;
+    const dimensions = resolveDimensions(value);
+    if (dimensions) return dimensions;
+  }
+
+  return null;
+}
+
+const imageUrl = computed(() => getImageUrl(props.item));
+const imageExt = computed(() => getImageExt(props.item));
+const imageSizeLabel = computed(() => getImageSize(props.item) || runtimeMeta.value.dimensions);
+const imageFileSizeLabel = computed(() => getImageFileSize(props.item) || runtimeMeta.value.fileSize);
+
+watch(
+  imageUrl,
+  async (url) => {
+    const taskId = ++currentMetaTaskId;
+
+    runtimeMeta.value = {
+      dimensions: null,
+      fileSize: null,
+    };
+
+    if (!url) return;
+
+    const [dimensions, fileSize] = await Promise.all([
+      loadImageDimensions(url),
+      loadImageFileSizeFromUrl(url),
+    ]);
+
+    if (taskId !== currentMetaTaskId) return;
+
+    runtimeMeta.value = {
+      dimensions,
+      fileSize,
+    };
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  currentMetaTaskId += 1;
+});
+
 function getField(item, key) {
   if (!item || typeof item !== "object") return null;
   return item[key] ?? item[key.replace(/_/g, "")] ?? null;
@@ -50,9 +303,8 @@ function formatDate(str) {
 }
 
 function openPreview() {
-  const imageUrl = getImageUrl(props.item);
-  if (!imageUrl) return;
-  emit("preview", imageUrl);
+  if (!imageUrl.value) return;
+  emit("preview", imageUrl.value);
 }
 
 async function handleDelete() {
@@ -103,12 +355,12 @@ async function handleDelete() {
   <div class="media-card group relative rounded-2xl overflow-hidden bg-white dark:bg-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-600">
     <div
       class="relative aspect-[4/3] bg-gray-100 dark:bg-gray-600 overflow-hidden"
-      :class="{ 'cursor-zoom-in': getImageUrl(item) }"
+      :class="{ 'cursor-zoom-in': imageUrl }"
       @click="openPreview"
     >
-      <template v-if="getImageUrl(item)">
+      <template v-if="imageUrl">
         <el-image
-          :src="getImageUrl(item)"
+          :src="imageUrl"
           fit="cover"
           class="w-full h-full transition-transform duration-500 group-hover:scale-105"
         />
@@ -121,7 +373,7 @@ async function handleDelete() {
 
       <div class="pointer-events-none absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
         <el-button
-          v-if="getImageUrl(item)"
+          v-if="imageUrl"
           class="pointer-events-auto"
           circle
           size="large"
@@ -140,11 +392,27 @@ async function handleDelete() {
         />
       </div>
 
-      <div
-        v-if="getImageUrl(item)"
-        class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-black/50 text-white text-[10px] font-medium backdrop-blur-sm"
-      >
-        {{ getImageExt(item) }}
+      <div class="absolute top-2 right-2 flex items-center gap-1">
+        <div
+          v-if="imageUrl"
+          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[10px] font-medium backdrop-blur-sm"
+        >
+          {{ imageExt }}
+        </div>
+
+        <div
+          v-if="imageSizeLabel"
+          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[10px] font-medium backdrop-blur-sm"
+        >
+          {{ imageSizeLabel }}
+        </div>
+
+        <div
+          v-if="imageFileSizeLabel"
+          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[10px] font-medium backdrop-blur-sm"
+        >
+          {{ imageFileSizeLabel }}
+        </div>
       </div>
     </div>
 
