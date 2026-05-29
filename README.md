@@ -29,3 +29,4 @@
 25. 0.1.25 适配Premium Addons 的premium-counter 组件
 26. 0.1.26 媒体库上传时展示预览图
 27. 0.1.27 媒体库显示图片尺寸、大小角标
+28. 0.1.28 ignore_bg1 、ignore_bg2 忽略背景图/叠加图

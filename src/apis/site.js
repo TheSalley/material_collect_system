@@ -27,6 +27,20 @@ export const bindSiteUrl = async (payload) => {
   });
 };
 
+/**
+ *  重新绑定
+ * POST /api/site/bind
+ */
+export const bindSite = async (payload) => {
+  return await requestWithoutAuth(config.baseUrl + "/api/site/bind", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+};
+
 export const updateSite = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/site/update", {
     method: "POST",

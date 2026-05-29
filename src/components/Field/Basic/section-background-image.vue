@@ -4,7 +4,6 @@
       <el-icon><PictureFilled /></el-icon>
       背景图
     </label>
-
     <div v-if="hasMainBg" class="bg-block">
       <div class="bg-block__title">主背景图</div>
       <ImageWp
