@@ -32,11 +32,9 @@ export const bindSiteUrl = async (payload) => {
  * POST /api/site/bind
  */
 export const bindSite = async (payload) => {
-  return await requestWithoutAuth(config.baseUrl + "/api/site/bind", {
+  return await fetchWithAuth(config.baseUrl + "/api/site/bind", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
