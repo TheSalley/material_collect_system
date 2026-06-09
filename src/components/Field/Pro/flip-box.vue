@@ -105,14 +105,13 @@ const visibleSections = computed(() =>
   sections
     .map((section) => ({
       ...section,
-      fields: section.fields.filter((field) => hasFieldContent(field.key)),
+      fields: section.fields.filter((field) => hasField(field.key)),
     }))
     .filter((section) => section.fields.length)
 );
 
-function hasFieldContent(key) {
-  const value = props.fields[key];
-  return value !== undefined && value !== null && value !== "";
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
 }
 
 function updateField(key, value) {

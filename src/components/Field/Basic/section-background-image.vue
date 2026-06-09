@@ -76,57 +76,8 @@ const props = defineProps({
   onUpdate: { type: Function, required: true },
 });
 
-function pickRawImageUrl(val) {
-  if (val == null) return "";
-  if (typeof val === "string") return val.trim();
-  if (typeof val !== "object" || Array.isArray(val)) return "";
-
-  const candidates = [
-    val.url,
-    val.src,
-    val.path,
-    val.link,
-    val.thumb,
-    val.image?.url,
-    val.sizes?.full?.url,
-    val.sizes?.large?.url,
-    val.sizes?.medium?.url,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === "string" && candidate.trim()) {
-      const value = candidate.trim();
-      if (!value.includes("elementor-placeholder")) return value;
-    }
-
-    if (
-      Array.isArray(candidate) &&
-      typeof candidate[0] === "string" &&
-      candidate[0].trim()
-    ) {
-      const value = candidate[0].trim();
-      if (!value.includes("elementor-placeholder")) return value;
-    }
-  }
-
-  return "";
-}
-
-function hasImageData(value) {
-  if (value == null || value === "") return false;
-  if (typeof value === "string") return value.trim().length > 0;
-
-  if (typeof value === "object" && !Array.isArray(value)) {
-    if (pickRawImageUrl(value)) return true;
-
-    const id = value.id;
-    if (id == null || id === "") return false;
-
-    const normalizedId = String(id).trim();
-    return normalizedId.length > 0 && normalizedId !== "0";
-  }
-
-  return false;
+function hasField(target, key) {
+  return Object.prototype.hasOwnProperty.call(target || {}, key);
 }
 
 function createEmptyGalleryItem() {
@@ -169,15 +120,12 @@ function getSlideshowItemKey(item, index) {
   return `slideshow-${index}`;
 }
 
-const hasMainBg = computed(() => hasImageData(props.fields?.background_image));
+const hasMainBg = computed(() => hasField(props.fields, "background_image"));
 const hasOverlayBg = computed(() =>
-  hasImageData(props.fields?.background_overlay_image)
+  hasField(props.fields, "background_overlay_image")
 );
 const hasSlideshowGalleryField = computed(() =>
-  Object.prototype.hasOwnProperty.call(
-    props.fields || {},
-    "background_slideshow_gallery"
-  )
+  hasField(props.fields, "background_slideshow_gallery")
 );
 const slideshowGallery = computed(() =>
   Array.isArray(props.fields?.background_slideshow_gallery)

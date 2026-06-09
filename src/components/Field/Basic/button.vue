@@ -1,5 +1,5 @@
 <template>
-  <div class="__field-item" v-if="fields.text !== ''">
+  <div class="__field-item" v-if="hasField('text')">
     <div class="__field-group">
       <label class="__field-label">
         <el-icon><Link /></el-icon>
@@ -33,4 +33,8 @@ const props = defineProps({
     required: true,
   },
 });
+
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
+}
 </script>

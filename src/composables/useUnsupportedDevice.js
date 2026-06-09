@@ -1,6 +1,6 @@
 import { onBeforeUnmount, onMounted, shallowRef } from "vue";
 
-const DEVICE_QUERY = "(max-width: 1280px)";
+const DEVICE_QUERY = "(max-width: 768px)";
 
 export function useUnsupportedDevice() {
   const isUnsupportedDevice = shallowRef(false);

@@ -63,13 +63,12 @@ const fieldOptions = [
 
 const visibleFields = computed(() =>
   fieldOptions.filter(
-    (field) => hasFieldContent(field.key) && (field.visible?.() ?? true),
+    (field) => hasField(field.key) && (field.visible?.() ?? true),
   ),
 );
 
-function hasFieldContent(key) {
-  const value = props.fields[key];
-  return value !== undefined && value !== null && value !== "";
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
 }
 
 function updateField(key, value) {

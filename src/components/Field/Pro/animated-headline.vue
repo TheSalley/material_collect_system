@@ -5,7 +5,7 @@
         <span>高亮标题</span>
         <FieldWidgetType :type="widgetType" />
       </label>
-      <div class="__field-group" v-if="fields.before_text !== ''">
+      <div class="__field-group" v-if="hasField('before_text')">
         <label class="__field-label">
           <el-icon>
             <Promotion />
@@ -17,7 +17,7 @@
           @input="onUpdate('before_text', fields.before_text)"
         />
       </div>
-      <div class="__field-group" v-if="fields.highlighted_text !== ''">
+      <div class="__field-group" v-if="hasField('highlighted_text')">
         <label class="__field-label">
           <el-icon>
             <Promotion />
@@ -51,4 +51,8 @@ const props = defineProps({
     required: true,
   },
 });
+
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
+}
 </script>

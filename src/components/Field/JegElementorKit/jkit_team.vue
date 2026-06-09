@@ -67,7 +67,7 @@ const fieldOptions = [
     icon: User,
     type: "text",
     placeholder: "请输入成员名称",
-    visible: () => hasMeaningfulValue("sg_member_name"),
+    visible: () => hasField("sg_member_name"),
   },
   {
     key: "sg_member_description",
@@ -77,12 +77,12 @@ const fieldOptions = [
     rows: 4,
     placeholder: "请输入成员描述",
     visible: () =>
-      hasMeaningfulValue("sg_member_description") &&
+      hasField("sg_member_description") &&
       props.fields.sg_member_show_description === "yes",
   },
 ];
 
-const hasImageField = computed(() => hasMeaningfulImage(props.fields?.sg_member_image));
+const hasImageField = computed(() => hasField("sg_member_image"));
 
 const visibleFields = computed(() =>
   fieldOptions.filter((field) => field.visible()),
@@ -94,60 +94,6 @@ const shouldShowField = computed(
 
 function hasField(key) {
   return Object.prototype.hasOwnProperty.call(props.fields, key);
-}
-
-function hasMeaningfulValue(key) {
-  if (!hasField(key)) return false;
-
-  const value = props.fields?.[key];
-  if (typeof value === "string") {
-    return value.trim().length > 0;
-  }
-
-  if (Array.isArray(value)) {
-    return value.length > 0;
-  }
-
-  return value !== undefined && value !== null && value !== "";
-}
-
-function hasMeaningfulImage(value) {
-  if (!value) return false;
-
-  if (typeof value === "string") {
-    return value.trim().length > 0;
-  }
-
-  if (typeof value === "object" && !Array.isArray(value)) {
-    const urlCandidates = [
-      value.url,
-      value.src,
-      value.path,
-      value.link,
-      value.thumb,
-      value.image?.url,
-      value.sizes?.full?.url,
-      value.sizes?.large?.url,
-      value.sizes?.medium?.url,
-    ];
-
-    if (
-      urlCandidates.some(
-        (candidate) =>
-          typeof candidate === "string" && candidate.trim().length > 0
-      )
-    ) {
-      return true;
-    }
-
-    const id = value.id;
-    if (id === undefined || id === null) return false;
-
-    const normalizedId = String(id).trim();
-    return normalizedId !== "" && normalizedId !== "0";
-  }
-
-  return false;
 }
 
 function handleImageUpdate(imageData) {

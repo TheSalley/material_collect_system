@@ -91,16 +91,15 @@ const hasBgImageField = computed(() =>
 );
 
 const visibleTextFields = computed(() =>
-  textFields.filter((field) => hasFieldContent(field.key))
+  textFields.filter((field) => hasField(field.key))
 );
 
 const shouldShowField = computed(
   () => hasBgImageField.value || visibleTextFields.value.length > 0
 );
 
-function hasFieldContent(key) {
-  const value = props.fields[key];
-  return value !== undefined && value !== null && value !== "";
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
 }
 
 function updateField(key, value) {

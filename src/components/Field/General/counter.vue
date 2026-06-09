@@ -6,7 +6,7 @@
         <span>数字变化</span>
         <FieldWidgetType :type="widgetType" />
       </label>
-      <div class="__field-group mt-3" v-if="fields.ending_number">
+      <div class="__field-group mt-3" v-if="hasField('ending_number')">
         <label class="__field-label">结束数字</label>
         <el-input
           v-model="fields.ending_number"
@@ -15,7 +15,7 @@
           @input="onUpdate('ending_number', fields.ending_number)"
         />
       </div>
-      <div class="__field-group mt-3" v-if="fields.suffix && fields.suffix !== ''">
+      <div class="__field-group mt-3" v-if="hasField('suffix')">
         <label class="__field-label">后缀</label>
         <el-input
           v-model="fields.suffix"
@@ -23,7 +23,7 @@
           @input="onUpdate('suffix', fields.suffix)"
         />
       </div>
-      <div class="__field-group mt-3" v-if="fields.title !== ''">
+      <div class="__field-group mt-3" v-if="hasField('title')">
         <label class="__field-label">标题</label>
         <el-input
           v-model="fields.title"
@@ -53,4 +53,8 @@ const props = defineProps({
     required: true,
   },
 });
+
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
+}
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <div class="__field-item" v-if="fields.editor !== ''">
+  <div class="__field-item" v-if="hasField('editor')">
     <div class="__field-group">
       <label class="__field-label">
         <el-icon>
@@ -45,4 +45,8 @@ const editorContent = computed({
     props.onUpdate("editor", val);
   },
 });
+
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
+}
 </script>

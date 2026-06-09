@@ -80,7 +80,7 @@ const fieldOptions = [
     icon: PriceTag,
     type: "text",
     placeholder: "请输入数字前缀",
-    visible: () => hasMeaningfulValue("sg_content_number_prefix"),
+    visible: () => hasField("sg_content_number_prefix"),
   },
   {
     key: "sg_content_number",
@@ -88,7 +88,7 @@ const fieldOptions = [
     icon: DataAnalysis,
     type: "text",
     placeholder: "请输入数字",
-    visible: () => hasMeaningfulValue("sg_content_number"),
+    visible: () => hasField("sg_content_number"),
   },
   {
     key: "sg_content_number_suffix",
@@ -96,7 +96,7 @@ const fieldOptions = [
     icon: PriceTag,
     type: "text",
     placeholder: "请输入数字后缀",
-    visible: () => hasMeaningfulValue("sg_content_number_suffix"),
+    visible: () => hasField("sg_content_number_suffix"),
   },
   {
     key: "sg_content_title",
@@ -104,7 +104,7 @@ const fieldOptions = [
     icon: Promotion,
     type: "text",
     placeholder: "请输入标题文本",
-    visible: () => hasMeaningfulValue("sg_content_title"),
+    visible: () => hasField("sg_content_title"),
   },
 ];
 
@@ -118,7 +118,7 @@ const iconType = computed(() => {
 });
 
 const showIconImageField = computed(
-  () => hasImageData(props.fields?.sg_icon_image) && iconType.value === "image"
+  () => hasField("sg_icon_image") && iconType.value === "image"
 );
 
 const shouldShowField = computed(
@@ -127,45 +127,6 @@ const shouldShowField = computed(
 
 function hasField(key) {
   return Object.prototype.hasOwnProperty.call(props.fields, key);
-}
-
-function hasMeaningfulValue(key) {
-  if (!hasField(key)) return false;
-
-  const value = props.fields?.[key];
-  if (typeof value === "string") return value.trim().length > 0;
-  if (Array.isArray(value)) return value.length > 0;
-
-  return value !== undefined && value !== null && value !== "";
-}
-
-function hasImageData(value) {
-  if (!value) return false;
-
-  if (typeof value === "string") {
-    return value.trim().length > 0;
-  }
-
-  if (typeof value === "object" && !Array.isArray(value)) {
-    const rawUrl = [
-      value.url,
-      value.src,
-      value.path,
-      value.link,
-      value.thumb,
-      value.image?.url,
-      value.sizes?.full?.url,
-      value.sizes?.large?.url,
-      value.sizes?.medium?.url,
-    ].find((item) => typeof item === "string" && item.trim().length > 0);
-
-    if (rawUrl) return true;
-
-    const id = value.id;
-    return id !== undefined && id !== null && String(id).trim() !== "" && String(id).trim() !== "0";
-  }
-
-  return false;
 }
 
 function handleImageUpdate(imageData) {

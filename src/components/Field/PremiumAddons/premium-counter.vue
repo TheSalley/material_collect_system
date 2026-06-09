@@ -65,7 +65,7 @@ const fieldOptions = [
     icon: DataAnalysis,
     type: "number",
     placeholder: "例如：100",
-    visible: () => hasMeaningfulValue("premium_counter_end_value"),
+    visible: () => hasField("premium_counter_end_value"),
   },
   {
     key: "premium_counter_suffix",
@@ -73,7 +73,7 @@ const fieldOptions = [
     icon: PriceTag,
     type: "text",
     placeholder: "请输入后缀",
-    visible: () => hasMeaningfulValue("premium_counter_suffix"),
+    visible: () => hasField("premium_counter_suffix"),
   },
   {
     key: "premium_counter_title",
@@ -81,7 +81,7 @@ const fieldOptions = [
     icon: Promotion,
     type: "text",
     placeholder: "请输入标题",
-    visible: () => hasMeaningfulValue("premium_counter_title"),
+    visible: () => hasField("premium_counter_title"),
   },
   {
     key: "premium_counter_desc",
@@ -90,7 +90,7 @@ const fieldOptions = [
     type: "textarea",
     rows: 4,
     placeholder: "请输入描述",
-    visible: () => hasMeaningfulValue("premium_counter_desc"),
+    visible: () => hasField("premium_counter_desc"),
   },
 ];
 
@@ -100,21 +100,6 @@ const visibleFields = computed(() =>
 
 function hasField(key) {
   return Object.prototype.hasOwnProperty.call(props.fields, key);
-}
-
-function hasMeaningfulValue(key) {
-  if (!hasField(key)) return false;
-
-  const value = props.fields?.[key];
-  if (typeof value === "string") {
-    return value.trim().length > 0;
-  }
-
-  if (Array.isArray(value)) {
-    return value.length > 0;
-  }
-
-  return value !== undefined && value !== null && value !== "";
 }
 
 function updateField(key, value) {

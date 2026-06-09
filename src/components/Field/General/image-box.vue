@@ -80,7 +80,7 @@ const textFields = [
 const hasImageField = computed(() => hasField("image"));
 
 const visibleTextFields = computed(() =>
-  textFields.filter(({ key }) => hasFieldContent(key))
+  textFields.filter(({ key }) => hasField(key))
 );
 
 const shouldShowField = computed(
@@ -89,11 +89,6 @@ const shouldShowField = computed(
 
 function hasField(key) {
   return Object.prototype.hasOwnProperty.call(props.fields, key);
-}
-
-function hasFieldContent(key) {
-  const value = props.fields[key];
-  return hasField(key) && value !== null && value !== undefined && value !== "";
 }
 
 function handleImageUpdate(imageData) {

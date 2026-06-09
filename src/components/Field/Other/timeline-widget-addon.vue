@@ -77,7 +77,7 @@
         </div>
 
         <div
-          v-if="hasMeaningfulRichText(item.twae_description)"
+          v-if="hasField(item, 'twae_description')"
           class="__field-group"
         >
           <label class="__field-label">
@@ -92,7 +92,7 @@
           />
         </div>
 
-        <div v-if="hasMeaningfulImage(item.twae_image)" class="__field-group">
+        <div v-if="hasField(item, 'twae_image')" class="__field-group">
           <label class="__field-label">
             <el-icon><Picture /></el-icon>
             <span>图片</span>
@@ -187,7 +187,7 @@ function hasField(target, key) {
 }
 
 function getVisibleTextFields(item) {
-  return textFields.filter(({ key }) => hasMeaningfulText(item?.[key]));
+  return textFields.filter(({ key }) => hasField(item, key));
 }
 
 function hasMeaningfulText(value) {
@@ -196,58 +196,6 @@ function hasMeaningfulText(value) {
   }
 
   return value !== undefined && value !== null && value !== "";
-}
-
-function hasMeaningfulRichText(value) {
-  if (typeof value !== "string") {
-    return false;
-  }
-
-  const plainText = value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .trim();
-
-  return plainText.length > 0;
-}
-
-function hasMeaningfulImage(value) {
-  if (!value) return false;
-
-  if (typeof value === "string") {
-    return value.trim().length > 0;
-  }
-
-  if (typeof value === "object" && !Array.isArray(value)) {
-    const urlCandidates = [
-      value.url,
-      value.src,
-      value.path,
-      value.link,
-      value.thumb,
-      value.image?.url,
-      value.sizes?.full?.url,
-      value.sizes?.large?.url,
-      value.sizes?.medium?.url,
-    ];
-
-    if (
-      urlCandidates.some(
-        (candidate) =>
-          typeof candidate === "string" && candidate.trim().length > 0
-      )
-    ) {
-      return true;
-    }
-
-    const id = value.id;
-    if (id === undefined || id === null) return false;
-
-    const normalizedId = String(id).trim();
-    return normalizedId !== "" && normalizedId !== "0";
-  }
-
-  return false;
 }
 
 function toggleCollapse(index) {

@@ -55,14 +55,13 @@ const textFieldOptions = [
 ];
 
 const visibleTextFields = computed(() =>
-  textFieldOptions.filter((field) => hasFieldContent(field.key)),
+  textFieldOptions.filter((field) => hasField(field.key)),
 );
 
 const shouldShowField = computed(() => visibleTextFields.value.length > 0);
 
-function hasFieldContent(key) {
-  const value = props.fields[key];
-  return value !== undefined && value !== null && value !== "";
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
 }
 
 function updateField(key, value) {

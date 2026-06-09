@@ -1,5 +1,5 @@
 <template>
-  <div class="__field-item" v-if="fields.youtube_url !== ''">
+  <div class="__field-item" v-if="hasField('youtube_url')">
     <div class="__field-group">
       <label class="__field-label">
         <el-icon><Link /></el-icon>
@@ -31,5 +31,9 @@ const props = defineProps({
     required: true,
   },
 });
+
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
+}
 </script>
 <style scoped></style>

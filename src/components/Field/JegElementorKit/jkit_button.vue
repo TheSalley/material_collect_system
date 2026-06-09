@@ -45,14 +45,12 @@ const props = defineProps({
 });
 
 const hasLabelField = computed(() => {
-  const value = props.fields?.sg_content_label;
-
-  if (typeof value === "string") {
-    return value.trim().length > 0;
-  }
-
-  return value !== undefined && value !== null && value !== "";
+  return hasField("sg_content_label");
 });
+
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
+}
 
 function updateField(key, value) {
   props.onUpdate(key, value);

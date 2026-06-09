@@ -116,7 +116,7 @@ const visibleTextFields = computed(() =>
 );
 
 const showHeaderImage = computed(() => {
-  if (!hasObjectField("ekit_icon_box_header_image")) return false;
+  if (!hasField("ekit_icon_box_header_image")) return false;
   return props.fields.ekit_icon_box_enable_header_icon === "image";
 });
 
@@ -132,26 +132,20 @@ const shouldShowField = computed(
   () => showHeaderImage.value || visibleTextFields.value.length > 0,
 );
 
-function hasFieldContent(key) {
-  const value = props.fields[key];
-  return value !== undefined && value !== null && value !== "";
-}
-
-function hasObjectField(key) {
-  const value = props.fields[key];
-  return value && typeof value === "object" && !Array.isArray(value);
+function hasField(key) {
+  return Object.prototype.hasOwnProperty.call(props.fields, key);
 }
 
 function shouldShowTextField(field) {
   if (field.key === "ekit_icon_box_btn_text") {
-    return isButtonEnabled.value && hasFieldContent(field.key);
+    return isButtonEnabled.value && hasField(field.key);
   }
 
   if (field.key === "ekit_icon_box_badge_title") {
-    return isBadgeEnabled.value && hasFieldContent(field.key);
+    return isBadgeEnabled.value && hasField(field.key);
   }
 
-  return hasFieldContent(field.key);
+  return hasField(field.key);
 }
 
 function updateField(key, value) {
