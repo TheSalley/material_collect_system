@@ -67,6 +67,8 @@ export const getSiteList = async (params = {}) => {
   const queryParams = new URLSearchParams();
   if (params.keyword) queryParams.append('keyword', params.keyword);
   if (params.demo_site) queryParams.append('demo_site', params.demo_site);
+  if (params.page) queryParams.append('page', params.page);
+  if (params.page_size) queryParams.append('page_size', params.page_size);
   if (params.site_status !== undefined) queryParams.append('site_status', params.site_status);
   if (params.include_deleted) queryParams.append('include_deleted', params.include_deleted);
 

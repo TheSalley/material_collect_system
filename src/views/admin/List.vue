@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, computed, nextTick } from "vue";
+import { ref, reactive, onMounted, nextTick } from "vue";
 import { getSiteList, createSite, updateSite, deleteSite, bindSiteUrl, bindSite } from "@/apis/index.js";
 import { ElMessage, ElMessageBox } from "element-plus";
 import "element-plus/theme-chalk/el-message-box.css";
@@ -10,8 +10,9 @@ import { Search, Plus, Setting, Link, Clock, Delete, UserFilled, CircleCheck, Ci
 const tableData = reactive([]);
 const searchValue = ref("");
 const loading = ref(false);
-
-let pageList = reactive([]);
+const currentPage = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
 
 const addDrawer = ref(false);
 const addFormRef = ref(null);
@@ -96,13 +97,29 @@ async function fetchList() {
   loading.value = true;
   try {
     // 根据 API 文档，可以使用 keyword 参数进行搜索
-    const params = searchValue.value ? { keyword: searchValue.value } : {};
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value,
+    };
+    if (searchValue.value) {
+      params.keyword = searchValue.value;
+    }
     const res = await getSiteList(params);
     if (res.code === 0) {
-      tableData.length = res.data.total;
       const list = res.data.list || [];
+      const nextTotal = Number(res.data?.total ?? list.length);
+      const maxPage = Math.max(1, Math.ceil(nextTotal / pageSize.value));
+
+      if (nextTotal > 0 && currentPage.value > maxPage) {
+        currentPage.value = maxPage;
+        return await fetchList();
+      }
       // 根据 API 文档，站点列表返回的字段是 site_id, site_name, site_status, wp_base_url 等
+      total.value = nextTotal;
+      tableData.length = 0;
       tableData.push(...list);
+    } else {
+      ElMessage.error(res.message || "鑾峰彇绔欑偣鍒楄〃澶辫触");
     }
     return res;
   } catch (error) {
@@ -111,6 +128,22 @@ async function fetchList() {
   } finally {
     loading.value = false;
   }
+}
+
+function handleSearch() {
+  currentPage.value = 1;
+  fetchList();
+}
+
+function handleCurrentChange(page) {
+  currentPage.value = page;
+  fetchList();
+}
+
+function handleSizeChange(size) {
+  pageSize.value = size;
+  currentPage.value = 1;
+  fetchList();
 }
 
 function openAddDrawer() {
@@ -238,7 +271,7 @@ async function reBind(row) {
               <el-icon><Search /></el-icon>
             </template>
             <template #append>
-              <el-button :icon="Search" @click="fetchList" />
+              <el-button :icon="Search" @click="handleSearch" />
             </template>
           </el-input>
         </div>
@@ -338,7 +371,17 @@ async function reBind(row) {
 
       <!-- 分页 -->
       <div class="flex justify-end px-6 py-5 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-        <el-pagination :page-size="20" :pager-count="11" layout="total, prev, pager, next, jumper" :total="tableData.length" background />
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :pager-count="11"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
+        />
       </div>
     </div>
   </div>
