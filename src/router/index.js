@@ -19,6 +19,12 @@ const adminRoutes = [
     component: () => import("@/layout/index.vue"),
     children: [
       {
+        path: "dashboard",
+        name: "AdminDashboard",
+        component: () => import("@/views/admin/Dashboard.vue"),
+        meta: { title: "面板", role: "admin" },
+      },
+      {
         path: "list",
         name: "AdminList",
         component: () => import("@/views/admin/List.vue"),
@@ -47,6 +53,12 @@ const adminRoutes = [
         name: "AdminPages",
         component: () => import("@/views/customer/Pages.vue"),
         meta: { title: "页面列表", hidden: true, role: "admin" },
+      },
+      {
+        path: "blackList",
+        name: "AdminBlackList",
+        component: () => import("@/views/admin/BlackList.vue"),
+        meta: { title: "黑名单", role: "admin" },
       },
     ],
   },
@@ -110,19 +122,14 @@ const notFoundRoute = {
 // 创建路由，预先注册所有路由
 const router = createRouter({
   history: createWebHashHistory(),
-  routes: [
-    loginRoute,
-    ...adminRoutes,
-    ...userRoutes,
-    notFoundRoute,
-  ],
+  routes: [loginRoute, ...adminRoutes, ...userRoutes, notFoundRoute],
 });
 
 // 路由守卫：只做权限检查和跳转
 router.beforeEach((to, from, next) => {
   const globalStore = useGlobalStore();
   const { user, access_token } = globalStore;
-  
+
   // /login 路径永远放行
   if (to.path === "/login") {
     next();
@@ -143,18 +150,18 @@ router.beforeEach((to, from, next) => {
   if (access_token && user) {
     const role = (user?.role ?? "user").toString().toLowerCase();
     const routeRole = to.meta?.role;
-    
+
     // 检查路由是否需要特定角色
     if (routeRole) {
       const isAdmin = role === "admin";
       const isUser = role === "user";
-      
+
       // 管理员路由，但用户不是管理员
       if (routeRole === "admin" && !isAdmin) {
         next("/login");
         return;
       }
-      
+
       // 用户路由，但用户是管理员（管理员可以访问用户路由）
       if (routeRole === "user" && !isUser && !isAdmin) {
         next("/login");
@@ -162,7 +169,7 @@ router.beforeEach((to, from, next) => {
       }
     }
 
-      // 已登录访问根路径 → 根据角色跳转
+    // 已登录访问根路径 → 根据角色跳转
     if (to.path === "/" || to.path === "") {
       if (role === "admin") {
         next({ path: "/admin/list", replace: true });
