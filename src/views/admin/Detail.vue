@@ -287,8 +287,8 @@
   </div>
 </template>
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from "vue";
-import { getPages, getUserList, getPagePermissions, setPagePermission } from "@/apis/index.js";
+import { ref, reactive, onMounted, computed, watch, provide } from "vue";
+import { getPages, getUserList, getPagePermissions, setPagePermission, getBlacklistConfig } from "@/apis/index.js";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import SiteInfoPanel from "@/components/SiteInfoPanel.vue";
@@ -314,6 +314,37 @@ let pageList = reactive([]);
 const router = useRouter();
 
 const { websiteInfo } = useGlobalStore();
+
+/** 黑名单图片 URL 列表（通过 provide 注入给下级组件） */
+const blacklist = ref([]);
+provide("blacklist", blacklist);
+
+/** 获取当前站点的 demo 名称 */
+const currentDemo = computed(() => {
+  return websiteInfo?.demo_site || websiteInfo?.demo || "";
+});
+
+/** 获取当前 Demo 的黑名单列表 */
+async function fetchBlacklist() {
+  const demo = currentDemo.value;
+  if (!demo) {
+    console.warn("[Detail] 未找到 demo_site，跳过黑名单加载");
+    return;
+  }
+  try {
+    const res = await getBlacklistConfig(demo);
+    if (res.code === 0) {
+      blacklist.value = Array.isArray(res.data?.blacklist) ? res.data.blacklist : [];
+    }
+  } catch {
+    // 静默失败，黑名单为空不影响页面使用
+  }
+}
+
+// 当 websiteInfo 变化时重新加载黑名单（处理异步/刷新场景）
+watch(currentDemo, (demo) => {
+  if (demo) fetchBlacklist();
+}, { immediate: true });
 
 /** 绑定当前站点的客户用户（来自用户列表，用于展示名称/ID/状态） */
 const customerProfile = ref(null);

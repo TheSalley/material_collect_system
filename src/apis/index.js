@@ -6,6 +6,7 @@ export * from "./file";
 export * from "./proxy";
 export * from "./translate";
 export * from "./media";
+export * from "./blacklist";
 
 // 导出请求工具函数（从 @/utils/http 导入）
 export {
