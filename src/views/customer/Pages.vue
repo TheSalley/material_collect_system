@@ -85,6 +85,14 @@
           >
             保存尺寸
           </el-button>
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            :icon="PictureFilled"
+            @click="goToDemoList"
+            size="large"
+          >
+            Demo 截图尺寸
+          </el-button>
           <el-button 
             type="primary" 
             :icon="Check"
@@ -124,12 +132,12 @@
 <script setup>
 import { computed, reactive, ref, watch, nextTick, provide } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
-import { updatePageById, translate } from "@/apis/index";
+import { updatePageById, translate, getBlacklistConfig } from "@/apis/index";
 import { ElLoading, ElMessage } from "element-plus";
 import ModuleMode from "@/components/ModuleMode.vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  Document, House, ArrowRight, Check, Sort
+  Document, House, ArrowRight, Check, Sort, PictureFilled
 } from '@element-plus/icons-vue';
 
 const router = useRouter();
@@ -148,6 +156,38 @@ const isTranslating = ref(false);
 const isSavingSizes = ref(false);
 provide("translateConfig", translateConfig);
 provide("isTranslate", isTranslating);
+
+const blacklist = ref([]);
+provide("blacklist", blacklist);
+
+const currentDemo = computed(() => {
+  return websiteInfo?.demo_site || websiteInfo?.demo || "";
+});
+
+async function fetchBlacklist(demo) {
+  const demoName = typeof demo === "string" ? demo.trim() : "";
+  if (!demoName) {
+    blacklist.value = [];
+    return;
+  }
+
+  try {
+    const res = await getBlacklistConfig(demoName);
+    blacklist.value = res.code === 0 && Array.isArray(res.data?.blacklist)
+      ? res.data.blacklist
+      : [];
+  } catch {
+    blacklist.value = [];
+  }
+}
+
+watch(
+  currentDemo,
+  (demo) => {
+    fetchBlacklist(demo);
+  },
+  { immediate: true },
+);
 
 function sameLang() {
   return translateConfig.sourceLanguage && translateConfig.sourceLanguage === translateConfig.targetLanguage;
@@ -344,6 +384,31 @@ async function handleSaveSizes() {
   } finally {
     isSavingSizes.value = false;
   }
+}
+
+function goToDemoList() {
+  const siteId = websiteInfo?.site_id;
+  const demoName = currentDemo.value;
+
+  if (!siteId) {
+    ElMessage({ message: "缂哄皯绔欑偣 ID锛屾棤娉曟墦寮€ Demo 鍒楄〃", type: "warning" });
+    return;
+  }
+
+  if (!demoName) {
+    ElMessage({ message: "褰撳墠绔欑偣鏈厤缃?Demo 鍚嶇О", type: "warning" });
+    return;
+  }
+
+  router.push({
+    name: "AdminDemoList",
+    query: {
+      site_id: String(siteId),
+      demo: demoName,
+      site_name: websiteInfo?.site_name || "",
+      back_page_id: String(route.params.id || ""),
+    },
+  });
 }
 
 async function handleSave() {

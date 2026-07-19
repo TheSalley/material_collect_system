@@ -19,6 +19,66 @@ export const getMediaByDemo = async ({ demo = "", page_name = "", page = 1, page
 };
 
 /**
+ * Demo 配置列表
+ * GET /api/media/demo-config/list
+ */
+export const getDemoConfigList = async ({ page = 1, page_size = 20 } = {}) => {
+  const query = new URLSearchParams();
+  query.set("page", String(page));
+  query.set("page_size", String(page_size));
+
+  return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/list?${query.toString()}`, {
+    method: "GET",
+    headers: getAuthHeaders(false),
+  });
+};
+
+/**
+ * 查询单个 Demo 配置
+ * GET /api/media/demo-config/get?demo=demo67
+ */
+export const getDemoConfig = async (demo) => {
+  const query = new URLSearchParams();
+  query.set("demo", String(demo || "").trim());
+
+  return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/get?${query.toString()}`, {
+    method: "GET",
+    headers: getAuthHeaders(false),
+  });
+};
+
+/**
+ * 保存 Demo 配置
+ * POST /api/media/demo-config/save
+ */
+export const saveDemoConfig = async ({ demo, imgs = [], sizes = [], blacklist = [] }) => {
+  return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/save`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      demo,
+      imgs,
+      sizes,
+      blacklist,
+    }),
+  });
+};
+
+/**
+ * 删除 Demo 配置
+ * POST /api/media/demo-config/delete
+ */
+export const deleteDemoConfig = async (demo) => {
+  return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/delete`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      demo,
+    }),
+  });
+};
+
+/**
  * 管理员上传素材
  * POST /api/media/save
  * body: FormData { file, demo, page }

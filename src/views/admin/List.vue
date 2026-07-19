@@ -49,6 +49,7 @@ const addFormRules = {
 };
 
 const router = useRouter();
+const globalStore = useGlobalStore();
 
 // 格式化时间
 const formatDate = (dateString) => {
@@ -230,8 +231,7 @@ onMounted(() => {
 });
 
 function config(data) {
-  const { setWebsiteInfo } = useGlobalStore();
-  setWebsiteInfo(data);
+  globalStore.setWebsiteInfo({ ...data });
   router.push({ name: "AdminDetail", query: { id: data.site_id } });
 }
 

@@ -4,27 +4,28 @@
       <el-icon><PictureFilled /></el-icon>
       背景图
     </label>
-    <div v-if="hasMainBg" class="bg-block">
+
+    <div v-if="showMainBgBlock" class="bg-block">
       <div class="bg-block__title">主背景图</div>
       <ImageWp
-        :model-value="fields.background_image"
+        :model-value="mainBackgroundImage"
         :node-id="nodeId"
         :show-size-config="true"
         @update:model-value="(newImageData) => onUpdate('background_image', newImageData)"
       />
     </div>
 
-    <div v-if="hasOverlayBg" class="bg-block">
+    <div v-if="showOverlayBgBlock" class="bg-block">
       <div class="bg-block__title">叠加层图</div>
       <ImageWp
-        :model-value="fields.background_overlay_image"
+        :model-value="overlayBackgroundImage"
         :node-id="nodeId"
         :show-size-config="true"
         @update:model-value="(newImageData) => onUpdate('background_overlay_image', newImageData)"
       />
     </div>
 
-    <div v-if="hasSlideshowGalleryField" class="bg-block">
+    <div v-if="showSlideshowBlock" class="bg-block">
       <div class="bg-block__header">
         <div class="bg-block__title mb-0">轮播背景图库</div>
         <el-button size="small" type="primary" plain :icon="Plus" @click="addSlideshowImage">
@@ -32,30 +33,30 @@
         </el-button>
       </div>
 
-      <div v-if="slideshowGallery.length" class="slideshow-list">
+      <div v-if="visibleSlideshowGallery.length" class="slideshow-list">
         <div
-          v-for="(image, index) in slideshowGallery"
-          :key="getSlideshowItemKey(image, index)"
+          v-for="item in visibleSlideshowGallery"
+          :key="getSlideshowItemKey(item.image, item.index)"
           class="slideshow-item"
         >
           <div class="slideshow-item__header">
-            <span class="slideshow-item__title">图片 {{ index + 1 }}</span>
+            <span class="slideshow-item__title">图片 {{ item.index + 1 }}</span>
             <el-button
               size="small"
               type="danger"
               plain
               :icon="Delete"
-              @click="removeSlideshowImage(index)"
+              @click="removeSlideshowImage(item.index)"
             >
               删除
             </el-button>
           </div>
 
           <ImageWp
-            :model-value="normalizeGalleryItem(image)"
+            :model-value="item.image"
             :node-id="nodeId"
             :show-size-config="true"
-            @update:model-value="(value) => updateSlideshowImage(index, value)"
+            @update:model-value="(value) => updateSlideshowImage(item.index, value)"
           />
         </div>
       </div>
@@ -66,15 +67,18 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, inject, ref } from "vue";
 import { Delete, PictureFilled, Plus } from "@element-plus/icons-vue";
 import ImageWp from "@/components/Common/imageWp.vue";
+import { isImageBlacklisted } from "@/utils/imageBlacklist";
 
 const props = defineProps({
   nodeId: { type: String, required: true },
   fields: { type: Object, required: true },
   onUpdate: { type: Function, required: true },
 });
+
+const blacklist = inject("blacklist", ref([]));
 
 function hasField(target, key) {
   return Object.prototype.hasOwnProperty.call(target || {}, key);
@@ -132,11 +136,38 @@ const slideshowGallery = computed(() =>
     ? props.fields.background_slideshow_gallery
     : []
 );
+
+const mainBackgroundImage = computed(() =>
+  normalizeGalleryItem(props.fields?.background_image)
+);
+const overlayBackgroundImage = computed(() =>
+  normalizeGalleryItem(props.fields?.background_overlay_image)
+);
+
+const showMainBgBlock = computed(() =>
+  hasMainBg.value &&
+  !isImageBlacklisted(mainBackgroundImage.value.url, blacklist.value)
+);
+const showOverlayBgBlock = computed(() =>
+  hasOverlayBg.value &&
+  !isImageBlacklisted(overlayBackgroundImage.value.url, blacklist.value)
+);
+const visibleSlideshowGallery = computed(() =>
+  slideshowGallery.value
+    .map((image, index) => ({
+      index,
+      image: normalizeGalleryItem(image),
+    }))
+    .filter((item) => !isImageBlacklisted(item.image.url, blacklist.value))
+);
+const showSlideshowBlock = computed(() =>
+  hasSlideshowGalleryField.value && visibleSlideshowGallery.value.length > 0
+);
 const shouldShowSection = computed(
   () =>
-    hasMainBg.value ||
-    hasOverlayBg.value ||
-    hasSlideshowGalleryField.value
+    showMainBgBlock.value ||
+    showOverlayBgBlock.value ||
+    showSlideshowBlock.value
 );
 
 function emitSlideshowGallery(next) {

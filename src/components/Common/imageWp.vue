@@ -1,19 +1,9 @@
 <template>
-  <div>
-    <!-- 图片预览 -->
-    <div v-if="imageUrl && !isBlacklisted" class="w-full mb-3" :style="{ maxWidth: width + 'px' }">
+  <div v-if="!isBlacklisted">
+    <div v-if="imageUrl" class="w-full mb-3" :style="{ maxWidth: width + 'px' }">
       <img :src="imageUrl" alt="预览图" />
     </div>
-    <!-- 黑名单提示 -->
-    <div
-      v-else-if="imageUrl && isBlacklisted"
-      class="w-full mb-3 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-center"
-      :style="{ maxWidth: width + 'px' }"
-    >
-      <el-icon class="text-red-400 text-2xl mb-1"><RemoveFilled /></el-icon>
-      <p class="text-sm text-red-500 dark:text-red-400">该图片已被列入黑名单，不予显示</p>
-    </div>
-    <!-- 上传按钮 -->
+
     <el-upload
       action="#"
       :before-upload="handleBeforeUpload"
@@ -22,20 +12,18 @@
     >
       <el-button type="primary" :icon="Upload">上传图片</el-button>
     </el-upload>
-    <!-- 文字提示 -->
+
     <div class="__field-upload-hints">
       <p class="__hint-line">
-        <span v-if="naturalSizeInfo.width && naturalSizeInfo.height"
-          >当前图片尺寸：{{ naturalSizeInfo.width }} ×
-          {{ naturalSizeInfo.height }} px
+        <span v-if="naturalSizeInfo.width && naturalSizeInfo.height">
+          当前图片尺寸：{{ naturalSizeInfo.width }} x {{ naturalSizeInfo.height }} px
         </span>
         <span v-if="configuredDims">
-          建议尺寸：{{ configuredDims.width }} ×
-          {{ configuredDims.height }} px</span
-        >
+          建议尺寸：{{ configuredDims.width }} x {{ configuredDims.height }} px
+        </span>
       </p>
       <p class="__hint-line">{{ uploadTip }}</p>
-      <!-- 截图自定义尺寸 -->
+
       <div
         v-if="isAdmin && showSizeConfig && nodeId"
         class="__hint-line __target-size-hint mt-2"
@@ -49,7 +37,7 @@
           size="small"
           class="__target-size-hint__input"
         />
-        <span class="__target-size-hint__x">×</span>
+        <span class="__target-size-hint__x">x</span>
         <el-input-number
           v-model="getOrCreateSizeConfig(nodeId).height"
           :min="1"
@@ -63,9 +51,10 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import { computed, ref, watch, inject } from "vue";
-import { Upload, RemoveFilled } from "@element-plus/icons-vue";
+import { Upload } from "@element-plus/icons-vue";
 import { ElLoading } from "element-plus";
 import { useGlobalStore } from "@/stores/global";
 import {
@@ -74,6 +63,7 @@ import {
   buildImageUploadTip,
   getImageNaturalSizeFromUrl,
 } from "@/utils/imageUpload";
+import { isImageBlacklisted } from "@/utils/imageBlacklist";
 
 defineOptions({
   inheritAttrs: false,
@@ -103,8 +93,6 @@ const naturalSizeInfo = ref({ width: "", height: "" });
 const { isAdmin } = useGlobalStore();
 
 const sectionSizes = inject("sectionSizes", ref({}));
-
-/** 黑名单图片 URL 列表（由父组件通过 provide 传入） */
 const blacklist = inject("blacklist", ref([]));
 
 const configuredDims = computed(() => {
@@ -129,13 +117,8 @@ function getOrCreateSizeConfig(id) {
 
 const imageUrl = computed(() => props.modelValue?.url);
 
-/** 判断当前图片是否在黑名单中 */
 const isBlacklisted = computed(() => {
-  const url = imageUrl.value;
-  if (!url) return false;
-  const list = blacklist.value;
-  if (!Array.isArray(list) || list.length === 0) return false;
-  return list.some((item) => url.includes(item) || item.includes(url));
+  return isImageBlacklisted(imageUrl.value, blacklist.value);
 });
 
 watch(
@@ -144,24 +127,33 @@ watch(
     naturalSizeInfo.value = { width: "", height: "" };
     if (!url) return;
     const dim = await getImageNaturalSizeFromUrl(url);
-    naturalSizeInfo.value = { width: dim.width, height: dim.height };
+    naturalSizeInfo.value = {
+      width: dim?.width || "",
+      height: dim?.height || "",
+    };
   },
   { immediate: true },
 );
 
 const handleBeforeUpload = (file) => {
-  const refDim = props.configuredDims || naturalSizeInfo.value;
-  const opts = refDim?.width && refDim?.height ? { strictMatch: true, refDimensions: refDim } : {};
+  const refDim = configuredDims.value || naturalSizeInfo.value;
+  const opts = refDim?.width && refDim?.height
+    ? { strictMatch: true, refDimensions: refDim }
+    : {};
 
   const loading = ElLoading.service({
     lock: true,
     text: "上传中...",
   });
 
-  handleImageUpload(file, (url, id) => {
-    loading.close();
-    emit("update:modelValue", { ...props.modelValue, url, id });
-  }, opts).then((ok) => {
+  handleImageUpload(
+    file,
+    (url, id) => {
+      loading.close();
+      emit("update:modelValue", { ...props.modelValue, url, id });
+    },
+    opts
+  ).then((ok) => {
     if (ok === false) {
       loading.close();
     }

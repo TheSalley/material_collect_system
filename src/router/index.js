@@ -55,6 +55,12 @@ const adminRoutes = [
         meta: { title: "页面列表", hidden: true, role: "admin" },
       },
       {
+        path: "demoList",
+        name: "AdminDemoList",
+        component: () => import("@/views/admin/DemoList.vue"),
+        meta: { title: "Demo 截图尺寸", role: "admin" },
+      },
+      {
         path: "blackList",
         name: "AdminBlackList",
         component: () => import("@/views/admin/BlackList.vue"),
