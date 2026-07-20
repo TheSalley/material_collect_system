@@ -1,7 +1,6 @@
-import { createWebHashHistory, createRouter } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
 
-// 登录页路由
 const loginRoute = {
   path: "/login",
   name: "Login",
@@ -11,7 +10,6 @@ const loginRoute = {
   },
 };
 
-// 管理员路由
 const adminRoutes = [
   {
     path: "/admin",
@@ -60,17 +58,10 @@ const adminRoutes = [
         component: () => import("@/views/admin/DemoList.vue"),
         meta: { title: "Demo 截图尺寸", role: "admin" },
       },
-      {
-        path: "blackList",
-        name: "AdminBlackList",
-        component: () => import("@/views/admin/BlackList.vue"),
-        meta: { title: "黑名单", role: "admin" },
-      },
     ],
   },
 ];
 
-// 用户身份路由
 const userRoutes = [
   {
     path: "/",
@@ -117,7 +108,6 @@ const userRoutes = [
   },
 ];
 
-// 404 路由
 const notFoundRoute = {
   path: "/:pathMatch(.*)*",
   name: "NotFound",
@@ -125,24 +115,20 @@ const notFoundRoute = {
   meta: { hidden: true },
 };
 
-// 创建路由，预先注册所有路由
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [loginRoute, ...adminRoutes, ...userRoutes, notFoundRoute],
 });
 
-// 路由守卫：只做权限检查和跳转
 router.beforeEach((to, from, next) => {
   const globalStore = useGlobalStore();
   const { user, access_token } = globalStore;
 
-  // /login 路径永远放行
   if (to.path === "/login") {
     next();
     return;
   }
 
-  // 未登录访问需要认证的路由 → 去登录
   if (!access_token) {
     if (to.meta.requiresAuth) {
       next("/login");
@@ -152,41 +138,35 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  // 已登录用户：检查路由权限
   if (access_token && user) {
     const role = (user?.role ?? "user").toString().toLowerCase();
     const routeRole = to.meta?.role;
 
-    // 检查路由是否需要特定角色
     if (routeRole) {
       const isAdmin = role === "admin";
       const isUser = role === "user";
 
-      // 管理员路由，但用户不是管理员
       if (routeRole === "admin" && !isAdmin) {
         next("/login");
         return;
       }
 
-      // 用户路由，但用户是管理员（管理员可以访问用户路由）
       if (routeRole === "user" && !isUser && !isAdmin) {
         next("/login");
         return;
       }
     }
 
-    // 已登录访问根路径 → 根据角色跳转
     if (to.path === "/" || to.path === "") {
       if (role === "admin") {
         next({ path: "/admin/list", replace: true });
         return;
-      } else {
-        next({ path: "/siteInfo", replace: true });
-        return;
       }
+
+      next({ path: "/siteInfo", replace: true });
+      return;
     }
 
-    // 处理 /pages/:id 路径，根据角色重定向
     if (to.path.startsWith("/pages/") && !to.path.startsWith("/admin/pages/")) {
       if (role === "admin") {
         const pageId = to.path.replace("/pages/", "");
