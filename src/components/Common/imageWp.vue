@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div v-if="!isBlacklisted">
     <div v-if="imageUrl" class="w-full mb-3" :style="{ maxWidth: width + 'px' }">
       <img :src="imageUrl" alt="预览图" />
@@ -21,6 +21,20 @@
         <span v-if="configuredDims">
           建议尺寸：{{ configuredDims.width }} x {{ configuredDims.height }} px
         </span>
+        <span v-else-if="isAdmin && showSizeConfig && nodeId">
+          建议尺寸：未设置
+        </span>
+        <el-button
+          v-if="isAdmin && nodeId && typeof bindDemoSize === 'function'"
+          size="small"
+          :type="isCurrentSizeBound ? 'success' : 'primary'"
+          :plain="!isCurrentSizeBound"
+          :loading="bindDemoSizeLoadingKey === nodeId"
+          :disabled="!configuredDims"
+          @click="bindDemoSize(nodeId)"
+        >
+          {{ isCurrentSizeBound ? "取消绑定 Demo" : "绑定 Demo" }}
+        </el-button>
       </p>
       <p class="__hint-line">{{ uploadTip }}</p>
 
@@ -94,6 +108,15 @@ const { isAdmin } = useGlobalStore();
 
 const sectionSizes = inject("sectionSizes", ref({}));
 const blacklist = inject("blacklist", ref([]));
+const bindDemoSize = inject("bindDemoSize", null);
+const bindDemoSizeLoadingRef = inject("bindDemoSizeLoadingKey", ref(""));
+const isDemoSizeBound = inject("isDemoSizeBound", null);
+
+const bindDemoSizeLoadingKey = computed(() => String(bindDemoSizeLoadingRef?.value || ""));
+const isCurrentSizeBound = computed(() => {
+  if (!props.nodeId || typeof isDemoSizeBound !== "function") return false;
+  return Boolean(isDemoSizeBound(props.nodeId));
+});
 
 const configuredDims = computed(() => {
   if (!sectionSizes.value || !props.nodeId) return null;

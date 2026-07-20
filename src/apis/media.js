@@ -51,16 +51,17 @@ export const getDemoConfig = async (demo) => {
  * 保存 Demo 配置
  * POST /api/media/demo-config/save
  */
-export const saveDemoConfig = async ({ demo, imgs = [], sizes = [], blacklist = [] }) => {
+export const saveDemoConfig = async ({ demo, imgs, sizes, blacklist }) => {
+  const body = {};
+  if (demo !== undefined) body.demo = demo;
+  if (imgs !== undefined) body.imgs = imgs;
+  if (sizes !== undefined) body.sizes = sizes;
+  if (blacklist !== undefined) body.blacklist = blacklist;
+
   return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/save`, {
     method: "POST",
     headers: getAuthHeaders(),
-    body: JSON.stringify({
-      demo,
-      imgs,
-      sizes,
-      blacklist,
-    }),
+    body: JSON.stringify(body),
   });
 };
 

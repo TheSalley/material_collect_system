@@ -87,6 +87,22 @@
           </el-button>
           <el-button
             v-if="pageData?.id && isAdmin"
+            @click="handleBindAllDemoScreenshots"
+            :loading="isBindingAllDemoScreenshots"
+            size="large"
+          >
+            一键获取截图
+          </el-button>
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            @click="handleBindAllDemoSizes"
+            :loading="isBindingAllDemoSizes"
+            size="large"
+          >
+            一键获取图片尺寸
+          </el-button>
+          <el-button
+            v-if="pageData?.id && isAdmin"
             :icon="PictureFilled"
             @click="goToDemoList"
             size="large"
@@ -131,8 +147,9 @@
 </template>
 <script setup>
 import { computed, reactive, ref, watch, nextTick, provide } from "vue";
+import { storeToRefs } from "pinia";
 import { useGlobalStore } from "@/stores/global.js";
-import { updatePageById, translate, getBlacklistConfig } from "@/apis/index";
+import { updatePageById, translate, getBlacklistConfig, getDemoConfig } from "@/apis/index";
 import { ElLoading, ElMessage } from "element-plus";
 import ModuleMode from "@/components/ModuleMode.vue";
 import { useRoute, useRouter } from "vue-router";
@@ -144,7 +161,8 @@ const router = useRouter();
 
 let pageData = ref(null);
 const ModuleModeNode = ref(null);
-const { user, websiteInfo, isAdmin } = useGlobalStore();
+const globalStore = useGlobalStore();
+const { user, websiteInfo, isAdmin } = storeToRefs(globalStore);
 const route = useRoute();
 
 // 翻译配置（旧版：通过 provide 给子组件/字段用）
@@ -154,6 +172,8 @@ const translateConfig = reactive({
 });
 const isTranslating = ref(false);
 const isSavingSizes = ref(false);
+const isBindingAllDemoScreenshots = ref(false);
+const isBindingAllDemoSizes = ref(false);
 provide("translateConfig", translateConfig);
 provide("isTranslate", isTranslating);
 
@@ -161,7 +181,7 @@ const blacklist = ref([]);
 provide("blacklist", blacklist);
 
 const currentDemo = computed(() => {
-  return websiteInfo?.demo_site || websiteInfo?.demo || "";
+  return websiteInfo.value?.demo_site || "";
 });
 
 async function fetchBlacklist(demo) {
@@ -386,8 +406,67 @@ async function handleSaveSizes() {
   }
 }
 
+async function handleBindAllDemoScreenshots() {
+  const fn = ModuleModeNode.value?.applyDemoScreenshots;
+  if (typeof fn !== "function") {
+    ElMessage({ message: "当前页面不支持同步 Demo 截图", type: "warning" });
+    return;
+  }
+
+  const demoName = String(currentDemo.value || "").trim();
+  if (!demoName) {
+    ElMessage({ message: "当前站点还未绑定 Demo，无法获取截图", type: "warning" });
+    return;
+  }
+
+  isBindingAllDemoScreenshots.value = true;
+  try {
+    const res = await getDemoConfig(demoName);
+    if (res?.code !== 0) {
+      ElMessage({ message: res?.message || "获取 Demo 截图失败", type: "error" });
+      return;
+    }
+
+    await fn(Array.isArray(res?.data?.imgs) ? res.data.imgs : []);
+  } catch (error) {
+    ElMessage({ message: error?.message || "获取 Demo 截图失败", type: "error" });
+  } finally {
+    isBindingAllDemoScreenshots.value = false;
+  }
+}
+
+async function handleBindAllDemoSizes() {
+  const fn = ModuleModeNode.value?.applyDemoSizes;
+  if (typeof fn !== "function") {
+    ElMessage({ message: "当前页面不支持同步 Demo 图片尺寸", type: "warning" });
+    return;
+  }
+
+  const demoName = String(currentDemo.value || "").trim();
+  if (!demoName) {
+    ElMessage({ message: "当前站点还未绑定 Demo，无法获取图片尺寸", type: "warning" });
+    return;
+  }
+
+  isBindingAllDemoSizes.value = true;
+  try {
+    const res = await getDemoConfig(demoName);
+    if (res?.code !== 0) {
+      ElMessage({ message: res?.message || "获取 Demo 图片尺寸失败", type: "error" });
+      return;
+    }
+
+    await fn(Array.isArray(res?.data?.sizes) ? res.data.sizes : []);
+  } catch (error) {
+    ElMessage({ message: error?.message || "获取 Demo 图片尺寸失败", type: "error" });
+  } finally {
+    isBindingAllDemoSizes.value = false;
+  }
+}
+
 function goToDemoList() {
-  const siteId = websiteInfo?.site_id;
+  const currentWebsiteInfo = websiteInfo.value;
+  const siteId = currentWebsiteInfo?.site_id;
   const demoName = currentDemo.value;
 
   if (!siteId) {
@@ -405,7 +484,7 @@ function goToDemoList() {
     query: {
       site_id: String(siteId),
       demo: demoName,
-      site_name: websiteInfo?.site_name || "",
+      site_name: currentWebsiteInfo?.site_name || "",
       back_page_id: String(route.params.id || ""),
     },
   });

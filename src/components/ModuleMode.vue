@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="page-mode-container">
     <!-- 左侧：与右侧同结构的独立卡片列表，标题/标签/间距一致 -->
     <div class="preview-section">
@@ -11,13 +11,40 @@
                   <Grid />
                 </el-icon>
                 <span class="collapse-text">板块 {{ index + 1 }}</span>
+                <el-tag v-if="isDemoScreenshotBound(part.id, index)" size="small" type="success" effect="plain">
+                  已绑定 Demo
+                </el-tag>
               </div>
-              <el-button v-if="isAdmin" type="primary" size="small" plain @click.stop="openUploadDialog(part.id, index)">
-                <el-icon>
-                  <Upload />
-                </el-icon>
-                上传
-              </el-button>
+              <div v-if="isAdmin" class="preview-block-header__actions">
+                <div class="preview-block-header__primary-actions">
+                  <el-button type="primary" size="small" plain @click.stop="openUploadDialog(part.id, index)">
+                    <el-icon>
+                      <Upload />
+                    </el-icon>
+                    上传
+                  </el-button>
+                  <el-button
+                    type="danger"
+                    size="small"
+                    plain
+                    :loading="removingImageKey === moduleImageKey(part.id)"
+                    :disabled="!getModuleImage(part.id)"
+                    @click.stop="removeModuleImage(part.id)"
+                  >
+                    移除截图
+                  </el-button>
+                </div>
+                <el-button
+                  size="small"
+                  :type="isDemoScreenshotBound(part.id, index) ? 'success' : 'primary'"
+                  :plain="!isDemoScreenshotBound(part.id, index)"
+                  :loading="bindingDemoImageKey === moduleImageKey(part.id)"
+                  :disabled="!getModuleImage(part.id)"
+                  @click.stop="toggleDemoScreenshot(part.id, index)"
+                >
+                  {{ isDemoScreenshotBound(part.id, index) ? "取消绑定 Demo" : "绑定 Demo" }}
+                </el-button>
+              </div>
             </div>
             <div class="preview-block-body">
               <div v-if="getModuleImage(part.id)" class="preview-image-wrapper">
@@ -28,7 +55,17 @@
                   </el-icon>
                   <span>查看大图</span>
                 </div>
-                <el-button v-if="isAdmin" class="preview-image-remove" :icon="Delete" :loading="removingImageKey === moduleImageKey(part.id)" circle size="small" type="danger" @click.stop="removeModuleImage(part.id)" />
+                <div v-if="isAdmin" class="preview-image-actions" :class="{ 'is-visible': removingImageKey === moduleImageKey(part.id) }">
+                  <el-button
+                    class="preview-image-remove"
+                    :icon="Delete"
+                    :loading="removingImageKey === moduleImageKey(part.id)"
+                    circle
+                    size="small"
+                    type="danger"
+                    @click.stop="removeModuleImage(part.id)"
+                  />
+                </div>
               </div>
               <el-empty v-else description="未上传截图" :image-size="80" />
             </div>
@@ -158,9 +195,10 @@
 
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch, computed, provide } from "vue";
+import { storeToRefs } from "pinia";
 import { Upload, Grid, Search, Picture, Check, ZoomIn, Delete } from "@element-plus/icons-vue";
 import { ElLoading, ElMessage, ElMessageBox } from "element-plus";
-import { getPageById, getPageConfig, getFileFullUrl, savePageConfig, savePageSizes } from "@/apis/index.js";
+import { getDemoConfig, getPageById, getPageConfig, getFileFullUrl, saveDemoConfig, savePageConfig, savePageSizes } from "@/apis/index.js";
 import { saveMedia, getMediaByDemo } from "@/apis/media.js";
 import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
@@ -203,12 +241,159 @@ provide("sectionSizes", sectionSizes);
 
 /** 按模块 elementor id 存截图，与 visibleParts 顺序无关、与右侧板块一一对应 */
 const moduleImages = ref({});
+const demoConfigState = ref({
+  imgs: [],
+  sizes: [],
+  blacklist: [],
+});
 const removingImageKey = ref(null);
+const bindingDemoImageKey = ref("");
+const bindingDemoSizeKey = ref("");
 let currentUploadModuleId = null;
 let currentUploadPartIndex = null;
 
+provide("bindDemoSize", toggleDemoSizeByNodeId);
+provide("bindDemoSizeLoadingKey", bindingDemoSizeKey);
+provide("isDemoSizeBound", isDemoSizeBound);
+
 function moduleImageKey(id) {
   return id == null ? "" : String(id);
+}
+
+function currentDemoName() {
+  const demo = websiteInfo.value?.demo_site || "";
+  return String(demo || "").trim();
+}
+
+function cloneDemoConfigRecord(record = {}, demoName = "") {
+  return {
+    demo: demoName,
+    imgs: Array.isArray(record?.imgs) ? [...record.imgs] : [],
+    sizes: Array.isArray(record?.sizes) ? [...record.sizes] : [],
+    blacklist: Array.isArray(record?.blacklist) ? [...record.blacklist] : [],
+  };
+}
+
+function syncDemoConfigState(record = {}, demoName = "") {
+  demoConfigState.value = cloneDemoConfigRecord(record, demoName);
+}
+
+async function fetchDemoConfigState() {
+  const demoName = currentDemoName();
+  if (!demoName) {
+    syncDemoConfigState({}, "");
+    return;
+  }
+
+  try {
+    const res = await getDemoConfig(demoName);
+    if (res?.code === 0) {
+      syncDemoConfigState(res.data || {}, demoName);
+      return;
+    }
+  } catch {
+    // noop
+  }
+
+  syncDemoConfigState({}, demoName);
+}
+
+function normalizeComparableUrl(value) {
+  return String(value || "").trim();
+}
+
+function replaceSizeRecordByModuleId(sizeList = [], nextSize) {
+  const targetId = String(nextSize?.module_id || "");
+  const filtered = Array.isArray(sizeList)
+    ? sizeList.filter((item) => String(item?.module_id || "") !== targetId)
+    : [];
+
+  if (nextSize) {
+    filtered.push(nextSize);
+  }
+
+  return filtered;
+}
+
+function replaceDemoImageRecordByModuleId(imageList = [], nextImage, partIndex = null) {
+  const targetId = String(nextImage?.module_id || "");
+  const filtered = Array.isArray(imageList)
+    ? imageList.filter((item, index) => {
+        if (String(item?.module_id || "") === targetId) return false;
+        if ((!item?.module_id || String(item?.module_id || "") === "") && partIndex != null && index === partIndex) {
+          return false;
+        }
+        return true;
+      })
+    : [];
+
+  if (nextImage) {
+    filtered.push(nextImage);
+  }
+
+  return filtered;
+}
+
+function removeDemoImageRecordByModuleId(imageList = [], moduleId, partIndex = null) {
+  const targetId = String(moduleId || "");
+  if (!targetId) return Array.isArray(imageList) ? [...imageList] : [];
+
+  return Array.isArray(imageList)
+    ? imageList.filter((item, index) => {
+        if (String(item?.module_id || "") === targetId) return false;
+        if ((!item?.module_id || String(item?.module_id || "") === "") && partIndex != null && index === partIndex) {
+          return false;
+        }
+        return true;
+      })
+    : [];
+}
+
+function removeSizeRecordByModuleId(sizeList = [], moduleId) {
+  const targetId = String(moduleId || "");
+  if (!targetId) return Array.isArray(sizeList) ? [...sizeList] : [];
+
+  return Array.isArray(sizeList)
+    ? sizeList.filter((item) => String(item?.module_id || "") !== targetId)
+    : [];
+}
+
+async function updateDemoConfig(mutator, successMessage, fields = ["imgs", "sizes", "blacklist"]) {
+  const demoName = currentDemoName();
+  if (!demoName) {
+    ElMessage.warning("当前站点还没有绑定 Demo，无法同步");
+    return { ok: false };
+  }
+
+  try {
+    const detailRes = await getDemoConfig(demoName);
+    const payload = cloneDemoConfigRecord(detailRes?.code === 0 ? detailRes.data : {}, demoName);
+
+    await mutator(payload);
+
+    const savePayload = { demo: demoName };
+    fields.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(payload, field)) {
+        savePayload[field] = payload[field];
+      }
+    });
+
+    const saveRes = await saveDemoConfig(savePayload);
+    if (saveRes?.code === 0) {
+      const nextState = saveRes?.data
+        ? { ...payload, ...saveRes.data }
+        : payload;
+      syncDemoConfigState(nextState, demoName);
+      ElMessage.success(saveRes.message || successMessage);
+      return { ok: true, data: nextState };
+    }
+
+    ElMessage.error(saveRes?.message || "同步 Demo 配置失败");
+    return { ok: false };
+  } catch (error) {
+    ElMessage.error(error?.message || "同步 Demo 配置失败");
+    return { ok: false };
+  }
 }
 
 function buildPageMaterialsPayload() {
@@ -225,6 +410,17 @@ function buildPageMaterialsPayload() {
       url: rawUrl.startsWith("http") ? rawUrl : getFileFullUrl(rawUrl),
     };
   });
+}
+
+function buildDemoImagePayloadByModuleId(moduleId) {
+  const currentImage = getModuleImage(moduleId);
+  const rawUrl = String(currentImage?.url || currentImage?.file_url || "").trim();
+  if (!moduleId || !rawUrl) return null;
+
+  return {
+    module_id: String(moduleId),
+    url: rawUrl.startsWith("http") ? rawUrl : getFileFullUrl(rawUrl),
+  };
 }
 
 /** 输出数组结构，供 POST /api/page_config/save_sizes */
@@ -254,8 +450,121 @@ function buildPageSizesPayload() {
   return result;
 }
 
+function buildDemoSizePayloadByNodeId(nodeId) {
+  const key = String(nodeId || "");
+  if (!key) return null;
+
+  const sizeInfo = sectionSizes.value?.[key];
+  const width = Number(sizeInfo?.width);
+  const height = Number(sizeInfo?.height);
+  const payload = { module_id: key };
+
+  if (!Number.isNaN(width) && width > 0) {
+    payload.width = Math.round(width);
+  }
+  if (!Number.isNaN(height) && height > 0) {
+    payload.height = Math.round(height);
+  }
+
+  return payload.width || payload.height ? payload : null;
+}
+
+function findDemoImageRecord(moduleId, partIndex) {
+  const targetId = String(moduleId || "");
+  const demoImages = Array.isArray(demoConfigState.value?.imgs) ? demoConfigState.value.imgs : [];
+  const matchedByModuleId = demoImages.find((item) => String(item?.module_id || "") === targetId);
+  if (matchedByModuleId) return matchedByModuleId;
+  return partIndex != null ? demoImages[partIndex] || null : null;
+}
+
+function applyPageConfigState(materials = [], sizes = []) {
+  sectionSizes.value = {};
+  if (Array.isArray(sizes)) {
+    for (const s of sizes) {
+      if (s && s.module_id) {
+        const key = String(s.module_id);
+        let w = s.width != null ? Number(s.width) : null;
+        let h = s.height != null ? Number(s.height) : null;
+        if (w != null && Number.isNaN(w)) w = null;
+        if (h != null && Number.isNaN(h)) h = null;
+        if (w !== null || h !== null) {
+          sectionSizes.value[key] = { width: w, height: h };
+        }
+      }
+    }
+  }
+
+  const nextImages = {};
+  visibleParts.value.forEach((part, idx) => {
+    const key = String(part.id);
+    const found = Array.isArray(materials) ? materials[idx] : null;
+    if (!found || !found.url) return;
+    nextImages[key] = {
+      id: found.id,
+      url: found.url,
+      demo: found.demo,
+      page: found.page,
+      file_url: getFileFullUrl(found.url),
+    };
+  });
+  moduleImages.value = nextImages;
+}
+
+async function refreshPageConfigState(pageId = props.pageId) {
+  const site_id = websiteInfo.value?.site_id;
+  if (!site_id || !pageId) {
+    moduleImages.value = {};
+    sectionSizes.value = {};
+    return { ok: false };
+  }
+
+  try {
+    const res = await getPageConfig(site_id, String(pageId));
+    if (res?.code === 0) {
+      const { materials = [], sizes = [] } = res.data || {};
+      applyPageConfigState(materials, sizes);
+      return { ok: true, data: res.data || {} };
+    }
+  } catch {
+    // noop
+  }
+
+  moduleImages.value = {};
+  sectionSizes.value = {};
+  return { ok: false };
+}
+
+function isDemoScreenshotBound(moduleId, partIndex) {
+  const currentImage = getModuleImage(moduleId);
+  const demoImage = findDemoImageRecord(moduleId, partIndex);
+  if (!currentImage || !demoImage) return false;
+
+  const currentUrl = normalizeComparableUrl(currentImage.url || currentImage.file_url);
+  const demoUrl = normalizeComparableUrl(demoImage.url || demoImage.file_url);
+
+  return Boolean(currentUrl) && currentUrl === demoUrl;
+}
+
+function isDemoSizeBound(nodeId) {
+  const currentSize = buildDemoSizePayloadByNodeId(nodeId);
+  if (!currentSize) return false;
+
+  const matched = Array.isArray(demoConfigState.value?.sizes)
+    ? demoConfigState.value.sizes.find((item) => String(item?.module_id || "") === String(nodeId || ""))
+    : null;
+
+  if (!matched) return false;
+
+  const currentWidth = currentSize.width ?? null;
+  const currentHeight = currentSize.height ?? null;
+  const matchedWidth = matched?.width != null ? Number(matched.width) : null;
+  const matchedHeight = matched?.height != null ? Number(matched.height) : null;
+
+  return currentWidth === matchedWidth && currentHeight === matchedHeight;
+}
+
 async function saveSectionSizes() {
-  const site_id = websiteInfo?.site_id;
+  const site_id = websiteInfo.value?.site_id;
   if (!site_id || !props.pageId) {
     ElMessage.warning("缺少站点或页面信息");
     return;
@@ -275,6 +584,273 @@ async function saveSectionSizes() {
     ElMessage.error("尺寸保存失败：" + (e?.message || ""));
   } finally {
     loadingInstance.close();
+  }
+}
+
+async function bindDemoScreenshot(moduleId, partIndex) {
+  const imageKey = moduleImageKey(moduleId);
+  const imagePayload = buildDemoImagePayloadByModuleId(moduleId);
+  if (!imageKey) {
+    return;
+  }
+  if (!imagePayload) {
+    ElMessage.warning("当前板块还没有可绑定的截图");
+    return;
+  }
+
+  bindingDemoImageKey.value = imageKey;
+  try {
+    await updateDemoConfig((payload) => {
+      payload.imgs = replaceDemoImageRecordByModuleId(payload.imgs, imagePayload, partIndex);
+    }, "当前板块截图已绑定到 Demo", ["imgs"]);
+  } finally {
+    bindingDemoImageKey.value = "";
+  }
+}
+
+async function toggleDemoScreenshot(moduleId, partIndex) {
+  if (!isDemoScreenshotBound(moduleId, partIndex)) {
+    return await bindDemoScreenshot(moduleId, partIndex);
+  }
+
+  const imageKey = moduleImageKey(moduleId);
+  if (!imageKey) {
+    return { ok: false };
+  }
+
+  bindingDemoImageKey.value = imageKey;
+  try {
+    return await updateDemoConfig((payload) => {
+      payload.imgs = removeDemoImageRecordByModuleId(payload.imgs, moduleId, partIndex);
+    }, "已取消 Demo 截图绑定", ["imgs"]);
+  } finally {
+    bindingDemoImageKey.value = "";
+  }
+}
+
+async function bindAllDemoScreenshots() {
+  const site_id = websiteInfo.value?.site_id;
+  if (!site_id || !props.pageId) {
+    ElMessage.warning("缺少站点或页面信息");
+    return { ok: false };
+  }
+
+  let materials = [];
+
+  try {
+    const res = await getPageConfig(site_id, String(props.pageId));
+    materials = Array.isArray(res?.data?.materials) ? res.data.materials : [];
+  } catch (error) {
+    ElMessage.error(error?.message || "获取页面截图配置失败");
+    return { ok: false };
+  }
+
+  const normalizedMaterials = materials.map((item) => {
+    if (!item?.url) return null;
+    return {
+      ...item,
+      url: String(item.url || "").startsWith("http") ? item.url : getFileFullUrl(item.url),
+    };
+  });
+
+  const count = normalizedMaterials.filter(Boolean).length;
+  if (count === 0) {
+    ElMessage.warning("当前页面还没有已保存的截图配置");
+    return { ok: false };
+  }
+
+  return await updateDemoConfig((payload) => {
+    payload.imgs = normalizedMaterials
+      .map((item, index) => {
+        const part = visibleParts.value[index];
+        if (!item?.url || !part?.id) return null;
+        return {
+          module_id: String(part.id),
+          url: item.url,
+        };
+      })
+      .filter(Boolean);
+  }, `已同步 ${count} 张截图到 Demo`, ["imgs"]);
+}
+
+async function bindDemoSizeByNodeId(nodeId) {
+  const sizePayload = buildDemoSizePayloadByNodeId(nodeId);
+  if (!sizePayload) {
+    ElMessage.warning("请先填写建议尺寸后再绑定 Demo");
+    return { ok: false };
+  }
+
+  bindingDemoSizeKey.value = String(nodeId || "");
+  try {
+    return await updateDemoConfig((payload) => {
+      payload.sizes = replaceSizeRecordByModuleId(payload.sizes, sizePayload);
+    }, "当前建议尺寸已绑定到 Demo", ["sizes"]);
+  } finally {
+    bindingDemoSizeKey.value = "";
+  }
+}
+
+async function toggleDemoSizeByNodeId(nodeId) {
+  if (!isDemoSizeBound(nodeId)) {
+    return await bindDemoSizeByNodeId(nodeId);
+  }
+
+  bindingDemoSizeKey.value = String(nodeId || "");
+  try {
+    return await updateDemoConfig((payload) => {
+      payload.sizes = removeSizeRecordByModuleId(payload.sizes, nodeId);
+    }, "已取消 Demo 尺寸绑定", ["sizes"]);
+  } finally {
+    bindingDemoSizeKey.value = "";
+  }
+}
+
+async function bindAllDemoSizes() {
+  const sizes = buildPageSizesPayload();
+  if (sizes.length === 0) {
+    ElMessage.warning("当前页面还没有可同步的图片尺寸");
+    return { ok: false };
+  }
+
+  return await updateDemoConfig((payload) => {
+    payload.sizes = sizes;
+  }, `已同步 ${sizes.length} 条图片尺寸到 Demo`, ["sizes"]);
+}
+
+async function applyDemoScreenshots(demoImages = []) {
+  const site_id = websiteInfo.value?.site_id;
+  if (!site_id || !props.pageId) {
+    ElMessage.warning("缺少站点或页面信息");
+    return { ok: false };
+  }
+
+  const imageList = Array.isArray(demoImages) ? demoImages : [];
+  const normalizedMaterials = visibleParts.value.map((part) => {
+    const item = imageList.find((entry) => String(entry?.module_id || "") === String(part?.id || ""));
+    const rawUrl = String(item?.url || item?.file_url || "").trim();
+    if (!rawUrl) return null;
+
+    const fullUrl = rawUrl.startsWith("http") ? rawUrl : getFileFullUrl(rawUrl);
+    return {
+      id: item?.id,
+      demo: item?.demo || currentDemoName(),
+      page: item?.page || "",
+      url: fullUrl,
+      file_url: fullUrl,
+      moduleId: String(part.id),
+    };
+  });
+
+  const count = normalizedMaterials.filter(Boolean).length;
+  if (count === 0) {
+    ElMessage.warning("当前 Demo 没有可用截图");
+    return { ok: false };
+  }
+
+  try {
+    const payload = normalizedMaterials.map((item) => {
+      if (!item) return null;
+      return {
+        id: item.id,
+        demo: item.demo,
+        page: item.page,
+        url: item.url,
+      };
+    });
+
+    const res = await savePageConfig(site_id, String(props.pageId), payload);
+    if (res?.code === 0) {
+      await refreshPageConfigState();
+      await fetchDemoConfigState();
+      ElMessage.success(res.message || `已获取 ${count} 张 Demo 截图`);
+      return { ok: true };
+    }
+
+    ElMessage.error(res?.message || "获取 Demo 截图失败");
+    return { ok: false };
+  } catch (error) {
+    ElMessage.error(error?.message || "获取 Demo 截图失败");
+    return { ok: false };
+  }
+}
+
+async function applyDemoSizes(demoSizes = []) {
+  const site_id = websiteInfo.value?.site_id;
+  if (!site_id || !props.pageId) {
+    ElMessage.warning("缺少站点或页面信息");
+    return { ok: false };
+  }
+
+  const visibleModuleIds = new Set(
+    visibleParts.value
+      .map((part) => String(part?.id || ""))
+      .filter(Boolean),
+  );
+
+  const currentSizes = { ...sectionSizes.value };
+  const nextSizes = Object.entries(currentSizes).reduce((acc, [moduleId, value]) => {
+    if (!visibleModuleIds.has(String(moduleId || ""))) {
+      acc[moduleId] = value;
+    }
+    return acc;
+  }, {});
+
+  if (Array.isArray(demoSizes)) {
+    for (const item of demoSizes) {
+      const moduleId = String(item?.module_id || "");
+      if (!moduleId || !visibleModuleIds.has(moduleId)) continue;
+
+      const width = item?.width != null ? Number(item.width) : null;
+      const height = item?.height != null ? Number(item.height) : null;
+      const hasWidth = Number.isFinite(width) && width > 0;
+      const hasHeight = Number.isFinite(height) && height > 0;
+      if (!hasWidth && !hasHeight) continue;
+
+      nextSizes[moduleId] = {
+        width: hasWidth ? Math.round(width) : null,
+        height: hasHeight ? Math.round(height) : null,
+      };
+    }
+  }
+
+  const payload = Object.entries(nextSizes).reduce((acc, [moduleId, size]) => {
+    const width = size?.width != null ? Number(size.width) : null;
+    const height = size?.height != null ? Number(size.height) : null;
+    const hasWidth = Number.isFinite(width) && width > 0;
+    const hasHeight = Number.isFinite(height) && height > 0;
+
+    if (!hasWidth && !hasHeight) return acc;
+
+    const record = { module_id: moduleId };
+    if (hasWidth) {
+      record.width = Math.round(width);
+    }
+    if (hasHeight) {
+      record.height = Math.round(height);
+    }
+    acc.push(record);
+    return acc;
+  }, []);
+
+  if (payload.length === 0) {
+    ElMessage.warning("当前 Demo 没有可用图片尺寸");
+    return { ok: false };
+  }
+
+  try {
+    const res = await savePageSizes(site_id, String(props.pageId), payload);
+    if (res?.code === 0) {
+      await refreshPageConfigState();
+      await fetchDemoConfigState();
+      ElMessage.success(res.message || `已获取 ${payload.length} 条 Demo 图片尺寸`);
+      return { ok: true };
+    }
+
+    ElMessage.error(res?.message || "获取 Demo 图片尺寸失败");
+    return { ok: false };
+  } catch (error) {
+    ElMessage.error(error?.message || "获取 Demo 图片尺寸失败");
+    return { ok: false };
   }
 }
 
@@ -301,7 +877,7 @@ async function removeModuleImage(moduleId) {
     return;
   }
 
-  const site_id = websiteInfo?.site_id;
+  const site_id = websiteInfo.value?.site_id;
   if (!site_id || !props.pageId) {
     ElMessage.warning("缺少站点或页面信息");
     return;
@@ -345,11 +921,12 @@ const state = reactive({
   ImageList: [],
 });
 
-const { websiteInfo, isAdmin } = useGlobalStore();
+const globalStore = useGlobalStore();
+const { websiteInfo, isAdmin } = storeToRefs(globalStore);
 
 /** 媒体库 /api/media/* 的 demo 参数须为站点 Demo 名称（如 demo67），不可传 site_id */
 function mediaDemoName() {
-  const d = websiteInfo?.demo_site;
+  const d = websiteInfo.value?.demo_site;
   return d != null && String(d).trim() !== "" ? String(d).trim() : "";
 }
 
@@ -527,7 +1104,7 @@ async function confirmSelectMedia() {
     ElMessage.warning("请先选择一个素材");
     return;
   }
-  const site_id = websiteInfo?.site_id;
+  const site_id = websiteInfo.value?.site_id;
   const mid = currentUploadModuleId;
   const k = moduleImageKey(mid);
   const pageName = uploadPageName.value?.trim() || item.page || "";
@@ -574,7 +1151,7 @@ function handleBeforeUpload(file) {
 const customUpload = async (file) => {
   uploading.value = true;
   try {
-    const site_id = websiteInfo?.site_id;
+    const site_id = websiteInfo.value?.site_id;
     if (!site_id) {
       ElMessage.error("未选择站点");
       return;
@@ -626,7 +1203,7 @@ watch(
   async (newId) => {
     if (!newId) return;
     const loadingInstance = ElLoading.service({ fullscreen: true });
-    const site_id = websiteInfo?.site_id;
+    const site_id = websiteInfo.value?.site_id;
 
     const res1 = await getPageById(newId, site_id);
     if (res1.code === 0 && res1.data.post_id) {
@@ -649,44 +1226,20 @@ watch(
     moduleImages.value = {};
     sectionSizes.value = {};
     if (site_id && newId) {
-      const res2 = await getPageConfig(site_id, newId);
-      if (res2?.code === 0) {
-        const { materials = [], sizes = [] } = res2.data || {};
-        // sizes from API contains module_id, so we map by ID instead of index.
-        sectionSizes.value = {}; // Reset before populating
-        if (Array.isArray(sizes)) {
-          for (const s of sizes) {
-            if (s && s.module_id) {
-              const key = String(s.module_id);
-              let w = s.width != null ? Number(s.width) : null;
-              let h = s.height != null ? Number(s.height) : null;
-              if (w != null && Number.isNaN(w)) w = null;
-              if (h != null && Number.isNaN(h)) h = null;
-              if (w !== null || h !== null) {
-                sectionSizes.value[key] = { width: w, height: h };
-              }
-            }
-          }
-        }
-        // materials 按索引对应板块：索引 0 -> 板块 1，索引 1 -> 板块 2...
-        visibleParts.value.forEach((part, idx) => {
-          const key = String(part.id);
-          const found = materials[idx];
-          if (!found || !found.url) return;
-          moduleImages.value[key] = {
-            id: found.id,
-            url: found.url,
-            demo: found.demo,
-            page: found.page,
-            file_url: getFileFullUrl(found.url),
-          };
-        });
-      }
+      await refreshPageConfigState(newId);
     }
 
     nextTick(() => {
       loadingInstance.close();
     });
+  },
+  { immediate: true },
+);
+
+watch(
+  () => currentDemoName(),
+  () => {
+    fetchDemoConfigState();
   },
   { immediate: true },
 );
@@ -734,7 +1287,13 @@ defineExpose({
   state,
   getFinalData,
   applyBulkFieldUpdates,
+  applyDemoScreenshots,
+  applyDemoSizes,
   saveSectionSizes,
+  bindDemoScreenshot,
+  bindAllDemoScreenshots,
+  bindDemoSizeByNodeId,
+  bindAllDemoSizes,
 });
 </script>
 
@@ -795,6 +1354,20 @@ defineExpose({
   border-bottom: 1px solid #ebeef5;
 }
 
+.preview-block-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preview-block-header__primary-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
 .preview-block-body {
   padding: 1.5rem;
   background: #fafbfc;
@@ -833,10 +1406,19 @@ defineExpose({
 }
 
 .preview-image-remove {
+  position: static;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.preview-image-actions {
   position: absolute;
   top: 10px;
   right: 10px;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -845,8 +1427,8 @@ defineExpose({
   opacity: 1;
 }
 
-.preview-image-wrapper:hover .preview-image-remove,
-.preview-image-remove.is-loading {
+.preview-image-wrapper:hover .preview-image-actions,
+.preview-image-actions.is-visible {
   opacity: 1;
 }
 
