@@ -269,7 +269,7 @@ function cloneDemoConfigRecord(record = {}, demoName = "") {
   return {
     demo: demoName,
     imgs: Array.isArray(record?.imgs) ? [...record.imgs] : [],
-    sizes: Array.isArray(record?.sizes) ? [...record.sizes] : [],
+    sizes: normalizeDemoSizeRecords(record?.sizes),
     blacklist: Array.isArray(record?.blacklist) ? [...record.blacklist] : [],
   };
 }
@@ -300,6 +300,39 @@ async function fetchDemoConfigState() {
 
 function normalizeComparableUrl(value) {
   return String(value || "").trim();
+}
+
+function normalizeDemoSizeRecords(value) {
+  let raw = value;
+
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+
+  if (Array.isArray(raw)) {
+    return raw;
+  }
+
+  if (raw && typeof raw === "object") {
+    return Object.values(raw).flatMap((item) => (Array.isArray(item) ? item : [item]));
+  }
+
+  return [];
+}
+
+function resolveSizeImageUrl(sizeInfo = {}, moduleId = "", fallbackUrl = "") {
+  const candidates = [fallbackUrl, buildModuleImageUrlPayload(moduleId), sizeInfo?.image_url];
+
+  for (const candidate of candidates) {
+    const url = normalizeComparableUrl(candidate);
+    if (url) return url;
+  }
+
+  return "";
 }
 
 function replaceSizeRecordByModuleId(sizeList = [], nextSize) {
@@ -423,6 +456,13 @@ function buildDemoImagePayloadByModuleId(moduleId) {
   };
 }
 
+function buildModuleImageUrlPayload(moduleId) {
+  const currentImage = getModuleImage(moduleId);
+  const rawUrl = String(currentImage?.url || currentImage?.file_url || "").trim();
+  if (!rawUrl) return "";
+  return rawUrl.startsWith("http") ? rawUrl : getFileFullUrl(rawUrl);
+}
+
 /** 输出数组结构，供 POST /api/page_config/save_sizes */
 function buildPageSizesPayload() {
   const sizes = sectionSizes.value;
@@ -441,6 +481,10 @@ function buildPageSizesPayload() {
       if (!Number.isNaN(h) && h > 0) {
         out.height = Math.round(h);
       }
+      const imageUrl = resolveSizeImageUrl(sizeInfo, moduleId);
+      if (imageUrl) {
+        out.image_url = imageUrl;
+      }
       acc.push(out);
     }
     return acc;
@@ -450,7 +494,7 @@ function buildPageSizesPayload() {
   return result;
 }
 
-function buildDemoSizePayloadByNodeId(nodeId) {
+function buildDemoSizePayloadByNodeId(nodeId, imageUrlOverride = "") {
   const key = String(nodeId || "");
   if (!key) return null;
 
@@ -464,6 +508,10 @@ function buildDemoSizePayloadByNodeId(nodeId) {
   }
   if (!Number.isNaN(height) && height > 0) {
     payload.height = Math.round(height);
+  }
+  const imageUrl = resolveSizeImageUrl(sizeInfo, key, imageUrlOverride);
+  if (imageUrl) {
+    payload.image_url = imageUrl;
   }
 
   return payload.width || payload.height ? payload : null;
@@ -488,7 +536,11 @@ function applyPageConfigState(materials = [], sizes = []) {
         if (w != null && Number.isNaN(w)) w = null;
         if (h != null && Number.isNaN(h)) h = null;
         if (w !== null || h !== null) {
-          sectionSizes.value[key] = { width: w, height: h };
+          sectionSizes.value[key] = {
+            width: w,
+            height: h,
+            image_url: resolveSizeImageUrl(s, key),
+          };
         }
       }
     }
@@ -549,16 +601,22 @@ function isDemoSizeBound(nodeId) {
   const currentSize = buildDemoSizePayloadByNodeId(nodeId);
   if (!currentSize) return false;
 
-  const matched = Array.isArray(demoConfigState.value?.sizes)
-    ? demoConfigState.value.sizes.find((item) => String(item?.module_id || "") === String(nodeId || ""))
-    : null;
+  const matched = normalizeDemoSizeRecords(demoConfigState.value?.sizes).find(
+    (item) => String(item?.module_id || "") === String(nodeId || ""),
+  );
 
   if (!matched) return false;
 
   const currentWidth = currentSize.width ?? null;
   const currentHeight = currentSize.height ?? null;
+  const currentImageUrl = resolveSizeImageUrl(currentSize, nodeId);
   const matchedWidth = matched?.width != null ? Number(matched.width) : null;
   const matchedHeight = matched?.height != null ? Number(matched.height) : null;
+  const matchedImageUrl = resolveSizeImageUrl(matched, nodeId);
+
+  if (currentImageUrl || matchedImageUrl) {
+    return currentWidth === matchedWidth && currentHeight === matchedHeight && currentImageUrl === matchedImageUrl;
+  }
 
   return currentWidth === matchedWidth && currentHeight === matchedHeight;
 }
@@ -673,8 +731,8 @@ async function bindAllDemoScreenshots() {
   }, `已同步 ${count} 张截图到 Demo`, ["imgs"]);
 }
 
-async function bindDemoSizeByNodeId(nodeId) {
-  const sizePayload = buildDemoSizePayloadByNodeId(nodeId);
+async function bindDemoSizeByNodeId(nodeId, imageUrl = "") {
+  const sizePayload = buildDemoSizePayloadByNodeId(nodeId, imageUrl);
   if (!sizePayload) {
     ElMessage.warning("请先填写建议尺寸后再绑定 Demo");
     return { ok: false };
@@ -684,15 +742,21 @@ async function bindDemoSizeByNodeId(nodeId) {
   try {
     return await updateDemoConfig((payload) => {
       payload.sizes = replaceSizeRecordByModuleId(payload.sizes, sizePayload);
+      if (sectionSizes.value?.[String(nodeId || "")]) {
+        sectionSizes.value[String(nodeId || "")] = {
+          ...sectionSizes.value[String(nodeId || "")],
+          image_url: sizePayload.image_url || "",
+        };
+      }
     }, "当前建议尺寸已绑定到 Demo", ["sizes"]);
   } finally {
     bindingDemoSizeKey.value = "";
   }
 }
 
-async function toggleDemoSizeByNodeId(nodeId) {
+async function toggleDemoSizeByNodeId(nodeId, imageUrl = "") {
   if (!isDemoSizeBound(nodeId)) {
-    return await bindDemoSizeByNodeId(nodeId);
+    return await bindDemoSizeByNodeId(nodeId, imageUrl);
   }
 
   bindingDemoSizeKey.value = String(nodeId || "");
@@ -795,22 +859,22 @@ async function applyDemoSizes(demoSizes = []) {
     return acc;
   }, {});
 
-  if (Array.isArray(demoSizes)) {
-    for (const item of demoSizes) {
-      const moduleId = String(item?.module_id || "");
-      if (!moduleId || !visibleModuleIds.has(moduleId)) continue;
+  for (const item of normalizeDemoSizeRecords(demoSizes)) {
+    const moduleId = String(item?.module_id || "");
+    if (!moduleId || !visibleModuleIds.has(moduleId)) continue;
 
-      const width = item?.width != null ? Number(item.width) : null;
-      const height = item?.height != null ? Number(item.height) : null;
-      const hasWidth = Number.isFinite(width) && width > 0;
-      const hasHeight = Number.isFinite(height) && height > 0;
-      if (!hasWidth && !hasHeight) continue;
+    const width = item?.width != null ? Number(item.width) : null;
+    const height = item?.height != null ? Number(item.height) : null;
+    const hasWidth = Number.isFinite(width) && width > 0;
+    const hasHeight = Number.isFinite(height) && height > 0;
+    if (!hasWidth && !hasHeight) continue;
+    const imageUrl = resolveSizeImageUrl(item, moduleId);
 
-      nextSizes[moduleId] = {
-        width: hasWidth ? Math.round(width) : null,
-        height: hasHeight ? Math.round(height) : null,
-      };
-    }
+    nextSizes[moduleId] = {
+      width: hasWidth ? Math.round(width) : null,
+      height: hasHeight ? Math.round(height) : null,
+      image_url: imageUrl,
+    };
   }
 
   const payload = Object.entries(nextSizes).reduce((acc, [moduleId, size]) => {
@@ -827,6 +891,10 @@ async function applyDemoSizes(demoSizes = []) {
     }
     if (hasHeight) {
       record.height = Math.round(height);
+    }
+    const imageUrl = normalizeComparableUrl(size?.image_url || "");
+    if (imageUrl) {
+      record.image_url = imageUrl;
     }
     acc.push(record);
     return acc;

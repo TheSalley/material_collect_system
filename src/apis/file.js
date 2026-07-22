@@ -1,7 +1,7 @@
 import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
 
 /**
- * 5.1 上传文件
+ * 5.1 涓婁紶鏂囦欢
  * POST /api/file/upload
  */
 export const uploadFile = async (formData) => {
@@ -15,7 +15,7 @@ export const uploadFile = async (formData) => {
 };
 
 /**
- * 5.2 查询文件列表
+ * 5.2 鏌ヨ鏂囦欢鍒楄〃
  * GET /api/file/get
  */
 export const getFileList = async (params) => {
@@ -34,7 +34,7 @@ export const getFileList = async (params) => {
 };
 
 /**
- * 将接口返回的相对 file_url 转为完整可访问 URL
+ * 灏嗘帴鍙ｈ繑鍥炵殑鐩稿 file_url 杞负瀹屾暣鍙闂?URL
  */
 export const getFileFullUrl = (path) => {
   if (!path) return "";
@@ -42,7 +42,7 @@ export const getFileFullUrl = (path) => {
 };
 
 /**
- * 查询页面截图配置
+ * 鏌ヨ椤甸潰鎴浘閰嶇疆
  * GET /api/page_config/get?site_id=&page_id=
  */
 export const getPageConfig = async (site_id, page_id) => {
@@ -57,7 +57,7 @@ export const getPageConfig = async (site_id, page_id) => {
 };
 
 /**
- * 保存页面截图配置
+ * 淇濆瓨椤甸潰鎴浘閰嶇疆
  * POST /api/page_config/save_materials
  * body: { site_id, data: { [page_id]: [...] } }
  */
@@ -78,12 +78,12 @@ export const savePageConfig = async (site_id, pageId, materialsData = []) => {
 };
 
 /**
- * 保存页面截图目标尺寸
+ * 淇濆瓨椤甸潰鎴浘鐩爣灏哄
  * POST /api/page_config/save_sizes
- * body: { site_id, data: { [page_id]: [{ module_id, width, height }, ...] } }
- * @param {string} site_id - 站点 ID
- * @param {string} pageId - 页面 ID
- * @param {Array} sizesData - 尺寸数据数组，每个元素包含 { module_id, width, height }
+ * body: { site_id, data: { [page_id]: [{ module_id, width, height, image_url? }, ...] } }
+ * @param {string} site_id - 绔欑偣 ID
+ * @param {string} pageId - 椤甸潰 ID
+ * @param {Array} sizesData - 尺寸数据数组，每个元素包含 { module_id, width, height, image_url? }
  */
 export const savePageSizes = async (site_id, pageId, sizesData = []) => {
   const payload = {
@@ -101,7 +101,7 @@ export const savePageSizes = async (site_id, pageId, sizesData = []) => {
   });
 };
 
-// 向后兼容的别名
+// 鍚戝悗鍏煎鐨勫埆鍚?
 export const upload_bind_img = uploadFile;
 export const get_bind_img = (site_id, elementor_id, page_id, component_id) => {
   return getFileList({

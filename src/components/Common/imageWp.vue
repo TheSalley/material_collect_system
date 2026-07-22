@@ -31,7 +31,7 @@
           :plain="!isCurrentSizeBound"
           :loading="bindDemoSizeLoadingKey === nodeId"
           :disabled="!configuredDims"
-          @click="bindDemoSize(nodeId)"
+          @click="bindDemoSize(nodeId, imageUrl)"
         >
           {{ isCurrentSizeBound ? "取消绑定 Demo" : "绑定 Demo" }}
         </el-button>
