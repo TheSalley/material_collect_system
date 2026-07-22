@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, inject, provide, unref } from "vue";
 import DataExtractor from "@/components/DataExtractor.vue";
 import { pickFieldModule } from "@/utils/elementorFieldUi.js";
 
@@ -48,6 +48,10 @@ const props = defineProps({
 const emit = defineEmits(["update:field"]);
 
 const settings = computed(() => props.settings ?? props.originalNode?.settings ?? {});
+const parentSectionId = inject("currentSectionId", "");
+const currentSectionId = computed(() => String(unref(parentSectionId) || props.originalNode?.id || ""));
+
+provide("currentSectionId", currentSectionId);
 
 const editableNode = computed(() => {
   if (!props.originalNode?.id) return null;

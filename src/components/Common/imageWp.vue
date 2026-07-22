@@ -21,17 +21,17 @@
         <span v-if="configuredDims">
           建议尺寸：{{ configuredDims.width }} x {{ configuredDims.height }} px
         </span>
-        <span v-else-if="isAdmin && showSizeConfig && nodeId">
+        <span v-else-if="isAdmin && showSizeConfig && sizeConfigKey">
           建议尺寸：未设置
         </span>
         <el-button
-          v-if="isAdmin && nodeId && typeof bindDemoSize === 'function'"
+          v-if="isAdmin && sizeConfigKey && typeof bindDemoSize === 'function'"
           size="small"
           :type="isCurrentSizeBound ? 'success' : 'primary'"
           :plain="!isCurrentSizeBound"
-          :loading="bindDemoSizeLoadingKey === nodeId"
+          :loading="bindDemoSizeLoadingKey === sizeConfigKey"
           :disabled="!configuredDims"
-          @click="bindDemoSize(nodeId, imageUrl)"
+          @click="bindDemoSize(sizeConfigKey, imageUrl)"
         >
           {{ isCurrentSizeBound ? "取消绑定 Demo" : "绑定 Demo" }}
         </el-button>
@@ -39,12 +39,12 @@
       <p class="__hint-line">{{ uploadTip }}</p>
 
       <div
-        v-if="isAdmin && showSizeConfig && nodeId"
+        v-if="isAdmin && showSizeConfig && sizeConfigKey"
         class="__hint-line __target-size-hint mt-2"
       >
         <span class="__target-size-hint__label">截图目标尺寸：</span>
         <el-input-number
-          v-model="getOrCreateSizeConfig(nodeId).width"
+          v-model="getOrCreateSizeConfig(sizeConfigKey).width"
           :min="1"
           :max="4096"
           controls-position="right"
@@ -53,7 +53,7 @@
         />
         <span class="__target-size-hint__x">x</span>
         <el-input-number
-          v-model="getOrCreateSizeConfig(nodeId).height"
+          v-model="getOrCreateSizeConfig(sizeConfigKey).height"
           :min="1"
           :max="4096"
           controls-position="right"
@@ -111,16 +111,23 @@ const blacklist = inject("blacklist", ref([]));
 const bindDemoSize = inject("bindDemoSize", null);
 const bindDemoSizeLoadingRef = inject("bindDemoSizeLoadingKey", ref(""));
 const isDemoSizeBound = inject("isDemoSizeBound", null);
+const injectedSectionId = inject("currentSectionId", "");
 
 const bindDemoSizeLoadingKey = computed(() => String(bindDemoSizeLoadingRef?.value || ""));
+const sizeConfigKey = computed(() => {
+  const sectionId = String(injectedSectionId?.value || injectedSectionId || "").trim();
+  if (sectionId) return sectionId;
+  return String(props.nodeId || "").trim();
+});
+
 const isCurrentSizeBound = computed(() => {
-  if (!props.nodeId || typeof isDemoSizeBound !== "function") return false;
-  return Boolean(isDemoSizeBound(props.nodeId));
+  if (!sizeConfigKey.value || typeof isDemoSizeBound !== "function") return false;
+  return Boolean(isDemoSizeBound(sizeConfigKey.value));
 });
 
 const configuredDims = computed(() => {
-  if (!sectionSizes.value || !props.nodeId) return null;
-  const s = sectionSizes.value?.[props.nodeId];
+  if (!sectionSizes.value || !sizeConfigKey.value) return null;
+  const s = sectionSizes.value?.[sizeConfigKey.value];
   if (!s) return null;
   const w = Number(s.width);
   const h = Number(s.height);

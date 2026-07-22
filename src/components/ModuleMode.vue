@@ -204,6 +204,7 @@ import DataExtractor from "./DataExtractor.vue";
 import { useGlobalStore } from "@/stores/global";
 import { extractEditableData, updateField, mapToObject } from "@/utils/dataExtractor.js";
 import { normalizeElementorRoots, pickFieldModule } from "@/utils/elementorFieldUi.js";
+import { buildUrlMatchTokens, hasSafeContainsMatch, hasTokenIntersection } from "@/utils/imageBlacklist.js";
 import { useMedia } from "@/composables/useMedia";
 
 const { queryDemo, page_name, loading, rows, page, total, totalPages, searched, loadMedia, handleQuery, handlePageChange, handleSizeChange, handleUpload: doUpload } = useMedia();
@@ -318,7 +319,20 @@ function normalizeDemoSizeRecords(value) {
   }
 
   if (raw && typeof raw === "object") {
-    return Object.values(raw).flatMap((item) => (Array.isArray(item) ? item : [item]));
+    return Object.entries(raw).flatMap(([key, item]) => {
+      if (Array.isArray(item)) {
+        return item;
+      }
+
+      if (item && typeof item === "object") {
+        if (!item.module_id && key) {
+          return [{ ...item, module_id: key }];
+        }
+        return [item];
+      }
+
+      return [];
+    });
   }
 
   return [];
@@ -330,6 +344,79 @@ function resolveSizeImageUrl(sizeInfo = {}, moduleId = "", fallbackUrl = "") {
   for (const candidate of candidates) {
     const url = normalizeComparableUrl(candidate);
     if (url) return url;
+  }
+
+  return "";
+}
+
+function extractSizeImageCandidate(sizeInfo = {}) {
+  const candidates = [sizeInfo?.image_url, sizeInfo?.url, sizeInfo?.file_url, sizeInfo?.imageUrl];
+
+  for (const candidate of candidates) {
+    const url = normalizeComparableUrl(candidate);
+    if (url) return url;
+  }
+
+  return "";
+}
+
+function isSameImageSource(sourceA = "", sourceB = "") {
+  const a = normalizeComparableUrl(sourceA);
+  const b = normalizeComparableUrl(sourceB);
+  if (!a || !b) return false;
+  if (a === b) return true;
+
+  const aTokens = buildUrlMatchTokens(a);
+  const bTokens = buildUrlMatchTokens(b);
+  if (aTokens.length === 0 || bTokens.length === 0) return false;
+
+  return hasTokenIntersection(aTokens, bTokens) || hasSafeContainsMatch(aTokens, bTokens);
+}
+
+function resolveDemoSizeModuleId(sizeInfo = {}, fallbackIndex = -1, visibleModuleIds = null) {
+  const directModuleId = String(sizeInfo?.module_id || "").trim();
+  if (directModuleId && (!visibleModuleIds || visibleModuleIds.has(directModuleId))) {
+    return directModuleId;
+  }
+
+  const sizeImageUrl = extractSizeImageCandidate(sizeInfo);
+  if (sizeImageUrl) {
+    const matchedPartByCurrentImage = visibleParts.value.find((part) =>
+      isSameImageSource(sizeImageUrl, buildModuleImageUrlPayload(part?.id)),
+    );
+    if (matchedPartByCurrentImage) {
+      const matchedId = String(matchedPartByCurrentImage.id || "");
+      if (matchedId && (!visibleModuleIds || visibleModuleIds.has(matchedId))) {
+        return matchedId;
+      }
+    }
+
+    const demoImages = Array.isArray(demoConfigState.value?.imgs) ? demoConfigState.value.imgs : [];
+    const matchedDemoImageIndex = demoImages.findIndex((item) =>
+      isSameImageSource(sizeImageUrl, item?.url || item?.file_url),
+    );
+
+    if (matchedDemoImageIndex >= 0) {
+      const matchedDemoImage = demoImages[matchedDemoImageIndex];
+      const matchedDemoModuleId = String(matchedDemoImage?.module_id || "").trim();
+      if (matchedDemoModuleId && (!visibleModuleIds || visibleModuleIds.has(matchedDemoModuleId))) {
+        return matchedDemoModuleId;
+      }
+
+      const matchedPartByIndex = visibleParts.value[matchedDemoImageIndex];
+      const matchedIndexModuleId = String(matchedPartByIndex?.id || "").trim();
+      if (matchedIndexModuleId && (!visibleModuleIds || visibleModuleIds.has(matchedIndexModuleId))) {
+        return matchedIndexModuleId;
+      }
+    }
+  }
+
+  if (fallbackIndex >= 0) {
+    const fallbackPart = visibleParts.value[fallbackIndex];
+    const fallbackModuleId = String(fallbackPart?.id || "").trim();
+    if (fallbackModuleId && (!visibleModuleIds || visibleModuleIds.has(fallbackModuleId))) {
+      return fallbackModuleId;
+    }
   }
 
   return "";
@@ -824,8 +911,18 @@ async function applyDemoScreenshots(demoImages = []) {
 
     const res = await savePageConfig(site_id, String(props.pageId), payload);
     if (res?.code === 0) {
-      await refreshPageConfigState();
-      await fetchDemoConfigState();
+      const nextImages = {};
+      normalizedMaterials.forEach((item) => {
+        if (!item?.moduleId) return;
+        nextImages[String(item.moduleId)] = {
+          id: item.id,
+          demo: item.demo,
+          page: item.page,
+          url: item.url,
+          file_url: item.file_url,
+        };
+      });
+      moduleImages.value = nextImages;
       ElMessage.success(res.message || `已获取 ${count} 张 Demo 截图`);
       return { ok: true };
     }
@@ -839,9 +936,8 @@ async function applyDemoScreenshots(demoImages = []) {
 }
 
 async function applyDemoSizes(demoSizes = []) {
-  const site_id = websiteInfo.value?.site_id;
-  if (!site_id || !props.pageId) {
-    ElMessage.warning("缺少站点或页面信息");
+  if (!props.pageId) {
+    ElMessage.warning("缺少页面信息");
     return { ok: false };
   }
 
@@ -859,9 +955,11 @@ async function applyDemoSizes(demoSizes = []) {
     return acc;
   }, {});
 
-  for (const item of normalizeDemoSizeRecords(demoSizes)) {
-    const moduleId = String(item?.module_id || "");
-    if (!moduleId || !visibleModuleIds.has(moduleId)) continue;
+  const normalizedDemoSizes = normalizeDemoSizeRecords(demoSizes);
+
+  for (const [index, item] of normalizedDemoSizes.entries()) {
+    const moduleId = resolveDemoSizeModuleId(item, index, visibleModuleIds);
+    if (!moduleId) continue;
 
     const width = item?.width != null ? Number(item.width) : null;
     const height = item?.height != null ? Number(item.height) : null;
@@ -905,21 +1003,9 @@ async function applyDemoSizes(demoSizes = []) {
     return { ok: false };
   }
 
-  try {
-    const res = await savePageSizes(site_id, String(props.pageId), payload);
-    if (res?.code === 0) {
-      await refreshPageConfigState();
-      await fetchDemoConfigState();
-      ElMessage.success(res.message || `已获取 ${payload.length} 条 Demo 图片尺寸`);
-      return { ok: true };
-    }
-
-    ElMessage.error(res?.message || "获取 Demo 图片尺寸失败");
-    return { ok: false };
-  } catch (error) {
-    ElMessage.error(error?.message || "获取 Demo 图片尺寸失败");
-    return { ok: false };
-  }
+  sectionSizes.value = nextSizes;
+  ElMessage.success(`已获取 ${payload.length} 条 Demo 图片尺寸`);
+  return { ok: true };
 }
 
 function getModuleImage(id) {

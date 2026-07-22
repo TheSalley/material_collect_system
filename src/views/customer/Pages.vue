@@ -101,14 +101,6 @@
           >
             一键获取图片尺寸
           </el-button>
-          <el-button
-            v-if="pageData?.id && isAdmin"
-            :icon="PictureFilled"
-            @click="goToDemoList"
-            size="large"
-          >
-            Demo 截图尺寸
-          </el-button>
           <el-button 
             type="primary" 
             :icon="Check"
@@ -154,7 +146,7 @@ import { ElLoading, ElMessage } from "element-plus";
 import ModuleMode from "@/components/ModuleMode.vue";
 import { useRoute, useRouter } from "vue-router";
 import {
-  Document, House, ArrowRight, Check, Sort, PictureFilled
+  Document, House, ArrowRight, Check, Sort
 } from '@element-plus/icons-vue';
 
 const router = useRouter();
@@ -456,38 +448,12 @@ async function handleBindAllDemoSizes() {
       return;
     }
 
-    await fn(Array.isArray(res?.data?.sizes) ? res.data.sizes : []);
+    await fn(res?.data?.sizes);
   } catch (error) {
     ElMessage({ message: error?.message || "获取 Demo 图片尺寸失败", type: "error" });
   } finally {
     isBindingAllDemoSizes.value = false;
   }
-}
-
-function goToDemoList() {
-  const currentWebsiteInfo = websiteInfo.value;
-  const siteId = currentWebsiteInfo?.site_id;
-  const demoName = currentDemo.value;
-
-  if (!siteId) {
-    ElMessage({ message: "缂哄皯绔欑偣 ID锛屾棤娉曟墦寮€ Demo 鍒楄〃", type: "warning" });
-    return;
-  }
-
-  if (!demoName) {
-    ElMessage({ message: "褰撳墠绔欑偣鏈厤缃?Demo 鍚嶇О", type: "warning" });
-    return;
-  }
-
-  router.push({
-    name: "AdminDemoList",
-    query: {
-      site_id: String(siteId),
-      demo: demoName,
-      site_name: currentWebsiteInfo?.site_name || "",
-      back_page_id: String(route.params.id || ""),
-    },
-  });
 }
 
 async function handleSave() {
