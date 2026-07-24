@@ -462,15 +462,20 @@ async function handleSave() {
     // ModuleModeNode 在模板中实际挂载（PageMode 被注释），优先使用
     const targetNode = ModuleModeNode.value;
     const finalData = targetNode?.getFinalData?.();
+    const siteId = websiteInfo.value?.site_id;
 
     if (!finalData) {
       ElMessage({ message: "没有数据可保存", type: "warning" });
       loadingInstance.close();
       return;
     }
-
+    if (!siteId) {
+      ElMessage({ message: "站点信息未加载，site_id 为空", type: "warning" });
+      loadingInstance.close();
+      return;
+    }
     const res = await updatePageById({
-      site_id: websiteInfo.site_id,
+      site_id: siteId,
       id: String(targetNode.state.moduleId),
       data: finalData,
     });
