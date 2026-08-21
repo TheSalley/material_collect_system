@@ -303,6 +303,64 @@ function normalizeComparableUrl(value) {
   return String(value || "").trim();
 }
 
+function buildSizeConfigKey(moduleId, imageUrl = "") {
+  const key = String(moduleId || "").trim();
+  if (!key) return "";
+
+  const normalizedImageUrl = normalizeComparableUrl(imageUrl);
+  if (!normalizedImageUrl) return key;
+
+  return `${key}::${encodeURIComponent(normalizedImageUrl)}`;
+}
+
+function parseSizeConfigKey(key = "") {
+  const raw = String(key || "").trim();
+  if (!raw) {
+    return { moduleId: "", imageUrl: "" };
+  }
+
+  const separatorIndex = raw.indexOf("::");
+  if (separatorIndex < 0) {
+    return { moduleId: raw, imageUrl: "" };
+  }
+
+  const moduleId = raw.slice(0, separatorIndex).trim();
+  const encodedImageUrl = raw.slice(separatorIndex + 2).trim();
+
+  if (!encodedImageUrl) {
+    return { moduleId, imageUrl: "" };
+  }
+
+  try {
+    return { moduleId, imageUrl: decodeURIComponent(encodedImageUrl) };
+  } catch {
+    return { moduleId, imageUrl: encodedImageUrl };
+  }
+}
+
+function getSizeRecordKey(sizeInfo = {}, fallbackModuleId = "", fallbackImageUrl = "") {
+  const moduleId = String(sizeInfo?.module_id || fallbackModuleId || "").trim();
+  if (!moduleId) return "";
+
+  const imageUrl = normalizeComparableUrl(sizeInfo?.image_url || fallbackImageUrl || sizeInfo?.url || sizeInfo?.file_url || sizeInfo?.imageUrl);
+  return buildSizeConfigKey(moduleId, imageUrl);
+}
+
+function getSizeRecord(sizeMap = {}, moduleId = "", imageUrl = "") {
+  const exactKey = buildSizeConfigKey(moduleId, imageUrl);
+  const legacyKey = String(moduleId || "").trim();
+
+  if (exactKey && sizeMap?.[exactKey]) {
+    return { key: exactKey, value: sizeMap[exactKey] };
+  }
+
+  if (legacyKey && sizeMap?.[legacyKey]) {
+    return { key: legacyKey, value: sizeMap[legacyKey] };
+  }
+
+  return { key: exactKey || legacyKey, value: null };
+}
+
 function normalizeDemoSizeRecords(value) {
   let raw = value;
 
@@ -422,10 +480,20 @@ function resolveDemoSizeModuleId(sizeInfo = {}, fallbackIndex = -1, visibleModul
   return "";
 }
 
-function replaceSizeRecordByModuleId(sizeList = [], nextSize) {
-  const targetId = String(nextSize?.module_id || "");
+function replaceSizeRecordByKey(sizeList = [], nextSize) {
+  const targetKey = getSizeRecordKey(nextSize);
+  const targetId = String(nextSize?.module_id || "").trim();
+  const targetImageUrl = normalizeComparableUrl(nextSize?.image_url || "");
+
   const filtered = Array.isArray(sizeList)
-    ? sizeList.filter((item) => String(item?.module_id || "") !== targetId)
+    ? sizeList.filter((item) => {
+        const itemKey = getSizeRecordKey(item);
+        if (targetKey && itemKey === targetKey) return false;
+        if (targetImageUrl && String(item?.module_id || "").trim() === targetId && normalizeComparableUrl(item?.image_url || "") === targetImageUrl) {
+          return false;
+        }
+        return targetImageUrl ? true : String(item?.module_id || "").trim() !== targetId;
+      })
     : [];
 
   if (nextSize) {
@@ -470,11 +538,31 @@ function removeDemoImageRecordByModuleId(imageList = [], moduleId, partIndex = n
 }
 
 function removeSizeRecordByModuleId(sizeList = [], moduleId) {
-  const targetId = String(moduleId || "");
+  const targetId = String(moduleId || "").trim();
   if (!targetId) return Array.isArray(sizeList) ? [...sizeList] : [];
 
   return Array.isArray(sizeList)
-    ? sizeList.filter((item) => String(item?.module_id || "") !== targetId)
+    ? sizeList.filter((item) => String(item?.module_id || "").trim() !== targetId)
+    : [];
+}
+
+function removeSizeRecordByKey(sizeList = [], moduleId, imageUrl = "") {
+  const targetId = String(moduleId || "").trim();
+  const targetImageUrl = normalizeComparableUrl(imageUrl);
+  if (!targetId) return Array.isArray(sizeList) ? [...sizeList] : [];
+
+  const targetKey = buildSizeConfigKey(targetId, targetImageUrl);
+  return Array.isArray(sizeList)
+    ? sizeList.filter((item) => {
+        const itemModuleId = String(item?.module_id || "").trim();
+        const itemImageUrl = normalizeComparableUrl(item?.image_url || "");
+        const itemKey = buildSizeConfigKey(itemModuleId, itemImageUrl);
+        if (itemKey && targetKey && itemKey === targetKey) return false;
+        if (targetImageUrl) {
+          return !(itemModuleId === targetId && itemImageUrl === targetImageUrl);
+        }
+        return itemModuleId !== targetId;
+      })
     : [];
 }
 
@@ -555,7 +643,8 @@ function buildPageSizesPayload() {
   const sizes = sectionSizes.value;
   if (!sizes) return [];
 
-  const result = Object.entries(sizes).reduce((acc, [moduleId, sizeInfo]) => {
+  const result = Object.entries(sizes).reduce((acc, [sizeKey, sizeInfo]) => {
+    const { moduleId, imageUrl: keyImageUrl } = parseSizeConfigKey(sizeKey);
     const w = Number(sizeInfo?.width);
     const h = Number(sizeInfo?.height);
 
@@ -568,7 +657,7 @@ function buildPageSizesPayload() {
       if (!Number.isNaN(h) && h > 0) {
         out.height = Math.round(h);
       }
-      const imageUrl = resolveSizeImageUrl(sizeInfo, moduleId);
+      const imageUrl = normalizeComparableUrl(keyImageUrl) || resolveSizeImageUrl(sizeInfo, moduleId);
       if (imageUrl) {
         out.image_url = imageUrl;
       }
@@ -582,13 +671,13 @@ function buildPageSizesPayload() {
 }
 
 function buildDemoSizePayloadByNodeId(nodeId, imageUrlOverride = "") {
-  const key = String(nodeId || "");
+  const key = buildSizeConfigKey(nodeId, imageUrlOverride);
   if (!key) return null;
 
-  const sizeInfo = sectionSizes.value?.[key];
+  const { value: sizeInfo } = getSizeRecord(sectionSizes.value, nodeId, imageUrlOverride);
   const width = Number(sizeInfo?.width);
   const height = Number(sizeInfo?.height);
-  const payload = { module_id: key };
+  const payload = { module_id: String(nodeId || "").trim() };
 
   if (!Number.isNaN(width) && width > 0) {
     payload.width = Math.round(width);
@@ -618,15 +707,17 @@ function applyPageConfigState(materials = [], sizes = []) {
     for (const s of sizes) {
       if (s && s.module_id) {
         const key = String(s.module_id);
+        const imageUrl = resolveSizeImageUrl(s, key);
+        const sizeKey = buildSizeConfigKey(key, imageUrl);
         let w = s.width != null ? Number(s.width) : null;
         let h = s.height != null ? Number(s.height) : null;
         if (w != null && Number.isNaN(w)) w = null;
         if (h != null && Number.isNaN(h)) h = null;
         if (w !== null || h !== null) {
-          sectionSizes.value[key] = {
+          sectionSizes.value[sizeKey] = {
             width: w,
             height: h,
-            image_url: resolveSizeImageUrl(s, key),
+            image_url: imageUrl,
           };
         }
       }
@@ -684,19 +775,32 @@ function isDemoScreenshotBound(moduleId, partIndex) {
   return Boolean(currentUrl) && currentUrl === demoUrl;
 }
 
-function isDemoSizeBound(nodeId) {
-  const currentSize = buildDemoSizePayloadByNodeId(nodeId);
+function isDemoSizeBound(nodeId, imageUrl = "") {
+  const currentSize = buildDemoSizePayloadByNodeId(nodeId, imageUrl);
   if (!currentSize) return false;
 
-  const matched = normalizeDemoSizeRecords(demoConfigState.value?.sizes).find(
-    (item) => String(item?.module_id || "") === String(nodeId || ""),
-  );
+  const currentKey = buildSizeConfigKey(nodeId, imageUrl);
+  const currentModuleId = String(nodeId || "").trim();
+  const hasImageUrl = Boolean(normalizeComparableUrl(imageUrl));
+  const matched = normalizeDemoSizeRecords(demoConfigState.value?.sizes).find((item) => {
+    const itemModuleId = String(item?.module_id || "").trim();
+    const itemImageUrl = normalizeComparableUrl(item?.image_url || item?.url || item?.file_url || item?.imageUrl);
+    const itemKey = buildSizeConfigKey(itemModuleId, itemImageUrl);
+
+    if (hasImageUrl) {
+      return Boolean(currentKey && itemKey && itemKey === currentKey);
+    }
+
+    if (currentKey && itemKey && itemKey === currentKey) return true;
+    if (currentKey && itemModuleId === currentModuleId && !itemImageUrl) return true;
+    return false;
+  });
 
   if (!matched) return false;
 
   const currentWidth = currentSize.width ?? null;
   const currentHeight = currentSize.height ?? null;
-  const currentImageUrl = resolveSizeImageUrl(currentSize, nodeId);
+  const currentImageUrl = resolveSizeImageUrl(currentSize, nodeId, imageUrl);
   const matchedWidth = matched?.width != null ? Number(matched.width) : null;
   const matchedHeight = matched?.height != null ? Number(matched.height) : null;
   const matchedImageUrl = resolveSizeImageUrl(matched, nodeId);
@@ -825,15 +929,24 @@ async function bindDemoSizeByNodeId(nodeId, imageUrl = "") {
     return { ok: false };
   }
 
-  bindingDemoSizeKey.value = String(nodeId || "");
+  bindingDemoSizeKey.value = buildSizeConfigKey(nodeId, imageUrl);
   try {
     return await updateDemoConfig((payload) => {
-      payload.sizes = replaceSizeRecordByModuleId(payload.sizes, sizePayload);
-      if (sectionSizes.value?.[String(nodeId || "")]) {
-        sectionSizes.value[String(nodeId || "")] = {
-          ...sectionSizes.value[String(nodeId || "")],
+      payload.sizes = replaceSizeRecordByKey(payload.sizes, sizePayload);
+      const currentKey = buildSizeConfigKey(nodeId, imageUrl);
+      const legacyKey = String(nodeId || "").trim();
+      const currentSize = sectionSizes.value?.[currentKey] || sectionSizes.value?.[legacyKey];
+      if (currentKey) {
+        sectionSizes.value[currentKey] = {
+          ...(currentSize || {}),
           image_url: sizePayload.image_url || "",
         };
+        if (legacyKey && legacyKey !== currentKey && sectionSizes.value?.[legacyKey] && !currentSize) {
+          sectionSizes.value[legacyKey] = {
+            ...sectionSizes.value[legacyKey],
+            image_url: sizePayload.image_url || "",
+          };
+        }
       }
     }, "当前建议尺寸已绑定到 Demo", ["sizes"]);
   } finally {
@@ -842,14 +955,14 @@ async function bindDemoSizeByNodeId(nodeId, imageUrl = "") {
 }
 
 async function toggleDemoSizeByNodeId(nodeId, imageUrl = "") {
-  if (!isDemoSizeBound(nodeId)) {
+  if (!isDemoSizeBound(nodeId, imageUrl)) {
     return await bindDemoSizeByNodeId(nodeId, imageUrl);
   }
 
-  bindingDemoSizeKey.value = String(nodeId || "");
+  bindingDemoSizeKey.value = buildSizeConfigKey(nodeId, imageUrl);
   try {
     return await updateDemoConfig((payload) => {
-      payload.sizes = removeSizeRecordByModuleId(payload.sizes, nodeId);
+      payload.sizes = removeSizeRecordByKey(payload.sizes, nodeId, imageUrl);
     }, "已取消 Demo 尺寸绑定", ["sizes"]);
   } finally {
     bindingDemoSizeKey.value = "";
@@ -949,7 +1062,8 @@ async function applyDemoSizes(demoSizes = []) {
 
   const currentSizes = { ...sectionSizes.value };
   const nextSizes = Object.entries(currentSizes).reduce((acc, [moduleId, value]) => {
-    if (!visibleModuleIds.has(String(moduleId || ""))) {
+    const { moduleId: plainModuleId, imageUrl } = parseSizeConfigKey(moduleId);
+    if (!visibleModuleIds.has(String(plainModuleId || ""))) {
       acc[moduleId] = value;
     }
     return acc;
@@ -960,15 +1074,16 @@ async function applyDemoSizes(demoSizes = []) {
   for (const [index, item] of normalizedDemoSizes.entries()) {
     const moduleId = resolveDemoSizeModuleId(item, index, visibleModuleIds);
     if (!moduleId) continue;
+    const imageUrl = resolveSizeImageUrl(item, moduleId);
+    const sizeKey = buildSizeConfigKey(moduleId, imageUrl);
 
     const width = item?.width != null ? Number(item.width) : null;
     const height = item?.height != null ? Number(item.height) : null;
     const hasWidth = Number.isFinite(width) && width > 0;
     const hasHeight = Number.isFinite(height) && height > 0;
     if (!hasWidth && !hasHeight) continue;
-    const imageUrl = resolveSizeImageUrl(item, moduleId);
 
-    nextSizes[moduleId] = {
+    nextSizes[sizeKey] = {
       width: hasWidth ? Math.round(width) : null,
       height: hasHeight ? Math.round(height) : null,
       image_url: imageUrl,
@@ -983,14 +1098,15 @@ async function applyDemoSizes(demoSizes = []) {
 
     if (!hasWidth && !hasHeight) return acc;
 
-    const record = { module_id: moduleId };
+    const { moduleId: plainModuleId, imageUrl: keyImageUrl } = parseSizeConfigKey(moduleId);
+    const record = { module_id: plainModuleId };
     if (hasWidth) {
       record.width = Math.round(width);
     }
     if (hasHeight) {
       record.height = Math.round(height);
     }
-    const imageUrl = normalizeComparableUrl(size?.image_url || "");
+    const imageUrl = resolveSizeImageUrl(size, plainModuleId);
     if (imageUrl) {
       record.image_url = imageUrl;
     }

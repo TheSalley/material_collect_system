@@ -31,7 +31,7 @@
           :plain="!isCurrentSizeBound"
           :loading="bindDemoSizeLoadingKey === sizeConfigKey"
           :disabled="!configuredDims"
-          @click="bindDemoSize(sizeConfigKey, imageUrl)"
+          @click="bindDemoSize(sectionConfigId, imageUrl)"
         >
           {{ isCurrentSizeBound ? "取消绑定 Demo" : "绑定 Demo" }}
         </el-button>
@@ -114,20 +114,89 @@ const isDemoSizeBound = inject("isDemoSizeBound", null);
 const injectedSectionId = inject("currentSectionId", "");
 
 const bindDemoSizeLoadingKey = computed(() => String(bindDemoSizeLoadingRef?.value || ""));
-const sizeConfigKey = computed(() => {
+const sectionConfigId = computed(() => {
   const sectionId = String(injectedSectionId?.value || injectedSectionId || "").trim();
   if (sectionId) return sectionId;
   return String(props.nodeId || "").trim();
 });
 
+function buildSizeConfigKey(sectionId, imageUrl = "") {
+  const key = String(sectionId || "").trim();
+  if (!key) return "";
+
+  const normalizedImageUrl = String(imageUrl || "").trim();
+  if (!normalizedImageUrl) return key;
+
+  return `${key}::${encodeURIComponent(normalizedImageUrl)}`;
+}
+
+function parseSizeConfigKey(key = "") {
+  const raw = String(key || "").trim();
+  if (!raw) {
+    return { sectionId: "", imageUrl: "" };
+  }
+
+  const separatorIndex = raw.indexOf("::");
+  if (separatorIndex < 0) {
+    return { sectionId: raw, imageUrl: "" };
+  }
+
+  const sectionId = raw.slice(0, separatorIndex).trim();
+  const encodedImageUrl = raw.slice(separatorIndex + 2).trim();
+  if (!encodedImageUrl) {
+    return { sectionId, imageUrl: "" };
+  }
+
+  try {
+    return { sectionId, imageUrl: decodeURIComponent(encodedImageUrl) };
+  } catch {
+    return { sectionId, imageUrl: encodedImageUrl };
+  }
+}
+
+const sizeConfigKey = computed(() => {
+  const sectionId = sectionConfigId.value;
+  const image = String(imageUrl.value || "").trim();
+  return buildSizeConfigKey(sectionId, image);
+});
+
+function hasValidSizeConfig(value) {
+  if (!value || typeof value !== "object") return false;
+  const w = Number(value.width);
+  const h = Number(value.height);
+  return (Number.isFinite(w) && w > 0) || (Number.isFinite(h) && h > 0);
+}
+
 const isCurrentSizeBound = computed(() => {
   if (!sizeConfigKey.value || typeof isDemoSizeBound !== "function") return false;
-  return Boolean(isDemoSizeBound(sizeConfigKey.value));
+  return Boolean(isDemoSizeBound(sectionConfigId.value, imageUrl.value));
 });
 
 const configuredDims = computed(() => {
   if (!sectionSizes.value || !sizeConfigKey.value) return null;
-  const s = sectionSizes.value?.[sizeConfigKey.value];
+  const direct = sectionSizes.value?.[sizeConfigKey.value];
+  if (hasValidSizeConfig(direct)) {
+    const w = Number(direct.width);
+    const h = Number(direct.height);
+    return { width: w, height: h };
+  }
+
+  const legacy = sectionSizes.value?.[sectionConfigId.value];
+  if (hasValidSizeConfig(legacy)) {
+    const w = Number(legacy.width);
+    const h = Number(legacy.height);
+    return { width: w, height: h };
+  }
+
+  const sectionIdOnly = parseSizeConfigKey(sizeConfigKey.value).sectionId;
+  const sectionFallback = sectionIdOnly ? sectionSizes.value?.[sectionIdOnly] : null;
+  if (hasValidSizeConfig(sectionFallback)) {
+    const w = Number(sectionFallback.width);
+    const h = Number(sectionFallback.height);
+    return { width: w, height: h };
+  }
+
+  const s = direct || legacy || sectionFallback;
   if (!s) return null;
   const w = Number(s.width);
   const h = Number(s.height);
@@ -140,7 +209,9 @@ const configuredDims = computed(() => {
 function getOrCreateSizeConfig(id) {
   if (!sectionSizes.value || !id) return { width: null, height: null };
   if (!sectionSizes.value[id]) {
-    sectionSizes.value[id] = { width: null, height: null };
+    const { sectionId } = parseSizeConfigKey(id);
+    const legacyConfig = sectionId ? sectionSizes.value[sectionId] || sectionSizes.value[sectionConfigId.value] : null;
+    sectionSizes.value[id] = legacyConfig ? { ...legacyConfig } : { width: null, height: null };
   }
   return sectionSizes.value[id];
 }
