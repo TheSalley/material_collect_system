@@ -69,6 +69,12 @@ const userRoutes = [
     component: () => import("@/layout/index.vue"),
     children: [
       {
+        path: "instruction",
+        name: "Instruction",
+        component: () => import("@/views/customer/Instruction.vue"),
+        meta: { title: "首页", role: "user" },
+      },
+      {
         path: "siteInfo",
         name: "CustomerHome",
         component: () => import("@/views/customer/index.vue"),

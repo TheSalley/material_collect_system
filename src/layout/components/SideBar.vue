@@ -236,7 +236,8 @@ const accessibleRoutes = computed(() => {
       root.children = root.children.filter((child) => {
         return (
           child.path === "siteInfo" ||
-          child.path === "pages/:id"
+          child.path === "pages/:id" ||
+          child.path === "instruction"
         );
       });
     }
