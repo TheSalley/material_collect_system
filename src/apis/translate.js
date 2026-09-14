@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
+import { config, fetchWithAuth } from "@/utils/http";
 
 /**
  * 7.1 翻译文本
@@ -7,7 +7,6 @@ import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
 export const translate = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/proxy/translate", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };

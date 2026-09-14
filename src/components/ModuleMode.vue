@@ -666,7 +666,7 @@ function buildPageSizesPayload() {
     return acc;
   }, []);
 
-  console.log("buildPageSizesPayload result:", result);
+
   return result;
 }
 
@@ -1202,7 +1202,7 @@ function mediaDemoName() {
 
 // ── 与 PageMode 相同的 visibleParts：左右列共用，保证一一对应 ────────────────
 
-const fieldModules = import.meta.glob("/src/components/Field/**/*.vue", {
+const fieldModules = import.meta.glob("/src/components/ElementorFields/**/*.vue", {
   eager: true,
 });
 
@@ -1233,7 +1233,7 @@ const visibleParts = computed(() => {
 });
 
 onMounted(async () => {
-  console.log("ModuleMode mounted, loading media with demo:", mediaDemoName());
+
   queryDemo.value = mediaDemoName();
   await loadMedia();
 });
@@ -1311,10 +1311,10 @@ function getFinalData() {
 // ── 提取可编辑数据 ───────────────────────────────────────────────────────────
 
 function extractData(data) {
-  console.log("开始提取可编辑数据...");
+
   const editableMap = extractEditableData(data);
-  console.log("提取完成，可编辑节点数量:", editableMap.size);
-  console.log("可编辑数据:", mapToObject(editableMap));
+
+
   return editableMap;
 }
 
@@ -1352,13 +1352,13 @@ async function handleMediaSearch() {
   if (mediaSearchTimer) clearTimeout(mediaSearchTimer);
   mediaSearchTimer = setTimeout(async () => {
     const keyword = mediaKeyword.value.trim();
-    console.log('搜索关键词:', keyword);
+
     page_name.value = keyword;
-    console.log('设置 page_name:', page_name.value);
+
     page.value = 1;
-    console.log('开始加载媒体列表...');
+
     await loadMedia();
-    console.log('加载完成，结果数量:', rows.value.length);
+
   }, 300);
 }
 
@@ -1401,7 +1401,7 @@ function handlePreviewClick(index) {
 
 function handleBeforeUpload(file) {
   if (!hasUploadPageName.value) {
-    ElMessage.warning("璇峰厛濉啓椤甸潰鏍囪瘑鍐嶄笂浼犲浘鐗?");
+    ElMessage.warning("请先填写页面标识再上传图片");
     return false;
   }
   const isImage = ["image/jpeg", "image/png", "image/webp"].includes(file.type);

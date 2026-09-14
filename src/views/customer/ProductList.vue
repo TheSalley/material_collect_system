@@ -1,10 +1,11 @@
 <template>
-  <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
+  <PageContainer title="产品列表" subtitle="管理和查看所有产品信息">
     <ProductListPanel />
-  </div>
+  </PageContainer>
 </template>
 
 <script setup>
+import PageContainer from "@/components/common/PageContainer.vue";
 import ProductListPanel from "@/components/ProductListPanel.vue";
 </script>
 
@@ -35,18 +36,5 @@ import ProductListPanel from "@/components/ProductListPanel.vue";
 
 :deep(.el-table__body-wrapper) {
   overflow-y: auto;
-}
-
-/* 暗色模式表格 */
-@media (prefers-color-scheme: dark) {
-  :deep(.el-table__header) {
-    background: #4b5563;
-  }
-  
-  :deep(.el-table__header th) {
-    background: #4b5563;
-    color: #f9fafb;
-    border-bottom-color: #6b7280;
-  }
 }
 </style>

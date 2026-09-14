@@ -28,7 +28,7 @@ export const refreshToken = async (refresh_token) => {
   });
 };
 
-import { fetchWithAuth, getAuthHeaders } from "@/utils/http";
+import { fetchWithAuth } from "@/utils/http";
 
 /**
  * 2.3 获取当前用户信息
@@ -36,7 +36,6 @@ import { fetchWithAuth, getAuthHeaders } from "@/utils/http";
  */
 export const getCurrentUser = async () => {
   return await fetchWithAuth(config.baseUrl + "/api/auth/me", {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -47,7 +46,6 @@ export const getCurrentUser = async () => {
 export const changePassword = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/auth/change_password", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };

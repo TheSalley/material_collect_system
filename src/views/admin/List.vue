@@ -6,6 +6,8 @@ import "element-plus/theme-chalk/el-message-box.css";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global.js";
 import { Search, Plus, Setting, Link, Clock, Delete, UserFilled, CircleCheck, CircleClose, Check, Grid, Document } from "@element-plus/icons-vue";
+import PageContainer from "@/components/common/PageContainer.vue";
+import PanelCard from "@/components/common/PanelCard.vue";
 
 const tableData = reactive([]);
 const searchValue = ref("");
@@ -97,7 +99,6 @@ async function handleDelete(row) {
 async function fetchList() {
   loading.value = true;
   try {
-    // 根据 API 文档，可以使用 keyword 参数进行搜索
     const params = {
       page: currentPage.value,
       page_size: pageSize.value,
@@ -115,12 +116,11 @@ async function fetchList() {
         currentPage.value = maxPage;
         return await fetchList();
       }
-      // 根据 API 文档，站点列表返回的字段是 site_id, site_name, site_status, wp_base_url 等
       total.value = nextTotal;
       tableData.length = 0;
       tableData.push(...list);
     } else {
-      ElMessage.error(res.message || "鑾峰彇绔欑偣鍒楄〃澶辫触");
+      ElMessage.error(res.message || "获取站点列表失败");
     }
     return res;
   } catch (error) {
@@ -249,56 +249,42 @@ async function reBind(row) {
 </script>
 
 <template>
-  <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
-    <!-- 页面标题区域 -->
-    <div class="px-6 pt-6 flex-shrink-0">
-      <div class="flex flex-col gap-2">
-        <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
-          <el-icon class="text-blue-500 text-4xl"><UserFilled /></el-icon>
-          站点管理
-        </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400">管理和配置所有客户站点信息</p>
-      </div>
-    </div>
-
-    <!-- 主内容卡片 -->
-    <div class="flex-1 flex flex-col m-6 bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden min-h-0">
-      <!-- 工具栏 -->
-      <div class="flex justify-between items-center px-6 py-5 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-        <div class="flex-1">
-          <el-input v-model="searchValue" class="w-full max-w-md" size="large" placeholder="搜索站点名称" clearable  @keyup.enter="fetchList">
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-            <template #append>
-              <el-button :icon="Search" @click="handleSearch" />
-            </template>
-          </el-input>
+  <PageContainer title="站点管理" subtitle="管理和配置所有客户站点信息" :icon="UserFilled">
+    <PanelCard flush>
+      <template #header>
+        <div class="flex justify-between items-center w-full gap-4">
+          <div class="flex-1 min-w-0">
+            <el-input v-model="searchValue" class="max-w-md" size="large" placeholder="搜索站点名称" clearable @keyup.enter="fetchList">
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+              <template #append>
+                <el-button :icon="Search" @click="handleSearch" />
+              </template>
+            </el-input>
+          </div>
+          <el-button type="primary" size="large" :icon="Plus" @click="openAddDrawer">添加站点</el-button>
         </div>
-        <div class="flex items-center gap-3">
-          <el-button type="primary" size="large" :icon="Plus" @click="openAddDrawer"> 添加站点 </el-button>
-        </div>
-      </div>
+      </template>
 
-      <!-- 表格区域 -->
-      <div class="flex-1 overflow-auto min-h-0 overflow-x-hidden">
+      <div class="flex-1 overflow-auto min-h-0">
         <el-table :data="tableData" :stripe="true" :highlight-current-row="true" class="w-full" empty-text="暂无数据" style="width: 100%" v-loading="loading">
           <el-table-column prop="site_id" label="ID" width="280">
             <template #default="scope">
-              <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.site_id }}</span>
+              <span class="font-mono text-xs text-gray-500">{{ scope.row.site_id }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="wp_auth_token" label="Token" width="280">
             <template #default="scope">
-              <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.wp_auth_token }}</span>
+              <span class="font-mono text-xs text-gray-500">{{ scope.row.wp_auth_token }}</span>
             </template>
           </el-table-column>
 
           <el-table-column prop="site_name" label="站点名称" min-width="150" show-overflow-tooltip>
             <template #default="scope">
               <div class="flex items-center gap-2">
-                <el-icon class="text-blue-500 text-base flex-shrink-0"><Link /></el-icon>
-                <span class="font-medium text-gray-900 dark:text-white truncate">{{ scope.row.site_name || "-" }}</span>
+                <el-icon class="text-primary text-base flex-shrink-0"><Link /></el-icon>
+                <span class="font-medium text-gray-900 truncate">{{ scope.row.site_name || "-" }}</span>
               </div>
             </template>
           </el-table-column>
@@ -308,49 +294,23 @@ async function reBind(row) {
               <el-tag v-if="scope.row.demo_site" size="small" effect="plain">
                 {{ scope.row.demo_site }}
               </el-tag>
-              <span v-else class="text-gray-400 dark:text-gray-500">-</span>
+              <span v-else class="text-gray-400">-</span>
             </template>
           </el-table-column>
 
           <el-table-column prop="wp_base_url" label="网址" min-width="200" show-overflow-tooltip>
             <template #default="scope">
-              <a :href="scope.row.wp_base_url" target="_blank" class="flex items-center gap-1.5 text-blue-500 hover:text-blue-600 hover:underline transition-colors truncate">
+              <a :href="scope.row.wp_base_url" target="_blank" class="flex items-center gap-1.5 text-primary hover:text-primary-hover hover:underline transition-colors truncate">
                 <el-icon><Link /></el-icon>
                 <span class="truncate">{{ scope.row.wp_base_url }}</span>
               </a>
             </template>
           </el-table-column>
 
-          <!-- 隐藏站点状态字段 -->
-          <!-- <el-table-column prop="site_status" label="状态" width="100" align="center">
-            <template #default="scope">
-              <el-tag 
-                :type="scope.row.site_status === 0 ? 'success' : 'warning'"
-                size="small"
-                effect="dark"
-                round
-              >
-                <el-icon class="mr-1">
-                  <CircleCheck v-if="scope.row.site_status === 0" />
-                  <CircleClose v-else />
-                </el-icon>
-                {{ scope.row.site_status === 0 ? "可上线" : "建站中" }}
-              </el-tag>
-            </template>
-          </el-table-column> -->
-
-          <el-table-column prop="is_deleted" label="删除状态" width="100" align="center" v-if="false">
-            <template #default="scope">
-              <el-tag :type="scope.row.is_deleted === 0 ? 'success' : 'danger'" size="small" effect="plain">
-                {{ scope.row.is_deleted === 0 ? "正常" : "已删除" }}
-              </el-tag>
-            </template>
-          </el-table-column>
-
           <el-table-column prop="updated_at" label="创建时间" width="280">
             <template #default="scope">
-              <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm">
-                <el-icon class="text-gray-400 dark:text-gray-500"><Clock /></el-icon>
+              <div class="flex items-center gap-1.5 text-gray-500 text-sm">
+                <el-icon class="text-gray-400"><Clock /></el-icon>
                 <span>{{ formatDate(scope.row.updated_at) }}</span>
               </div>
             </template>
@@ -360,17 +320,16 @@ async function reBind(row) {
             <template #default="scope">
               <div class="flex gap-2 justify-center">
                 <el-button size="small" :icon="Setting" link @click="reBind(scope.row)">重新绑定</el-button>
-                <el-button type="primary" size="small" :icon="Setting" link @click="openEditDrawer(scope.row)"> 编辑 </el-button>
-                <el-button type="success" size="small" :icon="Setting" link @click="config(scope.row)"> 配置 </el-button>
-                <el-button type="danger" size="small" :icon="Delete" link @click="handleDelete(scope.row)"> 删除 </el-button>
+                <el-button type="primary" size="small" :icon="Setting" link @click="openEditDrawer(scope.row)">编辑</el-button>
+                <el-button type="success" size="small" :icon="Setting" link @click="config(scope.row)">配置</el-button>
+                <el-button type="danger" size="small" :icon="Delete" link @click="handleDelete(scope.row)">删除</el-button>
               </div>
             </template>
           </el-table-column>
         </el-table>
       </div>
 
-      <!-- 分页 -->
-      <div class="flex justify-end px-6 py-5 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+      <template #footer>
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -382,76 +341,76 @@ async function reBind(row) {
           @current-change="handleCurrentChange"
           @size-change="handleSizeChange"
         />
-      </div>
-    </div>
-  </div>
+      </template>
+    </PanelCard>
 
-  <!-- 添加站点抽屉 -->
-  <el-drawer v-model="addDrawer" title="添加站点" direction="rtl" size="500px" :close-on-click-modal="false">
-    <template #header>
-      <div class="flex items-center gap-3">
-        <el-icon class="text-green-500 text-xl"><Plus /></el-icon>
-        <span class="text-lg font-semibold text-gray-900 dark:text-white">添加站点</span>
-      </div>
-    </template>
-    <template #default>
-      <el-form ref="addFormRef" :model="addForm" :rules="addFormRules" label-width="100px" class="py-5" label-position="left">
-        <el-form-item label="站点名称" prop="site_name">
-          <el-input v-model="addForm.site_name" placeholder="请输入站点名称" clearable />
-        </el-form-item>
-        <el-form-item label="Demo 名称" prop="demo_site">
-          <el-input v-model="addForm.demo_site" placeholder="请输入 Demo 名称" clearable />
-        </el-form-item>
-        <el-form-item label="站点 URL" prop="site_url">
-          <el-input v-model="addForm.site_url" placeholder="请输入站点 URL，无需后面加/" clearable />
-        </el-form-item>
-      </el-form>
-    </template>
-    <template #footer>
-      <div class="flex justify-end gap-3 pt-5 border-t border-gray-200 dark:border-gray-600">
-        <el-button @click="addDrawer = false" size="large">取消</el-button>
-        <el-button type="primary" @click="onAddSubmit" size="large" :icon="Check" :loading="addSaving"> 确定添加 </el-button>
-      </div>
-    </template>
-  </el-drawer>
+    <!-- 添加站点抽屉 -->
+    <el-drawer v-model="addDrawer" title="添加站点" direction="rtl" size="500px" :close-on-click-modal="false">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <el-icon class="text-success text-xl"><Plus /></el-icon>
+          <span class="text-lg font-semibold text-gray-900">添加站点</span>
+        </div>
+      </template>
+      <template #default>
+        <el-form ref="addFormRef" :model="addForm" :rules="addFormRules" label-width="100px" class="py-5" label-position="left">
+          <el-form-item label="站点名称" prop="site_name">
+            <el-input v-model="addForm.site_name" placeholder="请输入站点名称" clearable />
+          </el-form-item>
+          <el-form-item label="Demo 名称" prop="demo_site">
+            <el-input v-model="addForm.demo_site" placeholder="请输入 Demo 名称" clearable />
+          </el-form-item>
+          <el-form-item label="站点 URL" prop="site_url">
+            <el-input v-model="addForm.site_url" placeholder="请输入站点 URL，无需后面加/" clearable />
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200">
+          <el-button @click="addDrawer = false" size="large">取消</el-button>
+          <el-button type="primary" @click="onAddSubmit" size="large" :icon="Check" :loading="addSaving">确定添加</el-button>
+        </div>
+      </template>
+    </el-drawer>
 
-  <el-drawer v-model="editDrawer" title="编辑站点" direction="rtl" size="500px" :close-on-click-modal="false">
-    <template #header>
-      <div class="flex items-center gap-3">
-        <el-icon class="text-blue-500 text-xl"><Setting /></el-icon>
-        <span class="text-lg font-semibold text-gray-900 dark:text-white">编辑站点</span>
-      </div>
-    </template>
-    <template #default>
-      <el-form ref="editFormRef" :model="editForm" :rules="editFormRules" label-width="100px" class="py-5" label-position="left">
-        <el-form-item label="站点名称" prop="site_name">
-          <el-input v-model="editForm.site_name" placeholder="请输入站点名称" clearable />
-        </el-form-item>
-        <el-form-item label="Demo 名称" prop="demo_site">
-          <el-input v-model="editForm.demo_site" placeholder="请输入 Demo 名称" clearable />
-        </el-form-item>
-      </el-form>
-    </template>
-    <template #footer>
-      <div class="flex justify-end gap-3 pt-5 border-t border-gray-200 dark:border-gray-600">
-        <el-button @click="editDrawer = false" size="large">取消</el-button>
-        <el-button type="primary" @click="onEditSubmit" size="large" :icon="Check" :loading="editSaving"> 保存修改 </el-button>
-      </div>
-    </template>
-  </el-drawer>
+    <el-drawer v-model="editDrawer" title="编辑站点" direction="rtl" size="500px" :close-on-click-modal="false">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <el-icon class="text-primary text-xl"><Setting /></el-icon>
+          <span class="text-lg font-semibold text-gray-900">编辑站点</span>
+        </div>
+      </template>
+      <template #default>
+        <el-form ref="editFormRef" :model="editForm" :rules="editFormRules" label-width="100px" class="py-5" label-position="left">
+          <el-form-item label="站点名称" prop="site_name">
+            <el-input v-model="editForm.site_name" placeholder="请输入站点名称" clearable />
+          </el-form-item>
+          <el-form-item label="Demo 名称" prop="demo_site">
+            <el-input v-model="editForm.demo_site" placeholder="请输入 Demo 名称" clearable />
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200">
+          <el-button @click="editDrawer = false" size="large">取消</el-button>
+          <el-button type="primary" @click="onEditSubmit" size="large" :icon="Check" :loading="editSaving">保存修改</el-button>
+        </div>
+      </template>
+    </el-drawer>
+  </PageContainer>
 </template>
 
 <style scoped>
 /* 表格样式优化 */
 :deep(.el-table__header) {
-  background: #f9fafb;
+  background: var(--color-surface-hover);
 }
 
 :deep(.el-table__header th) {
-  background: #f9fafb;
-  color: #374151;
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
   font-weight: 600;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border);
 }
 
 :deep(.el-table__row) {
@@ -459,11 +418,11 @@ async function reBind(row) {
 }
 
 :deep(.el-table__row:hover) {
-  background: #f0f9ff;
+  background: var(--color-primary-light);
 }
 
 :deep(.el-table__row:hover td) {
-  background: #f0f9ff;
+  background: var(--color-primary-light);
 }
 
 :deep(.el-table__body-wrapper) {

@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
+import { config, fetchWithAuth } from "@/utils/http";
 import { useGlobalStore } from "@/stores/global";
 import { ElMessage } from "element-plus";
 
@@ -15,7 +15,6 @@ export const getMediaByDemo = async ({ demo = "", page_name = "", page = 1, page
 
   return await fetchWithAuth(`${config.baseUrl}/api/media/get?${q.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -30,7 +29,6 @@ export const getDemoConfigList = async ({ page = 1, page_size = 20 } = {}) => {
 
   return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/list?${query.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -44,7 +42,6 @@ export const getDemoConfig = async (demo) => {
 
   return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/get?${query.toString()}`, {
     method: "GET",
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -62,7 +59,6 @@ export const saveDemoConfig = async ({ demo, imgs, sizes, blacklist }) => {
 
   return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/save`, {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(body),
   });
 };
@@ -74,7 +70,6 @@ export const saveDemoConfig = async ({ demo, imgs, sizes, blacklist }) => {
 export const deleteDemoConfig = async (demo) => {
   return await fetchWithAuth(`${config.baseUrl}/api/media/demo-config/delete`, {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ demo }),
   });
 };

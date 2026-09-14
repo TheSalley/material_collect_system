@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
+import { config, fetchWithAuth } from "@/utils/http";
 
 /**
  * 3.1 获取用户列表
@@ -12,7 +12,6 @@ export const getUserList = async (params = {}) => {
   const url = config.baseUrl + "/api/user/list" + (queryParams.toString() ? `?${queryParams.toString()}` : '');
   
   return await fetchWithAuth(url, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -22,7 +21,6 @@ export const getUserList = async (params = {}) => {
  */
 export const getDeletedUserList = async () => {
   return await fetchWithAuth(config.baseUrl + "/api/user/deleted", {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -32,7 +30,6 @@ export const getDeletedUserList = async () => {
  */
 export const getUserDetail = async (id) => {
   return await fetchWithAuth(config.baseUrl + `/api/user/${id}`, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -44,7 +41,6 @@ export const getUserDetail = async (id) => {
 export const createUser = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/user/add", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -68,7 +64,6 @@ export const getPagePermissions = async (params = {}) => {
     "/api/user/page_permissions" +
     (qs ? `?${qs}` : "");
   return await fetchWithAuth(url, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -80,7 +75,6 @@ export const getPagePermissions = async (params = {}) => {
 export const setPagePermission = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/user/set_page_permission", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -93,7 +87,6 @@ export const setPagePermission = async (payload) => {
 export const updateUser = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/user/update", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -104,7 +97,6 @@ export const updateUser = async (payload) => {
 export const updateUserPageList = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/user/update_page_list", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -116,7 +108,6 @@ export const updateUserPageList = async (payload) => {
 export const deleteUser = async (id) => {
   return await fetchWithAuth(config.baseUrl + "/api/user/delete", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ id }),
   });
 };
@@ -128,7 +119,6 @@ export const deleteUser = async (id) => {
 export const revokeUserSites = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/user/revoke_sites", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -140,7 +130,6 @@ export const revokeUserSites = async (payload) => {
 export const restoreUser = async (id) => {
   return await fetchWithAuth(config.baseUrl + "/api/user/restore", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ id }),
   });
 };

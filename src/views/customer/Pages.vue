@@ -1,142 +1,3 @@
-<template>
-  <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
-    <!-- 页面头部 -->
-    <header class="sticky top-0 z-10 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-600 px-6 py-4 flex-shrink-0">
-      <div class="flex justify-between items-center w-full flex-wrap gap-4">
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center gap-3">
-            <el-icon class="text-blue-500 text-2xl"><Document /></el-icon>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">页面编辑</h1>
-          </div>
-          <div class="flex items-center gap-2 text-sm">
-            <a 
-              href="#" 
-              @click.prevent="router.push({ name: 'CustomerHome' })"
-              class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
-            >
-              <el-icon><House /></el-icon>
-              网站信息
-            </a>
-            <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
-            <span class="text-gray-700 dark:text-gray-300 font-medium">{{ websiteInfo.nickname || '页面编辑' }}</span>
-          </div>
-        </div>
-        
-        <!-- 工具栏 -->
-        <div class="flex items-center gap-3 flex-wrap">
-          <!-- 翻译工具（仅 admin 可见） -->
-          <div
-            v-if="isAdmin"
-            class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-600"
-          >
-            <div class="flex items-center gap-2">
-              <el-icon class="text-gray-500 dark:text-gray-400"><Sort /></el-icon>
-              <span class="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">从:</span>
-              <el-select
-                v-model="translateConfig.sourceLanguage"
-                placeholder="源语言"
-                size="default"
-                style="width: 120px"
-              >
-                <el-option label="中文" value="zh" />
-                <el-option label="俄语" value="ru" />
-                <el-option label="法语" value="fr" />
-                <el-option label="英语" value="en" />
-                <el-option label="日语" value="ja" />
-                <el-option label="韩语" value="ko" />
-                <el-option label="阿拉伯语" value="ar" />
-              </el-select>
-            </div>
-            <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">到:</span>
-              <el-select
-                v-model="translateConfig.targetLanguage"
-                placeholder="目标语言"
-                size="default"
-                style="width: 120px"
-              >
-                <el-option label="中文" value="zh" />
-                <el-option label="俄语" value="ru" />
-                <el-option label="法语" value="fr" />
-                <el-option label="英语" value="en" />
-                <el-option label="日语" value="ja" />
-                <el-option label="韩语" value="ko" />
-                <el-option label="阿拉伯语" value="ar" />
-              </el-select>
-            </div>
-            <el-button
-              type="success"
-              :icon="Sort"
-              :loading="isTranslating"
-              @click="toggleTranslate"
-              size="default"
-            >
-              一键翻译
-            </el-button>
-          </div>
-
-          <!-- 保存尺寸按钮（仅 admin 可见） -->
-          <el-button
-            v-if="pageData?.id && isAdmin"
-            @click="handleSaveSizes"
-            :loading="isSavingSizes"
-            size="large"
-          >
-            保存尺寸
-          </el-button>
-          <el-button
-            v-if="pageData?.id && isAdmin"
-            @click="handleBindAllDemoScreenshots"
-            :loading="isBindingAllDemoScreenshots"
-            size="large"
-          >
-            一键获取截图
-          </el-button>
-          <el-button
-            v-if="pageData?.id && isAdmin"
-            @click="handleBindAllDemoSizes"
-            :loading="isBindingAllDemoSizes"
-            size="large"
-          >
-            一键获取图片尺寸
-          </el-button>
-          <el-button 
-            type="primary" 
-            :icon="Check"
-            @click="handleSave"
-            size="large"
-          >
-            保存
-          </el-button>
-        </div>
-      </div>
-    </header>
-
-    <!-- 页面数据：模块模式沿用整区滚动；页面编辑模式由 PageMode 内左右列各自滚动 -->
-    <div
-      class="flex-1 min-h-0 overflow-hidden flex flex-col"
-      v-if="pageData?.id"
-    >
-      <!-- <template v-if="websiteInfo.mode === 1"> -->
-        <ModuleMode ref="ModuleModeNode" :pageId="pageData.id" />
-      <!-- </template> -->
-      <!-- <template v-else> -->
-        <!-- <PageMode ref="PageModeNode" :pageId="pageData.id" /> -->
-      <!-- </template> -->
-    </div>
-    
-    <!-- 空状态 -->
-    <div v-else class="flex-1 flex items-center justify-center">
-      <div class="text-center">
-        <el-icon class="text-6xl text-gray-300 dark:text-gray-600 mb-4">
-          <Document />
-        </el-icon>
-        <p class="text-gray-500 dark:text-gray-400">请选择要编辑的页面</p>
-      </div>
-    </div>
-  </div>
-</template>
 <script setup>
 import { computed, reactive, ref, watch, nextTick, provide } from "vue";
 import { storeToRefs } from "pinia";
@@ -148,6 +9,7 @@ import { useRoute, useRouter } from "vue-router";
 import {
   Document, House, ArrowRight, Check, Sort
 } from '@element-plus/icons-vue';
+import PageContainer from "@/components/common/PageContainer.vue";
 
 const router = useRouter();
 
@@ -215,13 +77,11 @@ async function toggleTranslate() {
     return;
   }
 
-  // 等待 DOM 更新完成
   await nextTick();
 
   const elementsToTranslate = [];
-  const translationMap = new Map(); // 原始文本/HTML -> 翻译文本
+  const translationMap = new Map();
 
-  // 获取所有 input 元素
   const inputs = document.querySelectorAll('.__field-item input[type="text"]');
   inputs.forEach((input, index) => {
     if (input.value && input.value.trim()) {
@@ -235,7 +95,6 @@ async function toggleTranslate() {
     }
   });
 
-  // 获取所有 textarea 元素
   const textareas = document.querySelectorAll('.__field-item textarea');
   textareas.forEach((textarea, index) => {
     if (textarea.value && textarea.value.trim()) {
@@ -249,7 +108,6 @@ async function toggleTranslate() {
     }
   });
 
-  // 获取所有 class 为 ql-editor 的元素
   const qlEditors = document.querySelectorAll('.__field-item .ql-editor');
   qlEditors.forEach((editor, index) => {
     const htmlContent = editor.innerHTML || '';
@@ -257,8 +115,8 @@ async function toggleTranslate() {
     if (textContent.trim()) {
       elementsToTranslate.push({
         element: editor,
-        text: textContent.trim(),         // 用纯文本去翻译
-        originalText: htmlContent,        // 用原 HTML 做映射 key
+        text: textContent.trim(),
+        originalText: htmlContent,
         type: 'ql-editor',
         index,
       });
@@ -299,7 +157,6 @@ async function toggleTranslate() {
           const translatedText = translateRes.data.translated_text;
           translationMap.set(item.originalText, translatedText);
 
-          // 写回 DOM 并触发 Vue 更新
           if (item.type === 'input' || item.type === 'textarea') {
             item.element.value = translatedText;
             item.element.dispatchEvent(new InputEvent('input', {
@@ -329,7 +186,6 @@ async function toggleTranslate() {
       }
     }
 
-    // 翻译完成后，强制同步映射到 pageData（确保保存生效）
     await syncDomToVueData(translationMap);
 
     if (successCount > 0) {
@@ -354,7 +210,6 @@ async function toggleTranslate() {
   }
 }
 
-// 同步 DOM 翻译结果到 Vue 的 pageData（旧版：用 translationMap 精确替换）
 async function syncDomToVueData(translationMap) {
   const targetNode = ModuleModeNode.value;
   if (!targetNode?.state?.pageData && !targetNode?.state?.originData) return;
@@ -459,7 +314,6 @@ async function handleBindAllDemoSizes() {
 async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
-    // ModuleModeNode 在模板中实际挂载（PageMode 被注释），优先使用
     const targetNode = ModuleModeNode.value;
     const finalData = targetNode?.getFinalData?.();
     const siteId = websiteInfo.value?.site_id;
@@ -480,8 +334,6 @@ async function handleSave() {
       data: finalData,
     });
 
-    console.log('保存结果:', res);
-    
     if (res.code === 0) {
       ElMessage({ message: res.message || "保存成功", type: "success" });
     } else {
@@ -498,15 +350,10 @@ async function handleSave() {
 watch(
   () => route.params.id,
   (newId, oldId) => {
-    console.log('id: ', newId, oldId);
     if (newId) {
-      // pageData.value = JSON.parse(websiteInfo.page_list).find(
-      //   (item) => item.id === route.params.id
-      // );
       pageData.value = {
         id: newId,
       }
-      
     }
     if (!newId) {
       pageData.value = null;
@@ -515,6 +362,131 @@ watch(
   { immediate: true }
 );
 </script>
+
+<template>
+  <PageContainer>
+    <template #header>
+      <div class="flex justify-between items-center w-full flex-wrap gap-4">
+        <div class="flex flex-col gap-2 min-w-0">
+          <div class="flex items-center gap-3">
+            <el-icon class="text-primary text-2xl"><Document /></el-icon>
+            <h1 class="text-2xl font-semibold text-gray-900">页面编辑</h1>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <a
+              href="#"
+              @click.prevent="router.push({ name: 'CustomerHome' })"
+              class="text-gray-500 hover:text-primary transition-colors flex items-center gap-1"
+            >
+              <el-icon><House /></el-icon>
+              网站信息
+            </a>
+            <el-icon class="text-gray-400"><ArrowRight /></el-icon>
+            <span class="text-gray-700 font-medium truncate">{{ websiteInfo.nickname || '页面编辑' }}</span>
+          </div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- 翻译工具（仅 admin 可见） -->
+          <div
+            v-if="isAdmin"
+            class="flex items-center gap-3 bg-surface-hover rounded-lg px-4 py-2 border border-border"
+          >
+            <div class="flex items-center gap-2">
+              <el-icon class="text-gray-500"><Sort /></el-icon>
+              <span class="text-sm text-gray-600 whitespace-nowrap">从:</span>
+              <el-select
+                v-model="translateConfig.sourceLanguage"
+                placeholder="源语言"
+                size="default"
+                style="width: 120px"
+              >
+                <el-option label="中文" value="zh" />
+                <el-option label="俄语" value="ru" />
+                <el-option label="法语" value="fr" />
+                <el-option label="英语" value="en" />
+                <el-option label="日语" value="ja" />
+                <el-option label="韩语" value="ko" />
+                <el-option label="阿拉伯语" value="ar" />
+              </el-select>
+            </div>
+            <el-icon class="text-gray-400"><ArrowRight /></el-icon>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600 whitespace-nowrap">到:</span>
+              <el-select
+                v-model="translateConfig.targetLanguage"
+                placeholder="目标语言"
+                size="default"
+                style="width: 120px"
+              >
+                <el-option label="中文" value="zh" />
+                <el-option label="俄语" value="ru" />
+                <el-option label="法语" value="fr" />
+                <el-option label="英语" value="en" />
+                <el-option label="日语" value="ja" />
+                <el-option label="韩语" value="ko" />
+                <el-option label="阿拉伯语" value="ar" />
+              </el-select>
+            </div>
+            <el-button
+              type="success"
+              :icon="Sort"
+              :loading="isTranslating"
+              @click="toggleTranslate"
+              size="default"
+            >
+              一键翻译
+            </el-button>
+          </div>
+
+          <!-- 保存尺寸按钮（仅 admin 可见） -->
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            @click="handleSaveSizes"
+            :loading="isSavingSizes"
+            size="large"
+          >
+            保存尺寸
+          </el-button>
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            @click="handleBindAllDemoScreenshots"
+            :loading="isBindingAllDemoScreenshots"
+            size="large"
+          >
+            一键获取截图
+          </el-button>
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            @click="handleBindAllDemoSizes"
+            :loading="isBindingAllDemoSizes"
+            size="large"
+          >
+            一键获取图片尺寸
+          </el-button>
+          <el-button type="primary" :icon="Check" @click="handleSave" size="large">保存</el-button>
+        </div>
+      </div>
+    </template>
+
+    <!-- 页面数据：模块模式沿用整区滚动 -->
+    <div class="flex-1 min-h-0 overflow-hidden flex flex-col" v-if="pageData?.id">
+      <ModuleMode ref="ModuleModeNode" :pageId="pageData.id" />
+    </div>
+
+    <!-- 空状态 -->
+    <div v-else class="flex-1 flex items-center justify-center">
+      <div class="text-center">
+        <el-icon class="text-6xl text-gray-300 mb-4">
+          <Document />
+        </el-icon>
+        <p class="text-gray-500">请选择要编辑的页面</p>
+      </div>
+    </div>
+  </PageContainer>
+</template>
+
 <style scoped>
 :deep(.el-tabs__content) {
   overflow-y: auto;

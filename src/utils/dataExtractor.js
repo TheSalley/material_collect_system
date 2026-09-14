@@ -287,7 +287,7 @@ export function extractEditableData(elementorData) {
 
         // 仅当有有效值时才记录该字段，透传原始值不做任何修改
         const fields = {};
-        console.log('@@@', node.settings.css_classes)
+
         if (backgroundType === "classic" && bgUrl && !node.settings.css_classes?.includes('ignore_bg1')) {
           fields.background_image = bg;
         }

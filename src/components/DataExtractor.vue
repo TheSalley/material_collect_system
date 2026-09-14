@@ -27,7 +27,7 @@ import { computed, inject, provide, unref } from "vue";
 import DataExtractor from "@/components/DataExtractor.vue";
 import { pickFieldModule } from "@/utils/elementorFieldUi.js";
 
-const modules = import.meta.glob("/src/components/Field/**/*.vue", { eager: true });
+const modules = import.meta.glob("/src/components/ElementorFields/**/*.vue", { eager: true });
 const getFieldComponent = (widgetType) => pickFieldModule(modules, widgetType);
 
 const props = defineProps({

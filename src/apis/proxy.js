@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
+import { config, fetchWithAuth } from "@/utils/http";
 
 /**
  * 6.1 获取页面列表
@@ -6,7 +6,6 @@ import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
  */
 export const getPages = async (site_id) => {
   return await fetchWithAuth(config.baseUrl + `/api/proxy/get_pages?site_id=${site_id}`, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -18,7 +17,6 @@ export const getElementorData = async (id, site_id) => {
   return await fetchWithAuth(
     config.baseUrl + `/api/proxy/elementor_data/${id}?site_id=${site_id}`,
     {
-      headers: getAuthHeaders(false),
     }
   );
 };
@@ -30,7 +28,6 @@ export const getElementorData = async (id, site_id) => {
 export const updateElementorData = async ({ site_id, id, data }) => {
   return await fetchWithAuth(config.baseUrl + "/api/proxy/update_elementor_data", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ site_id, id, data }),
   });
 };
@@ -65,7 +62,6 @@ export const getMediaList = async (params) => {
   const url = config.baseUrl + "/api/proxy/media_list?" + queryParams.toString();
 
   return await fetchWithAuth(url, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -76,7 +72,6 @@ export const getMediaList = async (params) => {
 export const deleteMedia = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/proxy/media_delete", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -101,7 +96,6 @@ export const setSiteIcon = async (formData) => {
  */
 export const getSiteIcon = async (site_id) => {
   return await fetchWithAuth(config.baseUrl + `/api/proxy/site_icon?site_id=${site_id}`, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -112,7 +106,6 @@ export const getSiteIcon = async (site_id) => {
 export const setSiteTitle = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/proxy/site_title", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -123,7 +116,6 @@ export const setSiteTitle = async (payload) => {
  */
 export const getSiteTitle = async (site_id) => {
   return await fetchWithAuth(config.baseUrl + `/api/proxy/site_title?site_id=${site_id}`, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -139,7 +131,6 @@ export const getNewsList = async (params) => {
 
   const url = config.baseUrl + "/api/proxy/get_news_list?" + queryParams.toString();
   return await fetchWithAuth(url, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -150,7 +141,6 @@ export const getNewsList = async (params) => {
 export const deleteContent = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/proxy/content_delete", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -166,7 +156,6 @@ export const getNews = async (params) => {
 
   const url = config.baseUrl + "/api/proxy/get_news?" + queryParams.toString();
   return await fetchWithAuth(url, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -176,7 +165,6 @@ export const getNews = async (params) => {
  */
 export const getNewsCategories = async (site_id) => {
   return await fetchWithAuth(config.baseUrl + `/api/proxy/get_news_categories?site_id=${site_id}`, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -187,7 +175,6 @@ export const getNewsCategories = async (site_id) => {
 export const contentCreate = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/proxy/content_create", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -203,7 +190,6 @@ export const getProduct = async (params) => {
 
   const url = config.baseUrl + "/api/proxy/get_product?" + queryParams.toString();
   return await fetchWithAuth(url, {
-    headers: getAuthHeaders(false),
   });
 };
 
@@ -219,7 +205,6 @@ export const getProductList = async (params) => {
 
   const url = config.baseUrl + "/api/proxy/get_product_list?" + queryParams.toString();
   return await fetchWithAuth(url, {
-    headers: getAuthHeaders(false),
   });
 };
 

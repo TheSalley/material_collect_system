@@ -1,291 +1,3 @@
-<template>
-  <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
-    <!-- 页面头部 -->
-    <header class="sticky top-0 z-10 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-600 px-6 py-4 flex-shrink-0">
-      <div class="flex justify-between items-center w-full">
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center gap-3">
-            <el-icon class="text-blue-500 text-2xl"><UserFilled /></el-icon>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">客户详情</h1>
-          </div>
-          <div class="flex items-center gap-2 text-sm">
-            <a 
-              href="#" 
-              @click.prevent="router.push({ name: 'AdminList' })"
-              class="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
-            >
-              <el-icon><House /></el-icon>
-              站点管理
-            </a>
-            <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
-            <span class="text-gray-700 dark:text-gray-300 font-medium">{{ displayCustomerTitle }}</span>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <el-button 
-            :icon="ArrowLeft"
-            @click="router.push({ name: 'AdminList' })"
-          >
-            返回
-          </el-button>
-          <el-button
-            v-if="activeSubTab !== 'pages'"
-            type="primary"
-            :icon="Check"
-            @click="handleSave"
-            size="large"
-          >
-            保存更改
-          </el-button>
-          <el-tooltip
-            v-else
-            content="页面权限通过右侧开关即时保存，无需点击保存"
-            placement="bottom"
-          >
-            <el-button type="primary" :icon="Check" size="large" disabled>
-              页面权限已即时保存
-            </el-button>
-          </el-tooltip>
-        </div>
-      </div>
-    </header>
-
-    <!-- 主内容区域 -->
-    <div class="flex-1 overflow-auto min-h-0">
-      <div class="p-6 space-y-6">
-        <!-- 客户信息卡片 -->
-        <div class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <el-icon class="text-blue-500"><InfoFilled /></el-icon>
-            客户信息
-          </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                <el-icon><User /></el-icon>
-                <span>客户名称</span>
-              </div>
-              <p class="text-gray-900 dark:text-white text-base font-medium">
-                {{ displayCustomerName }}
-              </p>
-            </div>
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                <el-icon><Key /></el-icon>
-                <span>客户ID</span>
-              </div>
-              <p class="text-gray-900 dark:text-white text-base font-medium font-mono">
-                {{ displayCustomerUserId }}
-              </p>
-            </div>
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                <el-icon><CircleCheck /></el-icon>
-                <span>账户状态</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span
-                  v-if="customerAccountStatus !== 'unbound'"
-                  :class="[
-                    'w-2.5 h-2.5 rounded-full',
-                    customerAccountStatus === 'active' ? 'bg-green-500' : 'bg-red-500',
-                  ]"
-                ></span>
-                <el-tag
-                  v-if="customerAccountStatus === 'unbound'"
-                  type="info"
-                  size="small"
-                  effect="plain"
-                  round
-                >
-                  未绑定客户账号
-                </el-tag>
-                <el-tag
-                  v-else
-                  :type="customerAccountStatus === 'active' ? 'success' : 'danger'"
-                  size="small"
-                  effect="dark"
-                  round
-                >
-                  {{ customerAccountStatus === 'active' ? '正常' : '禁用' }}
-                </el-tag>
-              </div>
-            </div>
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                <el-icon><Calendar /></el-icon>
-                <span>到期时间</span>
-              </div>
-              <p class="text-gray-900 dark:text-white text-base font-medium">
-                {{ displayExpireAt }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 页面 / 站点 / 内容 Tab 区域 -->
-        <div class="flex flex-col">
-          <div class="border-b border-gray-200 dark:border-gray-600 mb-6">
-            <nav class="flex space-x-8">
-              <!-- 站点信息 Tab -->
-              <button
-                type="button"
-                class="flex items-center gap-2 px-1 pb-4 border-b-2"
-                :class="activeSubTab === 'site' 
-                  ? 'border-blue-500 text-blue-500 font-semibold' 
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:border-blue-400 transition-colors'"
-                @click="activeSubTab = 'site'"
-              >
-                <el-icon :class="activeSubTab === 'site' ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'">
-                  <InfoFilled />
-                </el-icon>
-                <span class="text-base">站点信息</span>
-              </button>
-              <!-- 页面设置 Tab -->
-              <button
-                type="button"
-                class="flex items-center gap-2 px-1 pb-4 border-b-2"
-                :class="activeSubTab === 'pages' 
-                  ? 'border-blue-500 text-blue-500 font-semibold' 
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:border-blue-400 transition-colors'"
-                @click="activeSubTab = 'pages'"
-              >
-                <el-icon :class="activeSubTab === 'pages' ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'">
-                  <Document />
-                </el-icon>
-                <span class="text-base">页面设置</span>
-              </button>
-              <!-- 新闻 Tab -->
-              <button
-                type="button"
-                class="flex items-center gap-2 px-1 pb-4 border-b-2"
-                :class="activeSubTab === 'news' 
-                  ? 'border-blue-500 text-blue-500 font-semibold' 
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:border-blue-400 transition-colors'"
-                @click="activeSubTab = 'news'"
-              >
-                <el-icon :class="activeSubTab === 'news' ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'">
-                  <Document />
-                </el-icon>
-                <span class="text-base">新闻</span>
-              </button>
-              <!-- 产品 Tab -->
-              <button
-                type="button"
-                class="flex items-center gap-2 px-1 pb-4 border-b-2"
-                :class="activeSubTab === 'product' 
-                  ? 'border-blue-500 text-blue-500 font-semibold' 
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:border-blue-400 transition-colors'"
-                @click="activeSubTab = 'product'"
-              >
-                <el-icon :class="activeSubTab === 'product' ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'">
-                  <Box />
-                </el-icon>
-                <span class="text-base">产品</span>
-              </button>
-            </nav>
-          </div>
-
-          <!-- 页面设置：页面列表表格（页面授权 POST /api/user/set_page_permission） -->
-          <div
-            v-if="activeSubTab === 'pages'"
-            class="bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden"
-          >
-            <el-alert
-              v-if="!pagesPermissionBootstrapping && customerUserId == null"
-              type="warning"
-              class="m-4 mb-0"
-              show-icon
-              :closable="false"
-              title="未找到绑定当前站点的客户账号"
-              description="请先在「用户管理」中为该客户绑定本站点后，再在此处设置页面访问权限。"
-            />
-            <div class="overflow-x-auto p-4 pt-4">
-              <el-table
-                v-loading="pagesPermissionBootstrapping"
-                :data="pageList"
-                :stripe="true"
-                :highlight-current-row="true"
-                class="w-full"
-                empty-text="暂无页面数据"
-              >
-                <el-table-column prop="ID" label="ID" width="180">
-                  <template #default="scope">
-                    <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.ID }}</span>
-                  </template>
-                </el-table-column>
-                
-                <el-table-column prop="post_name" label="页面名称" min-width="200">
-                  <template #default="scope">
-                    <div class="flex items-center gap-2">
-                      <el-icon class="text-blue-500"><Document /></el-icon>
-                      <span class="font-medium text-gray-900 dark:text-white">{{ scope.row.post_name || '-' }}</span>
-                    </div>
-                  </template>
-                </el-table-column>
-                
-                <el-table-column label="授权状态" width="120" align="center">
-                  <template #default="scope">
-                    <el-tag
-                      :type="scope.row.allow ? 'success' : 'danger'"
-                      size="small"
-                      effect="dark"
-                      round
-                    >
-                      <el-icon class="mr-1">
-                        <CircleCheck v-if="scope.row.allow" />
-                        <CircleClose v-else />
-                      </el-icon>
-                      {{ scope.row.allow ? "启用" : "禁用" }}
-                    </el-tag>
-                  </template>
-                </el-table-column>
-                
-                <el-table-column fixed="right" label="操作" width="200" align="center">
-                  <template #default="scope">
-                    <div class="flex items-center justify-center gap-3">
-                      <el-switch
-                        :model-value="scope.row.allow"
-                        :loading="!!permissionRowLoading[scope.row.pageId]"
-                        :disabled="customerUserId == null || pagesPermissionBootstrapping"
-                        :active-color="'#13ce66'"
-                        :inactive-color="'#ff4949'"
-                        @change="(val) => onPagePermissionChange(scope.row, val)"
-                      />
-                      <el-button 
-                        type="primary" 
-                        size="small"
-                        :icon="Edit"
-                        @click="edit(scope.row)"
-                      >
-                        编辑
-                      </el-button>
-                    </div>
-                  </template>
-                </el-table-column>
-              </el-table>
-            </div>
-          </div>
-
-          <!-- 站点信息：复用 SiteInfoPanel -->
-          <div v-else-if="activeSubTab === 'site'">
-            <SiteInfoPanel />
-          </div>
-
-          <!-- 新闻：新闻列表 -->
-          <div v-else-if="activeSubTab === 'news'" class="min-h-0">
-            <NewsListPanel embedded />
-          </div>
-
-          <!-- 产品：产品列表 -->
-          <div v-else-if="activeSubTab === 'product'" class="min-h-0">
-            <ProductListPanel embedded />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
 <script setup>
 import { ref, reactive, onMounted, computed, watch, provide } from "vue";
 import { getPages, getUserList, getPagePermissions, setPagePermission, getBlacklistConfig } from "@/apis/index.js";
@@ -295,6 +7,8 @@ import SiteInfoPanel from "@/components/SiteInfoPanel.vue";
 import NewsListPanel from "@/components/NewsListPanel.vue";
 import ProductListPanel from "@/components/ProductListPanel.vue";
 import { useGlobalStore } from "@/stores/global.js";
+import PageContainer from "@/components/common/PageContainer.vue";
+import PanelCard from "@/components/common/PanelCard.vue";
 import {
   UserFilled, ArrowLeft, ArrowRight, Check, House,
   InfoFilled, User, Key, CircleCheck, CircleClose,
@@ -573,17 +287,270 @@ async function handleSave() {
 }
 </script>
 
+<template>
+  <PageContainer>
+    <template #header>
+      <div class="flex justify-between items-center w-full flex-wrap gap-4">
+        <div class="flex flex-col gap-2 min-w-0">
+          <div class="flex items-center gap-3">
+            <el-icon class="text-primary text-2xl"><UserFilled /></el-icon>
+            <h1 class="text-2xl font-semibold text-gray-900">客户详情</h1>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <a
+              href="#"
+              @click.prevent="router.push({ name: 'AdminList' })"
+              class="text-gray-500 hover:text-primary transition-colors flex items-center gap-1"
+            >
+              <el-icon><House /></el-icon>
+              站点管理
+            </a>
+            <el-icon class="text-gray-400"><ArrowRight /></el-icon>
+            <span class="text-gray-700 font-medium truncate">{{ displayCustomerTitle }}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <el-button :icon="ArrowLeft" @click="router.push({ name: 'AdminList' })">返回</el-button>
+          <el-button
+            v-if="activeSubTab !== 'pages'"
+            type="primary"
+            :icon="Check"
+            @click="handleSave"
+            size="large"
+          >
+            保存更改
+          </el-button>
+          <el-tooltip
+            v-else
+            content="页面权限通过右侧开关即时保存，无需点击保存"
+            placement="bottom"
+          >
+            <el-button type="primary" :icon="Check" size="large" disabled>
+              页面权限已即时保存
+            </el-button>
+          </el-tooltip>
+        </div>
+      </div>
+    </template>
+
+    <div class="flex-1 overflow-auto min-h-0">
+      <div class="p-6 space-y-6">
+        <!-- 客户信息卡片 -->
+        <PanelCard title="客户信息">
+          <template #header>
+            <div class="flex items-center gap-2">
+              <el-icon class="text-primary"><InfoFilled /></el-icon>
+              <h3 class="text-base font-semibold text-gray-900">客户信息</h3>
+            </div>
+          </template>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-2 text-gray-500 text-sm">
+                <el-icon><User /></el-icon>
+                <span>客户名称</span>
+              </div>
+              <p class="text-gray-900 text-base font-medium">{{ displayCustomerName }}</p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-2 text-gray-500 text-sm">
+                <el-icon><Key /></el-icon>
+                <span>客户ID</span>
+              </div>
+              <p class="text-gray-900 text-base font-medium font-mono">{{ displayCustomerUserId }}</p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-2 text-gray-500 text-sm">
+                <el-icon><CircleCheck /></el-icon>
+                <span>账户状态</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span
+                  v-if="customerAccountStatus !== 'unbound'"
+                  :class="[
+                    'w-2.5 h-2.5 rounded-full',
+                    customerAccountStatus === 'active' ? 'bg-success' : 'bg-danger',
+                  ]"
+                ></span>
+                <el-tag v-if="customerAccountStatus === 'unbound'" type="info" size="small" effect="plain" round>
+                  未绑定客户账号
+                </el-tag>
+                <el-tag v-else :type="customerAccountStatus === 'active' ? 'success' : 'danger'" size="small" effect="dark" round>
+                  {{ customerAccountStatus === 'active' ? '正常' : '禁用' }}
+                </el-tag>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-2 text-gray-500 text-sm">
+                <el-icon><Calendar /></el-icon>
+                <span>到期时间</span>
+              </div>
+              <p class="text-gray-900 text-base font-medium">{{ displayExpireAt }}</p>
+            </div>
+          </div>
+        </PanelCard>
+
+        <!-- 页面 / 站点 / 内容 Tab 区域 -->
+        <div class="flex flex-col">
+          <div class="border-b border-gray-200 mb-6">
+            <nav class="flex space-x-8">
+              <!-- 站点信息 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
+                :class="activeSubTab === 'site'
+                  ? 'border-primary text-primary font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                @click="activeSubTab = 'site'"
+              >
+                <el-icon :class="activeSubTab === 'site' ? 'text-primary' : 'text-gray-400'">
+                  <InfoFilled />
+                </el-icon>
+                <span class="text-base">站点信息</span>
+              </button>
+              <!-- 页面设置 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
+                :class="activeSubTab === 'pages'
+                  ? 'border-primary text-primary font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                @click="activeSubTab = 'pages'"
+              >
+                <el-icon :class="activeSubTab === 'pages' ? 'text-primary' : 'text-gray-400'">
+                  <Document />
+                </el-icon>
+                <span class="text-base">页面设置</span>
+              </button>
+              <!-- 新闻 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
+                :class="activeSubTab === 'news'
+                  ? 'border-primary text-primary font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                @click="activeSubTab = 'news'"
+              >
+                <el-icon :class="activeSubTab === 'news' ? 'text-primary' : 'text-gray-400'">
+                  <Document />
+                </el-icon>
+                <span class="text-base">新闻</span>
+              </button>
+              <!-- 产品 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
+                :class="activeSubTab === 'product'
+                  ? 'border-primary text-primary font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                @click="activeSubTab = 'product'"
+              >
+                <el-icon :class="activeSubTab === 'product' ? 'text-primary' : 'text-gray-400'">
+                  <Box />
+                </el-icon>
+                <span class="text-base">产品</span>
+              </button>
+            </nav>
+          </div>
+
+          <!-- 页面设置：页面列表表格（页面授权 POST /api/user/set_page_permission） -->
+          <div v-if="activeSubTab === 'pages'">
+            <PanelCard flush>
+              <el-alert
+                v-if="!pagesPermissionBootstrapping && customerUserId == null"
+                type="warning"
+                class="m-4 mb-0"
+                show-icon
+                :closable="false"
+                title="未找到绑定当前站点的客户账号"
+                description="请先在「用户管理」中为该客户绑定本站点后，再在此处设置页面访问权限。"
+              />
+              <div class="overflow-x-auto p-4 pt-4">
+                <el-table
+                  v-loading="pagesPermissionBootstrapping"
+                  :data="pageList"
+                  :stripe="true"
+                  :highlight-current-row="true"
+                  class="w-full"
+                  empty-text="暂无页面数据"
+                >
+                  <el-table-column prop="ID" label="ID" width="180">
+                    <template #default="scope">
+                      <span class="font-mono text-xs text-gray-500">{{ scope.row.ID }}</span>
+                    </template>
+                  </el-table-column>
+
+                  <el-table-column prop="post_name" label="页面名称" min-width="200">
+                    <template #default="scope">
+                      <div class="flex items-center gap-2">
+                        <el-icon class="text-primary"><Document /></el-icon>
+                        <span class="font-medium text-gray-900">{{ scope.row.post_name || '-' }}</span>
+                      </div>
+                    </template>
+                  </el-table-column>
+
+                  <el-table-column label="授权状态" width="120" align="center">
+                    <template #default="scope">
+                      <el-tag :type="scope.row.allow ? 'success' : 'danger'" size="small" effect="dark" round>
+                        <el-icon class="mr-1">
+                          <CircleCheck v-if="scope.row.allow" />
+                          <CircleClose v-else />
+                        </el-icon>
+                        {{ scope.row.allow ? "启用" : "禁用" }}
+                      </el-tag>
+                    </template>
+                  </el-table-column>
+
+                  <el-table-column fixed="right" label="操作" width="200" align="center">
+                    <template #default="scope">
+                      <div class="flex items-center justify-center gap-3">
+                        <el-switch
+                          :model-value="scope.row.allow"
+                          :loading="!!permissionRowLoading[scope.row.pageId]"
+                          :disabled="customerUserId == null || pagesPermissionBootstrapping"
+                          :active-color="'#13ce66'"
+                          :inactive-color="'#ff4949'"
+                          @change="(val) => onPagePermissionChange(scope.row, val)"
+                        />
+                        <el-button type="primary" size="small" :icon="Edit" @click="edit(scope.row)">编辑</el-button>
+                      </div>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+            </PanelCard>
+          </div>
+
+          <!-- 站点信息：复用 SiteInfoPanel -->
+          <div v-else-if="activeSubTab === 'site'">
+            <SiteInfoPanel />
+          </div>
+
+          <!-- 新闻：新闻列表 -->
+          <div v-else-if="activeSubTab === 'news'" class="min-h-0">
+            <NewsListPanel embedded />
+          </div>
+
+          <!-- 产品：产品列表 -->
+          <div v-else-if="activeSubTab === 'product'" class="min-h-0">
+            <ProductListPanel embedded />
+          </div>
+        </div>
+      </div>
+    </div>
+  </PageContainer>
+</template>
+
 <style scoped>
 /* 表格样式优化 */
 :deep(.el-table__header) {
-  background: #f9fafb;
+  background: var(--color-surface-hover);
 }
 
 :deep(.el-table__header th) {
-  background: #f9fafb;
-  color: #374151;
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
   font-weight: 600;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border);
 }
 
 :deep(.el-table__row) {
@@ -591,27 +558,14 @@ async function handleSave() {
 }
 
 :deep(.el-table__row:hover) {
-  background: #f0f9ff;
+  background: var(--color-primary-light);
 }
 
 :deep(.el-table__row:hover td) {
-  background: #f0f9ff;
+  background: var(--color-primary-light);
 }
 
 :deep(.el-table__body-wrapper) {
   overflow-y: auto;
-}
-
-/* 暗色模式表格 */
-@media (prefers-color-scheme: dark) {
-  :deep(.el-table__header) {
-    background: #4b5563;
-  }
-  
-  :deep(.el-table__header th) {
-    background: #4b5563;
-    color: #f9fafb;
-    border-bottom-color: #6b7280;
-  }
 }
 </style>

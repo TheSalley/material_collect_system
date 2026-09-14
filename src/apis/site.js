@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders, requestWithoutAuth } from "@/utils/http";
+import { config, fetchWithAuth, requestWithoutAuth } from "@/utils/http";
 
 /**
  * 4.1 创建站点
@@ -7,7 +7,6 @@ import { config, fetchWithAuth, getAuthHeaders, requestWithoutAuth } from "@/uti
 export const createSite = async (payload) => {
   const res = await fetchWithAuth(config.baseUrl + "/api/site/create", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
   return res;
@@ -34,7 +33,6 @@ export const bindSiteUrl = async (payload) => {
 export const bindSite = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/site/bind", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -42,7 +40,6 @@ export const bindSite = async (payload) => {
 export const updateSite = async (payload) => {
   return await fetchWithAuth(config.baseUrl + "/api/site/update", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
 };
@@ -54,7 +51,6 @@ export const updateSite = async (payload) => {
 export const deleteSite = async (site_id) => {
   return await fetchWithAuth(config.baseUrl + "/api/site/delete", {
     method: "POST",
-    headers: getAuthHeaders(),
     body: JSON.stringify({ site_id }),
   });
 };
@@ -75,6 +71,5 @@ export const getSiteList = async (params = {}) => {
   const url = config.baseUrl + "/api/site/list" + (queryParams.toString() ? `?${queryParams.toString()}` : '');
 
   return await fetchWithAuth(url, {
-    headers: getAuthHeaders(false),
   });
 };

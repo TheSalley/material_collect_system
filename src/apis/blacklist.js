@@ -1,4 +1,4 @@
-import { config, fetchWithAuth, getAuthHeaders } from "@/utils/http";
+import { config, fetchWithAuth } from "@/utils/http";
 
 export const getBlacklistConfig = async (demo) => {
   const queryParams = new URLSearchParams();
@@ -6,7 +6,6 @@ export const getBlacklistConfig = async (demo) => {
   const url = config.baseUrl + "/api/media/demo-config/get?" + queryParams.toString();
   return await fetchWithAuth(url, {
     method: "GET",
-    headers: getAuthHeaders(false),
   });
 };
 

@@ -107,7 +107,7 @@
 import { ref, nextTick } from "vue";
 import { login } from "@/apis/index.js";
 import { refreshUserSitePageListWithPermissions } from "@/utils/userSitePages.js";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
 import { User, Lock, Right, Refresh } from "@element-plus/icons-vue";
 import "element-plus/theme-chalk/el-message.css";
@@ -115,6 +115,7 @@ import "element-plus/theme-chalk/el-message-box.css";
 import { APP_VERSION } from "@/config/index";
 
 const router = useRouter();
+const route = useRoute();
 const globalStore = useGlobalStore();
 
 const form = ref({
@@ -169,7 +170,9 @@ const handleLogin = async () => {
         ElMessage.success("登录成功");
 
         // 根据角色跳转到对应页面
-        const targetPath = role === "admin" ? "/admin/list" : "/siteInfo";
+        const defaultPath = role === "admin" ? "/admin/list" : "/siteInfo";
+        const redirectPath = route.query.redirect;
+        const targetPath = typeof redirectPath === "string" && redirectPath ? redirectPath : defaultPath;
         router.replace(targetPath);
       } else {
         ElMessageBox.alert(res.message, "提示：", {

@@ -243,6 +243,17 @@ const accessibleRoutes = computed(() => {
     }
   }
   
+  // 按 meta.order 对子路由排序（升序，未设置 order 的保持原顺序排在后面）
+  arr.forEach((item) => {
+    if (item.children?.length) {
+      item.children = [...item.children].sort((a, b) => {
+        const orderA = typeof a.meta?.order === "number" ? a.meta.order : 999;
+        const orderB = typeof b.meta?.order === "number" ? b.meta.order : 999;
+        return orderA - orderB;
+      });
+    }
+  });
+
   return arr;
 });
 

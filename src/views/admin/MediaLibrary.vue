@@ -1,135 +1,11 @@
-<template>
-  <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
-    <div class="px-6 pt-6 flex-shrink-0">
-      <div class="flex flex-col gap-2">
-        <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
-          <el-icon class="text-blue-500 text-4xl"><Picture /></el-icon>
-          媒体库
-        </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-          按站点 Demo 名称查询 / 上传已采集的素材
-        </p>
-      </div>
-    </div>
-
-    <div class="flex flex-wrap gap-3 items-end px-6 py-4 flex-shrink-0">
-      <div class="flex flex-col gap-1">
-        <span class="text-xs text-gray-500 dark:text-gray-400">Demo 名称</span>
-        <el-input
-          v-model="queryDemo"
-          size="large"
-          placeholder="例如 demo67"
-          clearable
-          class="w-56"
-          @keyup.enter="handleQuery"
-        >
-          <template #prefix><el-icon><Search /></el-icon></template>
-        </el-input>
-      </div>
-      <el-button type="primary" size="large" :icon="Search" :loading="loading" @click="handleQuery">
-        查询
-      </el-button>
-      <el-button type="success" size="large" :icon="Upload" @click="openUploadDrawer">
-        上传素材
-      </el-button>
-    </div>
-
-    <div class="px-6 pb-2 flex-shrink-0 flex items-center justify-between">
-      <span v-if="total > 0" class="text-xs text-gray-400 dark:text-gray-500">
-        共 <strong class="text-gray-600 dark:text-gray-300">{{ total }}</strong> 条素材
-        <span class="ml-2 text-gray-400">当前第 {{ page }}/{{ totalPages }} 页</span>
-      </span>
-      <span v-else-if="rows.length > 0 || searched" class="text-xs text-gray-400 dark:text-gray-500">
-        共 <strong class="text-gray-600 dark:text-gray-300">{{ rows.length }}</strong> 条素材
-      </span>
-      <div v-else />
-
-      <el-pagination
-        v-if="total > 0"
-        v-model:current-page="page"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 50, 100]"
-        :total="total"
-        layout="sizes, prev, pager, next"
-        background
-        size="small"
-        @current-change="handlePageChange"
-        @size-change="handleSizeChange"
-      />
-    </div>
-
-    <div class="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
-      <div v-if="loading" class="flex justify-center items-center h-64">
-        <el-icon class="is-loading text-4xl text-blue-400"><Loading /></el-icon>
-      </div>
-
-      <div v-else-if="rows.length === 0 && searched" class="flex flex-col items-center justify-center h-64 gap-4 text-gray-400 dark:text-gray-500">
-        <el-icon class="text-7xl"><Picture /></el-icon>
-        <p class="text-base">暂无素材</p>
-        <p class="text-sm">输入 Demo 名称后点击查询，或上传新素材</p>
-      </div>
-
-      <div v-else-if="rows.length > 0" class="grid gap-4 media-grid">
-        <MediaCard
-          v-for="(item, idx) in rows"
-          :key="idx"
-          :item="item"
-          @preview="handlePreview"
-          @deleted="loadMedia"
-        />
-      </div>
-    </div>
-  </div>
-
-  <el-drawer v-model="uploadDrawerVisible" title="上传素材" size="420px" :before-close="closeUploadDrawer">
-    <el-form ref="uploadFormRef" :model="uploadForm" :rules="uploadFormRules" label-position="top">
-      <el-form-item label="Demo 名称" prop="demo">
-        <el-input v-model="uploadForm.demo" placeholder="例如 demo67" />
-      </el-form-item>
-      <el-form-item label="页面标识" prop="page">
-        <el-input v-model="uploadForm.page" placeholder="例如 home" />
-      </el-form-item>
-      <el-form-item label="文件" prop="file">
-        <el-upload
-          ref="uploadRef"
-          class="w-full"
-          drag
-          multiple
-          :auto-upload="false"
-          :limit="30"
-          accept="image/*"
-          :on-change="handleFileChange"
-          :on-remove="handleFileRemove"
-          :file-list="uploadFiles"
-          list-type="picture"
-        >
-          <el-icon class="el-icon--upload text-4xl text-blue-400 mb-2"><UploadFilled /></el-icon>
-          <div class="el-upload__text">拖拽文件到此处，或 <em>点击上传</em></div>
-          <template #tip>
-            <div class="el-upload__tip">支持 jpg / png / gif / webp 等图片格式，可批量选择多张</div>
-          </template>
-        </el-upload>
-      </el-form-item>
-    </el-form>
-    <template #footer>
-      <div class="flex justify-end gap-3">
-        <el-button @click="closeUploadDrawer">取消</el-button>
-        <el-button type="primary" :loading="uploading" @click="handleUpload">确认上传</el-button>
-      </div>
-    </template>
-  </el-drawer>
-
-  <el-dialog v-model="previewVisible" align-center class="preview-dialog">
-    <img v-if="previewUrl" :src="previewUrl" class="w-full max-h-[80vh] object-contain rounded-lg" />
-  </el-dialog>
-</template>
-
 <script setup>
 import { nextTick, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { Picture, Search, Upload, UploadFilled, Loading, Delete } from "@element-plus/icons-vue";
 import MediaCard from "@/components/MediaCard.vue";
 import { useMedia } from "@/composables/useMedia";
+import PageContainer from "@/components/common/PageContainer.vue";
+import PanelCard from "@/components/common/PanelCard.vue";
 
 const {
   queryDemo, loading, rows, page, pageSize, total, totalPages, searched,
@@ -167,7 +43,6 @@ function closeUploadDrawer() {
 }
 
 function handleFileChange(file) {
-  // 避免重复添加（on-change 在某些情况下可能重复触发）
   if (!uploadFiles.value.some((f) => f.uid === file.uid)) {
     uploadFiles.value.push(file);
   }
@@ -179,7 +54,6 @@ function handleFileRemove(file) {
 
 function removeFileByUid(uid) {
   uploadFiles.value = uploadFiles.value.filter((f) => f.uid !== uid);
-  // 同步清除 el-upload 内部的文件记录
   const uploadInstance = uploadRef.value;
   if (uploadInstance) {
     const target = uploadInstance.uploadFiles.find((f) => f.uid === uid);
@@ -203,7 +77,7 @@ async function handleUpload() {
       return;
     }
     uploading.value = true;
-    const CONCURRENCY = 5; // 同时并发上传 5 个文件
+    const CONCURRENCY = 5;
     let successCount = 0;
     let failCount = 0;
 
@@ -237,6 +111,121 @@ onMounted(() => {
   loadMedia();
 });
 </script>
+
+<template>
+  <PageContainer title="媒体库" subtitle="按站点 Demo 名称查询 / 上传已采集的素材" :icon="Picture">
+    <PanelCard>
+      <template #header>
+        <div class="flex flex-wrap gap-3 items-end w-full">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500">Demo 名称</span>
+            <el-input
+              v-model="queryDemo"
+              size="large"
+              placeholder="例如 demo67"
+              clearable
+              class="w-56"
+              @keyup.enter="handleQuery"
+            >
+              <template #prefix><el-icon><Search /></el-icon></template>
+            </el-input>
+          </div>
+          <el-button type="primary" size="large" :icon="Search" :loading="loading" @click="handleQuery">查询</el-button>
+          <el-button type="success" size="large" :icon="Upload" @click="openUploadDrawer">上传素材</el-button>
+        </div>
+      </template>
+
+      <!-- 内容区 -->
+      <div v-if="loading" class="flex justify-center items-center h-64">
+        <el-icon class="is-loading text-4xl text-primary"><Loading /></el-icon>
+      </div>
+
+      <div v-else-if="rows.length === 0 && searched" class="flex flex-col items-center justify-center h-64 gap-4 text-gray-400">
+        <el-icon class="text-7xl"><Picture /></el-icon>
+        <p class="text-base">暂无素材</p>
+        <p class="text-sm">输入 Demo 名称后点击查询，或上传新素材</p>
+      </div>
+
+      <div v-else-if="rows.length > 0" class="grid gap-4 media-grid">
+        <MediaCard
+          v-for="(item, idx) in rows"
+          :key="idx"
+          :item="item"
+          @preview="handlePreview"
+          @deleted="loadMedia"
+        />
+      </div>
+
+      <template #footer>
+        <div class="flex items-center justify-between w-full flex-wrap gap-3">
+          <span v-if="total > 0" class="text-xs text-gray-400">
+            共 <strong class="text-gray-600">{{ total }}</strong> 条素材
+            <span class="ml-2 text-gray-400">当前第 {{ page }}/{{ totalPages }} 页</span>
+          </span>
+          <span v-else-if="rows.length > 0 || searched" class="text-xs text-gray-400">
+            共 <strong class="text-gray-600">{{ rows.length }}</strong> 条素材
+          </span>
+          <el-pagination
+            v-if="total > 0"
+            v-model:current-page="page"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 50, 100]"
+            :total="total"
+            layout="sizes, prev, pager, next"
+            background
+            size="small"
+            @current-change="handlePageChange"
+            @size-change="handleSizeChange"
+          />
+        </div>
+      </template>
+    </PanelCard>
+
+    <!-- 上传素材抽屉 -->
+    <el-drawer v-model="uploadDrawerVisible" title="上传素材" size="420px" :before-close="closeUploadDrawer">
+      <el-form ref="uploadFormRef" :model="uploadForm" :rules="uploadFormRules" label-position="top">
+        <el-form-item label="Demo 名称" prop="demo">
+          <el-input v-model="uploadForm.demo" placeholder="例如 demo67" />
+        </el-form-item>
+        <el-form-item label="页面标识" prop="page">
+          <el-input v-model="uploadForm.page" placeholder="例如 home" />
+        </el-form-item>
+        <el-form-item label="文件" prop="file">
+          <el-upload
+            ref="uploadRef"
+            class="w-full"
+            drag
+            multiple
+            :auto-upload="false"
+            :limit="30"
+            accept="image/*"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            :file-list="uploadFiles"
+            list-type="picture"
+          >
+            <el-icon class="el-icon--upload text-4xl text-primary mb-2"><UploadFilled /></el-icon>
+            <div class="el-upload__text">拖拽文件到此处，或 <em>点击上传</em></div>
+            <template #tip>
+              <div class="el-upload__tip">支持 jpg / png / gif / webp 等图片格式，可批量选择多张</div>
+            </template>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="flex justify-end gap-3">
+          <el-button @click="closeUploadDrawer">取消</el-button>
+          <el-button type="primary" :loading="uploading" @click="handleUpload">确认上传</el-button>
+        </div>
+      </template>
+    </el-drawer>
+
+    <!-- 预览 Dialog -->
+    <el-dialog v-model="previewVisible" align-center class="preview-dialog">
+      <img v-if="previewUrl" :src="previewUrl" class="w-full max-h-[80vh] object-contain rounded-lg" />
+    </el-dialog>
+  </PageContainer>
+</template>
 
 <style scoped>
 .media-grid {

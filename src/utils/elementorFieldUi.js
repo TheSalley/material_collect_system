@@ -1,13 +1,13 @@
 const FIELD_BASES = [
-  "/src/components/Field/",
-  "/src/components/Field/Basic/",
-  "/src/components/Field/General/",
-  "/src/components/Field/PremiumAddons/",
-  "/src/components/Field/JegElementorKit/",
-  "/src/components/Field/Pro/",
-  "/src/components/Field/Other/",
-  "/src/components/Field/ElementsKit/",
-  "/src/components/Field/EssentialAddons/"
+  "/src/components/ElementorFields/",
+  "/src/components/ElementorFields/Basic/",
+  "/src/components/ElementorFields/General/",
+  "/src/components/ElementorFields/PremiumAddons/",
+  "/src/components/ElementorFields/JegElementorKit/",
+  "/src/components/ElementorFields/Pro/",
+  "/src/components/ElementorFields/Other/",
+  "/src/components/ElementorFields/ElementsKit/",
+  "/src/components/ElementorFields/EssentialAddons/"
 ];
 
 /**

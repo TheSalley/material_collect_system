@@ -1,14 +1,13 @@
 <template>
-  <div class="w-full h-full min-h-full bg-gray-50 dark:bg-gray-800 flex flex-col overflow-hidden">
-    <!-- 页面标题区域 -->
-    <div class="px-6 pt-6 flex-shrink-0">
+  <PageContainer>
+    <template #header>
       <div class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
-          <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
-            <el-icon class="text-blue-500 text-4xl"><Document /></el-icon>
+          <h1 class="flex items-center gap-3 text-[28px] font-bold text-gray-900">
+            <el-icon class="text-primary text-3xl"><Document /></el-icon>
             新闻列表
           </h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">管理和查看所有新闻信息</p>
+          <p class="text-sm text-gray-500">管理和查看所有新闻信息</p>
         </div>
         <div class="flex items-center gap-2 pt-1">
           <el-button type="primary" :icon="Plus" @click="goToUpload">
@@ -16,12 +15,10 @@
           </el-button>
         </div>
       </div>
-    </div>
+    </template>
 
-    <!-- 主内容卡片 -->
-    <div class="flex-1 flex flex-col m-6 bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden min-h-0">
-      <!-- 工具栏 -->
-      <div class="flex justify-between items-center px-6 py-5 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+    <PanelCard flush>
+      <template #header>
         <div class="flex-1">
           <el-input
             v-model="searchValue"
@@ -40,103 +37,71 @@
             </template>
           </el-input>
         </div>
-      </div>
+      </template>
 
-      <!-- 表格区域 -->
-      <div class="flex-1 overflow-auto min-h-0 overflow-x-hidden">
-        <el-table 
-          :data="tableData" 
-          :stripe="true"
-          :highlight-current-row="true"
-          class="w-full"
-          empty-text="暂无数据"
-          style="width: 100%"
-          v-loading="loading"
-        >
-          <el-table-column prop="id" label="ID" width="100" align="center">
-            <template #default="scope">
-              <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.id }}</span>
-            </template>
-          </el-table-column>
-          
-          <el-table-column prop="title" label="新闻标题" min-width="260" show-overflow-tooltip>
-            <template #default="scope">
-              <span class="font-medium text-gray-900 dark:text-white">{{ scope.row.title || '-' }}</span>
-            </template>
-          </el-table-column>
-          
-          <!-- <el-table-column prop="date" label="发布时间" width="200">
-            <template #default="scope">
-              <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm">
-                <el-icon class="text-gray-400 dark:text-gray-500"><Clock /></el-icon>
-                <span>{{ scope.row.date || '-' }}</span>
-              </div>
-            </template>
-          </el-table-column>
+      <el-table
+        :data="tableData"
+        :stripe="true"
+        :highlight-current-row="true"
+        class="w-full"
+        empty-text="暂无数据"
+        style="width: 100%"
+        v-loading="loading"
+      >
+        <el-table-column prop="id" label="ID" width="100" align="center">
+          <template #default="scope">
+            <span class="font-mono text-xs text-gray-500">{{ scope.row.id }}</span>
+          </template>
+        </el-table-column>
 
-          <el-table-column prop="updated_at" label="更新时间" width="200">
-            <template #default="scope">
-              <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-sm">
-                <el-icon class="text-gray-400 dark:text-gray-500"><Clock /></el-icon>
-                <span>{{ scope.row.updated_at || '-' }}</span>
-              </div>
-            </template>
-          </el-table-column> -->
-          
-          <!-- <el-table-column prop="status" label="状态" width="100" align="center">
-            <template #default="scope">
-              <el-tag 
-                :type="scope.row.status === 'publish' ? 'success' : 'warning'"
+        <el-table-column prop="title" label="新闻标题" min-width="260" show-overflow-tooltip>
+          <template #default="scope">
+            <span class="font-medium text-gray-900">{{ scope.row.title || '-' }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column fixed="right" label="操作" width="200" align="center">
+          <template #default="scope">
+            <div class="flex gap-2 justify-center">
+              <el-button
+                type="primary"
                 size="small"
-                effect="dark"
+                :icon="Document"
+                link
+                @click="viewDetail(scope.row)"
               >
-                {{ scope.row.status === 'publish' ? '已发布' : (scope.row.status || '未知') }}
-              </el-tag>
-            </template>
-          </el-table-column> -->
-          
-          <el-table-column fixed="right" label="操作" width="200" align="center">
-            <template #default="scope">
-              <div class="flex gap-2 justify-center">
-                <el-button
-                  type="primary"
-                  size="small"
-                  :icon="Document"
-                  link
-                  @click="viewDetail(scope.row)"
-                >
-                  查看
-                </el-button>
-                <el-button
-                  type="danger"
-                  size="small"
-                  :icon="Delete"
-                  link
-                  @click="handleDelete(scope.row)"
-                >
-                  删除
-                </el-button>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+                查看
+              </el-button>
+              <el-button
+                type="danger"
+                size="small"
+                :icon="Delete"
+                link
+                @click="handleDelete(scope.row)"
+              >
+                删除
+              </el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
 
-      <!-- 分页 -->
-      <div class="flex justify-end px-6 py-5 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          layout="total, sizes, prev, pager, next, jumper"
-          background
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
-    </div>
-  </div>
+      <template #footer>
+        <div class="flex justify-end">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="total"
+            layout="total, sizes, prev, pager, next, jumper"
+            background
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
+      </template>
+    </PanelCard>
+  </PageContainer>
 </template>
 
 <script setup>
@@ -146,7 +111,9 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import "element-plus/theme-chalk/el-message-box.css";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global.js";
-import { 
+import PageContainer from "@/components/common/PageContainer.vue";
+import PanelCard from "@/components/common/PanelCard.vue";
+import {
   Search, Plus, Delete, Clock, Document
 } from '@element-plus/icons-vue';
 
@@ -163,7 +130,7 @@ const total = ref(0);
 // 格式化时间
 const formatDate = (dateString) => {
   if (!dateString) return '-';
-  
+
   const date = new Date(dateString);
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -171,7 +138,7 @@ const formatDate = (dateString) => {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   const seconds = String(date.getSeconds()).padStart(2, '0');
-  
+
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
@@ -191,7 +158,7 @@ async function fetchList() {
       page_size: pageSize.value,
     };
     // 当前后端 /news_list 暂未提供搜索参数，这里暂不向后端传递搜索条件
-    
+
     const res = await getNewsList(params);
     if (res.code === 0) {
       const list = res.data?.list || [];
@@ -225,7 +192,7 @@ async function handleDelete(row) {
         closeOnPressEscape: true,
       }
     );
-    
+
     const site_id = websiteInfo?.site_id;
     if (!site_id) {
       ElMessage.error("未选择站点");
@@ -237,7 +204,7 @@ async function handleDelete(row) {
       post_id: row.id,
       post_type: 'post',
     });
-    
+
     if (res.code === 0) {
       ElMessage.success(res.message || "删除成功");
       await fetchList();
@@ -309,18 +276,5 @@ onMounted(() => {
 
 :deep(.el-table__body-wrapper) {
   overflow-y: auto;
-}
-
-/* 暗色模式表格 */
-@media (prefers-color-scheme: dark) {
-  :deep(.el-table__header) {
-    background: #4b5563;
-  }
-  
-  :deep(.el-table__header th) {
-    background: #4b5563;
-    color: #f9fafb;
-    border-bottom-color: #6b7280;
-  }
 }
 </style>
