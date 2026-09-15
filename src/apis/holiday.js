@@ -2,9 +2,15 @@
  * 节假日/节气倒计时 API
  * 外部服务：https://cron.1919532973.workers.dev
  * 无需认证，直接调用
+ *
+ * 跨域说明：workers.dev 未返回 Access-Control-Allow-Origin，
+ * 开发环境通过 Vite 代理（/holiday-api -> https://cron.1919532973.workers.dev）访问；
+ * 生产环境仍直连（如需生产直连可用，需在 nginx 为 /holiday-api 配置反向代理）。
  */
 
-const HOLIDAY_API_BASE = "https://cron.1919532973.workers.dev";
+const HOLIDAY_API_BASE = import.meta.env.DEV
+  ? "/holiday-api"
+  : "https://cron.1919532973.workers.dev";
 
 /**
  * 获取即将到来的节假日/节气倒计时列表

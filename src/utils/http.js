@@ -4,9 +4,12 @@
  * 设计原则：
  * 1. 统一错误处理：网络错误、超时、HTTP 错误、401 都在 baseRequest 里处理
  * 2. 自动加 token：fetchWithAuth 内部自动从 store 取 token，不需要手动传 getAuthHeaders
- * 3. 修复 401 bug：401 检查在 !res.ok 之前，确保 401 时正确 clearUser + 跳登录
- * 4. 返回格式兼容：fetchWithAuth 仍然返回后端原始格式 { code, data, message }
- * 5. 新推荐方式：request() 返回 { success, data, message, code }，便于调用方判断
+ * 3. 401 处理：仅在带认证（auth: true）的请求上触发；免认证接口（登录/刷新/公开绑定等）
+ *    返回的 code:401 是业务错误（如"账号或密码错误"），交给调用方展示，不视为会话过期
+ * 4. 静默续期：带认证请求遇到 401 时，若 store 中有 refresh_token，先尝试刷新 token，
+ *    成功后用新 token 重放原请求一次；刷新失败或无 refresh_token 才登出
+ * 5. 返回格式兼容：fetchWithAuth 仍然返回后端原始格式 { code, data, message }
+ * 6. 新推荐方式：request() 返回 { success, data, message, code }，便于调用方判断
  */
 import { useGlobalStore } from "@/stores/global";
 import router from "@/router";
@@ -31,25 +34,95 @@ export const config = {
 const ERROR_MESSAGES = HTTP_ERROR_MESSAGES;
 
 /**
- * 处理 401 未授权
+ * 静默续期单飞锁：并发 401 只发一次刷新请求，其余请求复用其结果
+ */
+let refreshPromise = null;
+
+/**
+ * 处理 401 未授权（会话过期，登出并跳登录）
  */
 function handleUnauthorized(silent) {
   const globalStore = useGlobalStore();
+  const wasLoggedIn = !!globalStore.access_token || !!globalStore.user;
+  const currentRoute = router.currentRoute.value;
+
   globalStore.clearUser();
-  router.push("/login");
-  if (!silent) {
+
+  // 记录当前页面，登录后回跳；已在登录页则不做跳转
+  if (currentRoute.path !== "/login") {
+    router.replace({
+      path: "/login",
+      query: { redirect: currentRoute.fullPath },
+    });
+  }
+
+  // 并发多个 401 时只提示一次
+  if (!silent && wasLoggedIn) {
     ElMessage.error("登录已过期，请重新登录");
   }
+}
+
+/**
+ * 尝试用 refresh_token 静默续期
+ * 成功时更新 store 中的 access_token（若后端轮换 refresh_token 则一并更新）
+ *
+ * @returns {Promise<boolean>} 是否续期成功
+ */
+async function tryRefreshToken() {
+  const globalStore = useGlobalStore();
+  const rt = globalStore.refresh_token;
+  if (!rt) return false;
+
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), config.timeout);
+      try {
+        const res = await fetch(config.baseUrl + "/api/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: rt }),
+          signal: controller.signal,
+        });
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+        if (res.ok && data?.code === 0 && data?.data?.access_token) {
+          globalStore.access_token = data.data.access_token;
+          if (data.data.refresh_token) {
+            globalStore.refresh_token = data.data.refresh_token;
+          }
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error("刷新 token 失败:", error);
+        return false;
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
 }
 
 /**
  * 核心请求函数（内部使用）
  * @param {string} url - 请求地址
  * @param {object} options - fetch options
- * @param {object} opts - 额外配置 { auth: boolean, silent: boolean }
+ * @param {object} opts - 额外配置 { auth: boolean, silent: boolean, retried: boolean }
  * @returns {Promise<object>} 后端原始响应格式 { code, data, message }
  */
-async function baseRequest(url, options = {}, { auth = true, silent = false } = {}) {
+async function baseRequest(
+  url,
+  options = {},
+  { auth = true, silent = false, retried = false } = {}
+) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.timeout);
 
@@ -87,6 +160,19 @@ async function baseRequest(url, options = {}, { auth = true, silent = false } = 
 
     // 401 处理（必须在 !res.ok 之前，因为 401 时 res.ok 为 false）
     if (res.status === 401 || data?.code === 401) {
+      // 免认证接口的 code:401 属于业务错误（如登录密码错误），交给调用方处理，不登出
+      if (!auth) {
+        return data;
+      }
+
+      // 有 refresh_token 时静默续期一次，成功则用新 token 重放原请求
+      if (!retried) {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+          return baseRequest(url, options, { auth, silent, retried: true });
+        }
+      }
+
       handleUnauthorized(silent);
       return data;
     }

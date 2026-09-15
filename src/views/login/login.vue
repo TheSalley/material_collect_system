@@ -152,6 +152,10 @@ const handleLogin = async () => {
       if (res.code === 0) {
         globalStore.user = res.data.user;
         globalStore.access_token = res.data.access_token;
+        // 保存刷新令牌（后端返回时），用于 access_token 过期后静默续期
+        if (res.data.refresh_token) {
+          globalStore.refresh_token = res.data.refresh_token;
+        }
         globalStore.isLogin = true;
         // 保存登录返回的站点列表，并默认选中第一个站点（客户端页面用）
         globalStore.sites = res.data.sites || [];

@@ -66,7 +66,7 @@
             <h1
               class="text-[#111418] dark:text-white text-sm font-medium leading-tight"
             >
-              {{ user.nickname }}
+              {{ user?.nickname }}
             </h1>
             <p
               class="text-gray-500 dark:text-gray-400 text-xs font-normal leading-tight"
@@ -221,7 +221,7 @@ const accessibleRoutes = computed(() => {
   });
   
   // 处理用户页面列表
-  if (user.page_list) {
+  if (user?.page_list) {
     arr.forEach((item) => {
       if (item.path === "/pages/:id" || (item.children && item.children.some(c => c.path === "pages/:id"))) {
         item.children = JSON.parse(user.page_list);
