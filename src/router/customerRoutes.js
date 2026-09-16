@@ -7,13 +7,14 @@ const customerRoutes = [
   {
     path: "/",
     meta: { requiresAuth: true, role: "user", hidden: true },
+    redirect: "/instruction",
     component: () => import("@/layout/index.vue"),
     children: [
       {
         path: "instruction",
         name: "Instruction",
         component: () => import("@/views/customer/Instruction.vue"),
-        meta: { title: "首页", role: "user", order: 1 },
+        meta: { title: "教程页", role: "user", order: 1 },
       },
       {
         path: "siteInfo",

@@ -50,7 +50,7 @@ router.beforeEach((to, from, next) => {
 
   // 1. 已登录用户访问登录页 → 重定向到对应首页
   if (to.path === "/login" && isLoggedIn) {
-    next(userRole === "admin" ? "/admin/dashboard" : "/siteInfo");
+    next(userRole === "admin" ? "/admin/dashboard" : "/instruction");
     return;
   }
 
@@ -75,7 +75,7 @@ router.beforeEach((to, from, next) => {
   // admin 路由：仅 admin 可访问
   if (routeRole === "admin" && userRole !== "admin") {
     ElMessage.warning("您没有权限访问该页面");
-    next("/siteInfo");
+    next("/instruction");
     return;
   }
 

@@ -12,8 +12,7 @@ export const useUserStore = defineStore(
     // 用户信息
     const user = ref(null);
     const access_token = ref("");
-    // 刷新令牌：登录响应若返回 refresh_token 则保存，用于 access_token 过期后静默续期
-    const refresh_token = ref("");
+
     const isLogin = ref(false);
 
     /** 设置用户信息 */
@@ -25,7 +24,7 @@ export const useUserStore = defineStore(
     function clearUser() {
       user.value = null;
       access_token.value = "";
-      refresh_token.value = "";
+
       isLogin.value = false;
       // 重置路由
       resetRoutes();
@@ -40,7 +39,7 @@ export const useUserStore = defineStore(
     return {
       user,
       access_token,
-      refresh_token,
+
       isLogin,
       setUser,
       clearUser,

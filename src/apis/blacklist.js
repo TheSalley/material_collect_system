@@ -14,8 +14,6 @@ export const saveBlacklistConfig = async (demo, blacklistUrls = []) => {
     demo,
     blacklist: blacklistUrls,
   };
-  const headers = getAuthHeaders(false);
-  headers["Content-Type"] = "application/json";
   return await fetchWithAuth(config.baseUrl + "/api/media/demo-config/save", {
     method: "POST",
     headers,

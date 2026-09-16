@@ -37,11 +37,8 @@ export const updateElementorData = async ({ site_id, id, data }) => {
  * POST /api/proxy/upload_image
  */
 export const uploadImage = async (formData) => {
-  const headers = getAuthHeaders(false);
-
   return await fetchWithAuth(config.baseUrl + "/api/proxy/upload_image", {
     method: "POST",
-    headers,
     body: formData,
   });
 };
@@ -81,11 +78,8 @@ export const deleteMedia = async (payload) => {
  * POST /api/proxy/site_icon
  */
 export const setSiteIcon = async (formData) => {
-  const headers = getAuthHeaders(false);
-
   return await fetchWithAuth(config.baseUrl + "/api/proxy/site_icon", {
     method: "POST",
-    headers,
     body: formData,
   });
 };

@@ -7,6 +7,7 @@ const adminRoutes = [
   {
     path: "/admin",
     meta: { requiresAuth: true, role: "admin", hidden: true },
+    redirect: "/admin/dashboard",
     component: () => import("@/layout/index.vue"),
     children: [
       {

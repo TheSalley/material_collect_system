@@ -5,11 +5,8 @@ import { config, fetchWithAuth } from "@/utils/http";
  * POST /api/file/upload
  */
 export const uploadFile = async (formData) => {
-  const headers = getAuthHeaders(false);
-
   return await fetchWithAuth(config.baseUrl + "/api/file/upload", {
     method: "POST",
-    headers,
     body: formData,
   });
 };
@@ -67,11 +64,8 @@ export const savePageConfig = async (site_id, pageId, materialsData = []) => {
       [pageId]: materialsData,
     },
   };
-  const headers = getAuthHeaders(false);
-  headers["Content-Type"] = "application/json";
   return await fetchWithAuth(config.baseUrl + "/api/page_config/save_materials", {
     method: "POST",
-    headers,
     body: JSON.stringify(payload),
   });
 };
@@ -91,11 +85,8 @@ export const savePageSizes = async (site_id, pageId, sizesData = []) => {
       [pageId]: sizesData,
     },
   };
-  const headers = getAuthHeaders(false);
-  headers["Content-Type"] = "application/json";
   return await fetchWithAuth(config.baseUrl + "/api/page_config/save_sizes", {
     method: "POST",
-    headers,
     body: JSON.stringify(payload),
   });
 };

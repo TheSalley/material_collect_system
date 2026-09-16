@@ -21,7 +21,7 @@ export const useGlobalStore = defineStore("global", () => {
 
   // storeToRefs 返回与子 store 共享的 ref：通过 globalStore 读写会直接作用到子 store，
   // 子 store 的 persist 订阅才会被触发
-  const { user, access_token, refresh_token, isLogin, isAdmin } =
+  const { user, access_token, isLogin, isAdmin } =
     storeToRefs(userStore);
   const { websiteInfo, sites, sitePageList } = storeToRefs(websiteStore);
 
@@ -38,7 +38,7 @@ export const useGlobalStore = defineStore("global", () => {
     // ===== 用户相关（委托给 userStore，保持可写且与子 store 共享） =====
     user,
     access_token,
-    refresh_token,
+
     isLogin,
     isAdmin, // computed，只读
     setUser: userStore.setUser,

@@ -14,19 +14,7 @@ export const login = async (payload) => {
   });
 };
 
-/**
- * 2.2 刷新 Token
- * POST /api/auth/refresh
- */
-export const refreshToken = async (refresh_token) => {
-  return await requestWithoutAuth(config.baseUrl + "/api/auth/refresh", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ refresh_token }),
-  });
-};
+
 
 import { fetchWithAuth } from "@/utils/http";
 

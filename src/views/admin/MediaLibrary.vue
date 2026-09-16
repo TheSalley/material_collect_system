@@ -1,11 +1,12 @@
 <script setup>
 import { nextTick, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
-import { Picture, Search, Upload, UploadFilled, Loading, Delete } from "@element-plus/icons-vue";
+import { Picture, Search, Upload, Loading, Delete } from "@element-plus/icons-vue";
 import MediaCard from "@/components/MediaCard.vue";
 import { useMedia } from "@/composables/useMedia";
 import PageContainer from "@/components/common/PageContainer.vue";
 import PanelCard from "@/components/common/PanelCard.vue";
+import ImageUploader from "@/components/common/ImageUploader.vue";
 
 const {
   queryDemo, loading, rows, page, pageSize, total, totalPages, searched,
@@ -15,7 +16,7 @@ const {
 const uploadDrawerVisible = ref(false);
 const uploading = ref(false);
 const uploadFormRef = ref(null);
-const uploadRef = ref(null);
+const imageUploaderRef = ref(null);
 const uploadFiles = ref([]);
 const previewVisible = ref(false);
 const previewUrl = ref("");
@@ -34,7 +35,9 @@ function openUploadDrawer() {
   uploadDrawerVisible.value = true;
   nextTick(() => {
     uploadFormRef.value?.clearValidate();
-    uploadRef.value?.clearFiles();
+    imageUploaderRef.value?.clearFiles();
+    // 自动聚焦上传区域，用户打开抽屉后可直接 Ctrl+V 粘贴
+    imageUploaderRef.value?.focus();
   });
 }
 
@@ -42,19 +45,12 @@ function closeUploadDrawer() {
   uploadDrawerVisible.value = false;
 }
 
-function handleFileChange(file) {
-  if (!uploadFiles.value.some((f) => f.uid === file.uid)) {
-    uploadFiles.value.push(file);
-  }
-}
-
-function handleFileRemove(file) {
-  uploadFiles.value = uploadFiles.value.filter((f) => f.uid !== file.uid);
-}
+// 文件选择/移除/粘贴逻辑已封装在 ImageUploader 组件内部
+// 通过 v-model="uploadFiles" 同步文件列表
 
 function removeFileByUid(uid) {
   uploadFiles.value = uploadFiles.value.filter((f) => f.uid !== uid);
-  const uploadInstance = uploadRef.value;
+  const uploadInstance = imageUploaderRef.value?.uploadRef;
   if (uploadInstance) {
     const target = uploadInstance.uploadFiles.find((f) => f.uid === uid);
     if (target) uploadInstance.handleRemove(target);
@@ -191,25 +187,11 @@ onMounted(() => {
           <el-input v-model="uploadForm.page" placeholder="例如 home" />
         </el-form-item>
         <el-form-item label="文件" prop="file">
-          <el-upload
-            ref="uploadRef"
-            class="w-full"
-            drag
-            multiple
-            :auto-upload="false"
+          <ImageUploader
+            ref="imageUploaderRef"
+            v-model="uploadFiles"
             :limit="30"
-            accept="image/*"
-            :on-change="handleFileChange"
-            :on-remove="handleFileRemove"
-            :file-list="uploadFiles"
-            list-type="picture"
-          >
-            <el-icon class="el-icon--upload text-4xl text-primary mb-2"><UploadFilled /></el-icon>
-            <div class="el-upload__text">拖拽文件到此处，或 <em>点击上传</em></div>
-            <template #tip>
-              <div class="el-upload__tip">支持 jpg / png / gif / webp 等图片格式，可批量选择多张</div>
-            </template>
-          </el-upload>
+          />
         </el-form-item>
       </el-form>
       <template #footer>
