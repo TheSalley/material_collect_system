@@ -54,7 +54,7 @@
                     :class="{ 'is-selected': selectedMediaId === item.id }"
                     @click="selectedMediaId = item.id"
                   >
-                    <el-image :src="getFileFullUrl(item.file_url || item.url)" fit="cover" class="media-thumb">
+                    <el-image :src="getFileFullUrl?.(item.file_url || item.url)" fit="cover" class="media-thumb">
                       <template #error>
                         <div class="media-thumb-fallback">
                           <el-icon>

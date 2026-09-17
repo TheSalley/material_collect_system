@@ -53,7 +53,7 @@
 import { ref, reactive, onMounted, nextTick, watch, computed } from "vue";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
-import { getPageById } from "@/apis/index.js";
+import { getPageById, getFileFullUrl } from "@/apis/index.js";
 import { useGlobalStore } from "@/stores/global";
 import PreviewPanel from "@/components/module-mode/PreviewPanel.vue";
 import EditorPanel from "@/components/module-mode/EditorPanel.vue";
@@ -325,7 +325,7 @@ const {
 
 onMounted(async () => {
 
-  queryDemo.value = mediaDemoName();
+  queryDemo.value = currentDemoName();
   await loadMedia();
 });
 
