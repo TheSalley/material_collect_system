@@ -1,36 +1,32 @@
 <template>
   <div
-    class="flex flex-col gap-4 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark p-4 w-64 h-screen overflow-hidden"
+    class="sidebar-shell flex flex-col border-r border-gray-200/70 dark:border-gray-700/60 p-4 w-64 h-screen overflow-hidden"
   >
     <div class="flex items-center gap-3 px-3 py-2">
       <a href="/"><img class="logo" src="/logo.webp" /></a>
     </div>
     <div class="flex flex-col justify-between flex-1 min-h-0">
-      <div class="flex flex-col gap-2 sidebar-menu-scroll">
-        <el-menu :default-active="activeMenu" router>
-          <template v-for="menuRoute in accessibleRoutes" :key="menuRoute.path">
-            <!-- 动态页面列表：显示为子菜单 -->
-            <el-sub-menu v-if="menuRoute.path.includes('/pages/:id') && menuRoute.children && menuRoute.children.length > 0" :index="menuRoute.path">
-              <template #title>
-                <!-- <el-icon><location /></el-icon> -->
-                <span>{{ menuRoute.meta.title }}</span>
-              </template>
-              <el-menu-item
-                v-for="sub_route in menuRoute.children.filter(child => !child.meta?.hidden)"
-                :key="sub_route.id"
-                :index="menuRoute.path.split(':')[0] + sub_route.id"
-                >{{ sub_route.post_name }}</el-menu-item
-              >
-            </el-sub-menu>
-            <!-- 普通路由：如果有子路由，显示子路由为独立菜单项 -->
-            <template v-else-if="menuRoute.children && menuRoute.children.length > 0">
-              <template v-for="child in menuRoute.children.filter(child => !child.meta?.hidden)" :key="child.path">
-                <!-- 用户身份且为「页面列表」且已拉取到页面数据：显示为子菜单 -->
+      <div class="flex flex-col sidebar-menu-scroll">
+        <template v-for="menuRoute in accessibleRoutes" :key="menuRoute.path">
+          <div
+            v-for="group in groupChildren(menuRoute)"
+            :key="group.label || `nogroup-${menuRoute.path}`"
+            class="menu-group"
+          >
+            <div v-if="group.label" class="menu-group-title">
+              {{ group.label }}
+            </div>
+            <el-menu :default-active="activeMenu" router class="group-menu">
+              <template v-for="child in group.items" :key="child.path">
+                <!-- 用户身份 + 页面列表：显示为可展开的子菜单 -->
                 <el-sub-menu
                   v-if="isUserRole && child.path === 'pages/:id' && sitePageList.length > 0"
                   :index="'/pages/' + (websiteInfo?.site_id || '')"
                 >
                   <template #title>
+                    <el-icon>
+                      <component :is="iconMap[child.meta?.icon]" />
+                    </el-icon>
                     <span>{{ child.meta?.title || child.name }}</span>
                   </template>
                   <el-menu-item
@@ -38,21 +34,23 @@
                     :key="page.id"
                     :index="'/pages/' + page.id"
                   >
-                    {{ page.post_name }}
+                    <span class="sub-item-text">{{ page.post_name }}</span>
                   </el-menu-item>
                 </el-sub-menu>
-                <el-menu-item v-else :index="getChildMenuIndex(menuRoute, child)">
+                <!-- 普通菜单项 -->
+                <el-menu-item
+                  v-else
+                  :index="getChildMenuIndex(menuRoute, child)"
+                >
+                  <el-icon>
+                    <component :is="iconMap[child.meta?.icon]" />
+                  </el-icon>
                   <span>{{ child.meta?.title || child.name }}</span>
                 </el-menu-item>
               </template>
-            </template>
-            <!-- 没有子路由：显示为普通菜单项 -->
-            <el-menu-item v-else :index="getMenuIndex(menuRoute)">
-              <!-- <el-icon><icon-menu /></el-icon> -->
-              <span>{{ menuRoute.meta.title }}</span>
-            </el-menu-item>
-          </template>
-        </el-menu>
+            </el-menu>
+          </div>
+        </template>
       </div>
       <!-- 底部 -->
       <div class="flex flex-col gap-1 sidebar-footer">
@@ -120,17 +118,71 @@
 import { computed, nextTick } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { useRouter, useRoute } from "vue-router";
-import { resetRoutes } from "@/utils/index"
+import { resetRoutes } from "@/utils/index";
+import {
+  Grid,
+  FolderOpened,
+  User,
+  Picture,
+  Monitor,
+  Reading,
+  Setting,
+  Files,
+  Goods,
+  Tickets,
+} from "@element-plus/icons-vue";
 
 const { user, clearUser, websiteInfo, sitePageList } = useGlobalStore();
 const router = useRouter();
 const route = useRoute();
+
+// meta.icon 字符串 → element-plus 图标组件
+const iconMap = {
+  Grid,
+  FolderOpened,
+  User,
+  Picture,
+  Monitor,
+  Reading,
+  Setting,
+  Files,
+  Goods,
+  Tickets,
+};
 
 // role 为 user 表示用户身份
 const isUserRole = computed(() => {
   const r = (user?.role ?? "").toString().toLowerCase();
   return r === "user";
 });
+
+// 将父路由的 children 按 meta.group 分组（组间按 groupOrder，组内保持原 order）
+function groupChildren(menuRoute) {
+  if (!menuRoute.children?.length) {
+    return [{ label: null, order: 0, items: [menuRoute] }];
+  }
+  const groups = new Map();
+  const noGroup = { label: null, order: 0, items: [] };
+  for (const child of menuRoute.children) {
+    if (child.meta?.hidden) continue;
+    const label = child.meta?.group;
+    if (label == null) {
+      noGroup.items.push(child);
+      continue;
+    }
+    if (!groups.has(label)) {
+      groups.set(label, {
+        label,
+        order: typeof child.meta?.groupOrder === "number" ? child.meta.groupOrder : 0,
+        items: [],
+      });
+    }
+    groups.get(label).items.push(child);
+  }
+  const arr = [...groups.values()].sort((a, b) => a.order - b.order);
+  if (noGroup.items.length) arr.push(noGroup); // 未分组的放在末尾
+  return arr;
+}
 
 const accessibleRoutes = computed(() => {
   const role = (user?.role ?? "user").toString().toLowerCase();
@@ -257,14 +309,6 @@ const accessibleRoutes = computed(() => {
   return arr;
 });
 
-// 获取菜单项的 index（动态路由需替换为实际 site_id）
-const getMenuIndex = (menuRoute) => {
-  if (menuRoute.path === "/pages/:id" && websiteInfo?.site_id) {
-    return `/pages/${websiteInfo.site_id}`;
-  }
-  return menuRoute.path;
-};
-
 // 获取子路由菜单项的 index
 const getChildMenuIndex = (menuRoute, child) => {
   const base = menuRoute.path === '/' ? '' : menuRoute.path;
@@ -329,13 +373,15 @@ async function logout() {
 }
 </script>
 <style scoped>
-.aside-container {
-  display: flex;
-  flex-direction: column;
-  --el-menu-bg-color: #001428;
-  --el-menu-text-color: #fff;
-  --el-menu-active-color: #409eff;
+/* 侧边栏整体：柔和渐变背景（避开纯平），非线性动效 */
+.sidebar-shell {
+  background: linear-gradient(180deg, #fbfcfe 0%, #f4f7fb 55%, #eef2f8 100%);
+  transition: background 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
+.dark .sidebar-shell {
+  background: linear-gradient(180deg, #131b26 0%, #10161f 60%, #0d131b 100%);
+}
+
 .sidebar-menu-scroll {
   flex: 1 1 auto;
   min-height: 0;
@@ -353,12 +399,166 @@ async function logout() {
   width: 100%;
 }
 
-.el-menu {
-  border-right: unset;
+/* 分组：每组之间留出呼吸空间，标题小号、灰色、不成等宽 */
+.menu-group {
+  margin-bottom: 18px;
+}
+.menu-group:last-child {
+  margin-bottom: 4px;
+}
+.menu-group-title {
+  padding: 6px 10px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #9aa3b2;
+  text-transform: uppercase;
+  user-select: none;
+}
+.dark .menu-group-title {
+  color: #64748b;
 }
 
-.el-menu-item:hover {
-  color: #409eff;
+.group-menu {
+  border-right: unset;
+  background: transparent !important;
+  padding: 0 2px;
+}
+
+/* 深度定制 el-menu-item：圆角 + 图标 + 悬停/激活状态 */
+.group-menu :deep(.el-menu-item) {
+  height: 42px;
+  line-height: 42px;
+  padding: 0 12px;
+  margin: 2px 0;
+  border-radius: 10px;
+  color: #46505e;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dark .group-menu :deep(.el-menu-item) {
+  color: #c3cad6;
+}
+.group-menu :deep(.el-menu-item .el-icon) {
+  font-size: 17px;
+  margin-right: 10px;
+  color: #7c8798;
+  transition: color 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dark .group-menu :deep(.el-menu-item .el-icon) {
+  color: #6b7485;
+}
+
+.group-menu :deep(.el-menu-item:hover) {
+  color: #1f6fe0;
+  background: rgba(43, 124, 238, 0.08);
+  transform: translateX(2px);
+}
+.group-menu :deep(.el-menu-item:hover .el-icon) {
+  color: #1f6fe0;
+}
+
+/* 激活项：主色渐变底 + 左侧指示条 + 图标亮起 */
+.group-menu :deep(.el-menu-item.is-active) {
+  position: relative;
+  color: #1a5fc4;
+  font-weight: 600;
+  background: linear-gradient(90deg, rgba(43, 124, 238, 0.16) 0%, rgba(43, 124, 238, 0.05) 100%);
+  box-shadow: inset 0 0 0 1px rgba(43, 124, 238, 0.12);
+}
+.group-menu :deep(.el-menu-item.is-active)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #2b7cee 0%, #4f9af5 100%);
+}
+.group-menu :deep(.el-menu-item.is-active .el-icon) {
+  color: #2b7cee;
+}
+.dark .group-menu :deep(.el-menu-item.is-active) {
+  color: #6fb0f7;
+  background: linear-gradient(90deg, rgba(43, 124, 238, 0.24) 0%, rgba(43, 124, 238, 0.06) 100%);
+}
+
+/* 子菜单标题：与普通项视觉同源，但更强调可展开 */
+.group-menu :deep(.el-sub-menu__title) {
+  height: 42px;
+  line-height: 42px;
+  padding: 0 12px;
+  margin: 2px 0;
+  border-radius: 10px;
+  color: #46505e;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dark .group-menu :deep(.el-sub-menu__title) {
+  color: #c3cad6;
+}
+.group-menu :deep(.el-sub-menu__title .el-icon) {
+  font-size: 17px;
+  margin-right: 10px;
+  color: #7c8798;
+}
+.dark .group-menu :deep(.el-sub-menu__title .el-icon) {
+  color: #6b7485;
+}
+.group-menu :deep(.el-sub-menu__title:hover) {
+  color: #1f6fe0;
+  background: rgba(43, 124, 238, 0.08);
+}
+
+/* 子菜单内子项：缩进 + 左侧层级线，体现父子关系 */
+.group-menu :deep(.el-sub-menu .el-menu) {
+  background: transparent !important;
+}
+.group-menu :deep(.el-sub-menu .el-menu-item) {
+  height: 36px;
+  line-height: 36px;
+  padding-left: 38px !important;
+  margin: 1px 0;
+  font-size: 13px;
+  font-weight: 400;
+  position: relative;
+}
+.group-menu :deep(.el-sub-menu .el-menu-item)::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 2px;
+  background: #dbe2ec;
+  transition: background 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.group-menu :deep(.el-sub-menu .el-menu-item:hover)::before {
+  background: #2b7cee;
+}
+.group-menu :deep(.el-sub-menu .el-menu-item.is-active)::before {
+  background: #2b7cee;
+}
+.group-menu :deep(.el-sub-menu .el-menu-item.is-active) {
+  color: #1a5fc4;
+  font-weight: 600;
+  background: rgba(43, 124, 238, 0.08);
+}
+.dark .group-menu :deep(.el-sub-menu .el-menu-item::before) {
+  background: #2a3442;
+}
+
+.sub-item-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .__avator {
