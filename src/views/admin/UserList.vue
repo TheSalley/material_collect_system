@@ -1,11 +1,11 @@
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch } from "vue";
-import { getUserList, updateUser, createUser, getSiteList, deleteUser } from "@/apis/index.js";
-import { ElMessage } from "element-plus";
+import { getUserList, updateUser, createUser, getSiteList, deleteUser, revokeUserSites, restoreUser } from "@/apis/index.js";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
 import {
   Search, Plus, Edit, Delete, Clock,
-  User, UserFilled, CircleCheck, CircleClose, Check, Lock, Link, WarningFilled
+  User, UserFilled, Check, Lock, Link, WarningFilled
 } from '@element-plus/icons-vue';
 import { useGlobalStore } from "@/stores/global.js";
 import PageContainer from "@/components/common/PageContainer.vue";
@@ -15,6 +15,7 @@ const tableData = reactive([]);
 const searchValue = ref("");
 const loading = ref(false);
 const saving = ref(false);
+const statusSwitchingId = ref(null);
 
 const router = useRouter();
 const globalStore = useGlobalStore();
@@ -180,6 +181,65 @@ async function edit(data) {
   });
 }
 
+/**
+ * 状态开关：禁用 = 撤销用户全部站点授权；启用 = 恢复已删除用户
+ * POST /api/user/revoke_sites | POST /api/user/restore
+ */
+async function handleToggleStatus(row, enabled) {
+  const id = row?.id;
+  if (id == null) return;
+
+  if (enabled) {
+    // 由禁用 -> 启用：走恢复接口
+    try {
+      await ElMessageBox.confirm(
+        `确定要恢复用户 "${row.username || ""}" 吗？恢复后需要重新分配站点授权。`,
+        "恢复用户",
+        { type: "warning", confirmButtonText: "确定恢复", cancelButtonText: "取消" }
+      );
+    } catch {
+      await fetchUserList();
+      return;
+    }
+
+    const res = await restoreUser(id);
+    if (res.code === 0) {
+      ElMessage.success(res.message || "恢复成功");
+    } else {
+      ElMessage.error(res.message || "恢复失败");
+      await fetchUserList(); // 状态回滚
+    }
+  } else {
+    // 由启用 -> 禁用：撤销站点授权（需要 site_ids）
+    const siteIds = Array.isArray(row.site_ids) ? row.site_ids : [];
+    if (siteIds.length === 0) {
+      ElMessage.warning("该用户没有站点授权，无需撤销");
+      await fetchUserList();
+      return;
+    }
+
+    try {
+      await ElMessageBox.confirm(
+        `确定要撤销用户 "${row.username || ""}" 的全部站点授权吗？`,
+        "撤销站点授权",
+        { type: "warning", confirmButtonText: "确定撤销", cancelButtonText: "取消" }
+      );
+    } catch {
+      await fetchUserList();
+      return;
+    }
+
+    const res = await revokeUserSites({ id, site_ids: siteIds });
+    if (res.code === 0) {
+      ElMessage.success(res.message || "已撤销站点授权");
+    } else {
+      ElMessage.error(res.message || "撤销失败");
+      await fetchUserList(); // 状态回滚
+    }
+  }
+
+  await fetchUserList();
+}
 // 打开删除确认弹窗
 function handleDelete(data) {
   deleteTarget.value = data;
@@ -366,20 +426,16 @@ onMounted(() => {
             </template>
           </el-table-column>
 
-          <el-table-column prop="is_deleted" label="状态" width="100" align="center">
+          <el-table-column prop="is_deleted" label="状态" width="120" align="center">
             <template #default="scope">
-              <el-tag
-                :type="scope.row.is_deleted === 0 ? 'success' : 'danger'"
-                size="small"
-                effect="dark"
-                round
-              >
-                <el-icon class="mr-1">
-                  <CircleCheck v-if="scope.row.is_deleted === 0" />
-                  <CircleClose v-else />
-                </el-icon>
-                {{ scope.row.is_deleted === 0 ? "启用" : "禁用" }}
-              </el-tag>
+              <el-switch
+                :model-value="scope.row.is_deleted === 0"
+                :loading="statusSwitchingId === scope.row.id"
+                inline-prompt
+                active-text="启用"
+                inactive-text="禁用"
+                @change="(val) => handleToggleStatus(scope.row, val)"
+              />
             </template>
           </el-table-column>
 
