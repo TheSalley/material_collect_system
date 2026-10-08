@@ -23,4 +23,15 @@ export default defineConfig({
       resolvers: [ElementPlusResolver()],
     }),
   ],
+  server: {
+    proxy: {
+      // 节假日/节气 API：cron.1919532973.workers.dev 响应无 CORS 头，
+      // 浏览器直连会被跨域拦截，开发环境统一走本地代理
+      "/holiday-api": {
+        target: "https://cron.1919532973.workers.dev",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/holiday-api/, ""),
+      },
+    },
+  },
 });

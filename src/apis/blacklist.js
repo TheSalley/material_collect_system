@@ -1,0 +1,22 @@
+import { config, fetchWithAuth } from "@/utils/http";
+
+export const getBlacklistConfig = async (demo) => {
+  const queryParams = new URLSearchParams();
+  queryParams.append("demo", demo);
+  const url = config.baseUrl + "/api/media/demo-config/get?" + queryParams.toString();
+  return await fetchWithAuth(url, {
+    method: "GET",
+  });
+};
+
+export const saveBlacklistConfig = async (demo, blacklistUrls = []) => {
+  const payload = {
+    demo,
+    blacklist: blacklistUrls,
+  };
+  return await fetchWithAuth(config.baseUrl + "/api/media/demo-config/save", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+};

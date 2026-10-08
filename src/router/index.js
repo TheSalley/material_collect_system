@@ -1,122 +1,89 @@
-import { createWebHashHistory, createRouter } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
+import { ElMessage } from "element-plus";
 import { useGlobalStore } from "@/stores/global";
-import { addProtectedRoutes } from "@/utils";
+import adminRoutes from "./adminRoutes";
+import customerRoutes from "./customerRoutes";
+import { isWhitelistRoute } from "./whitelist";
 
-const publicRoutes = [
-  {
-    path: "/login",
-    name: "Login",
-    component: () => import("@/views/login/login.vue"),
-    meta: {
-      hidden: true,
-    },
+/**
+ * 登录页（白名单路由，无需登录即可访问）
+ */
+const loginRoute = {
+  path: "/login",
+  name: "Login",
+  component: () => import("@/views/login/login.vue"),
+  meta: {
+    hidden: true,
   },
-  {
-    path: "/:pathMatch(.*)*",
-    name: "NotFound",
-    component: () => import("@/views/404.vue"),
-    meta: {
-      hidden: true,
-    },
-  },
-];
+};
 
-// adminRoutes 优化
-const adminRoutes = [
-  {
-    path: "/",
-    meta: { requiresAuth: true, role: "administrator", hidden: true },
-    component: () => import("@/layout/index.vue"),
-    children: [
-      {
-        path: "",
-        name: "AdminList",
-        component: () => import("@/views/admin/List.vue"),
-        meta: { title: "客户管理" },
-      },
-      {
-        path: "detail",
-        name: "AdminDetail",
-        component: () => import("@/views/admin/Detail.vue"),
-        meta: { title: "详情页", hidden: true },
-      },
-      {
-        path: "pages/:id",
-        name: "CustomerPages",
-        component: () => import("@/views/customer/Pages.vue"),
-        meta: { title: "页面列表" },
-      },
-    ],
-  },
-];
-
-// userRoutes 优化
-const userRoutes = [
-  {
-    path: "/",
-    meta: { requiresAuth: true, role: "customer", hidden: true },
-    component: () => import("@/layout/index.vue"),
-    children: [
-      {
-        path: "",
-        name: "CustomerHome",
-        component: () => import("@/views/customer/index.vue"),
-        meta: { title: "网站信息" },
-      },
-      {
-        path: "pages/:id",
-        name: "CustomerPages",
-        component: () => import("@/views/customer/Pages.vue"),
-        meta: { title: "页面列表" },
-      },
-    ],
-  },
-];
+/**
+ * 404 页（白名单路由）
+ */
+const notFoundRoute = {
+  path: "/:pathMatch(.*)*",
+  name: "NotFound",
+  component: () => import("@/views/404.vue"),
+  meta: { hidden: true },
+};
 
 const router = createRouter({
   history: createWebHashHistory(),
-  routes: [...publicRoutes],
+  routes: [loginRoute, ...adminRoutes, ...customerRoutes, notFoundRoute],
 });
 
-let isDynamicRoutesAdded = false;
-
-// 路由守卫：检测登录状态
-router.beforeEach(async (to, from, next) => {
+/**
+ * 全局路由守卫
+ *
+ * 执行顺序：
+ * 1. 已登录用户访问 /login → 重定向到对应首页
+ * 2. 白名单路由（/login、404、meta.public）→ 直接放行
+ * 3. 未登录 → 跳登录（带 redirect 参数，登录后回跳）
+ * 4. 角色权限校验：admin 路由仅 admin 可访问；user 路由 admin 也可访问
+ * 5. 放行
+ */
+router.beforeEach((to, from, next) => {
   const globalStore = useGlobalStore();
-  const { user, token } = globalStore;
-  
-  // 重置动态路由添加状态，确保登出后重新登录可以正确添加路由
-  if (!token) {
-    isDynamicRoutesAdded = false;
-  }
+  const { user, access_token } = globalStore;
+  const userRole = (user?.role || "user").toString().toLowerCase();
+  const isLoggedIn = !!access_token;
 
-  // 检查当前访问的路由是否需要认证
-  if (to.meta.requiresAuth && !token) {
-    next("/login");
+  // 1. 已登录用户访问登录页 → 重定向到对应首页
+  if (to.path === "/login" && isLoggedIn) {
+    next(userRole === "admin" ? "/admin/dashboard" : "/instruction");
     return;
   }
 
-  // 3. 已登录但动态路由未添加 → 先添加再重定向
-  if (token && !isDynamicRoutesAdded) {
-    try {
-      await addProtectedRoutes(user.role);
-      isDynamicRoutesAdded = true;
-
-      next({ path: to.path, replace: true });
-      return;
-    } catch (err) {
-      next("/login");
-      return;
-    }
-  }
-
-  // 特殊处理：如果访问根路径且未登录，重定向到登录页
-  if (to.path === "/" && !token) {
-    next("/login");
+  // 2. 白名单路由：不需要登录即可访问
+  if (isWhitelistRoute(to)) {
+    next();
     return;
   }
+
+  // 3. 未登录 → 跳登录（带 redirect 参数，登录后回跳原页面）
+  if (!isLoggedIn) {
+    next({
+      path: "/login",
+      query: { redirect: to.fullPath },
+    });
+    return;
+  }
+
+  // 4. 角色权限校验
+  const routeRole = to.meta.role;
+
+  // admin 路由：仅 admin 可访问
+  if (routeRole === "admin" && userRole !== "admin") {
+    ElMessage.warning("您没有权限访问该页面");
+    next("/instruction");
+    return;
+  }
+
+  // user 路由：user 和 admin 都可访问（admin 权限更高，不拦截）
+
+  // 5. 放行
   next();
 });
 
 export default router;
-export { adminRoutes, userRoutes, publicRoutes };
+export { adminRoutes, customerRoutes, loginRoute, notFoundRoute };

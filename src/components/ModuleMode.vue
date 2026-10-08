@@ -1,184 +1,513 @@
 <template>
-  <div v-for="(module, moduleIndex) in state.originData" :key="module.id" class="flex justify-between gap-4 px-10 py-10 border-b border-gray-200">
-    <div class="w-1/2 __border-shadow sticky top-0 h-fit">
-      <el-button class="absolute right-0 top-0" type="primary" @click="() => openUploadDialog(moduleIndex)">上传截图</el-button>
-      <img :src="moduleImages[moduleIndex]?.file_url" alt="module picture" v-if="moduleImages[moduleIndex]" />
-      <el-empty v-else description="未上传截图" />
-    </div>
-    <div class="w-1/2 __border-shadow">
-      <div v-if="state?.moduleId">
-        <div v-for="(part, index) in [module]" :key="index" class="mb-4">
-          <el-collapse accordion class="px-4">
-            <el-collapse-item v-if="!part.settings?.hide_desktop" :title="`模块-${index + 1}-${part.id}`" :name="`part-${index}`">
-              <span></span>
-              <div v-for="(topNode, index1) in part.elements" :key="topNode.id">
-                <DataExtractor v-if="!topNode.settings?.hide_desktop" 
-                  :current-node="topNode" 
-                  :is-translate="isTranslate"
-                  :source-language="sourceLanguage"
-                  :target-language="targetLanguage"
-                  @update:node="
-                  (updatedNode) => handleNodeUpdate(moduleIndex, index1, updatedNode)
-                " />
-              </div>
-            </el-collapse-item>
-          </el-collapse>
-        </div>
-      </div>
-      <el-empty description="非Elementor" v-else />
-    </div>
+  <div class="page-mode-container">
+    <!-- 左侧：板块预览 -->
+    <PreviewPanel
+      :visible-parts="visibleParts"
+      :active-part-index="activePartIndex"
+      :is-admin="isAdmin"
+      :get-module-image="getModuleImage"
+      :removing-image-key="removingImageKey"
+      :binding-demo-image-key="bindingDemoImageKey"
+      :is-demo-screenshot-bound="isDemoScreenshotBound"
+      @preview-click="handlePreviewClick"
+      @open-upload="openUploadDialog"
+      @remove-image="removeModuleImage"
+      @toggle-demo-screenshot="toggleDemoScreenshot"
+    />
+
+    <!-- 右侧：编辑区 -->
+    <EditorPanel
+      :visible-parts="visibleParts"
+      v-model:active-collapse-name="activeCollapseName"
+      :active-part-index="activePartIndex"
+      :state="state"
+      :editor-scroll-ref="editorScrollRef"
+      @field-update="handleFieldUpdate"
+    />
   </div>
 
   <!-- 上传图片弹窗 -->
-  <el-dialog v-model="dialogVisible" title="图片上传" width="800">
-    <el-upload drag action="#" :before-upload="handleBeforeUpload">
-      <el-icon class="el-icon--upload">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-          <path fill="currentColor"
-            d="M544 864V672h128L512 480 352 672h128v192H320v-1.6c-5.376.32-10.496 1.6-16 1.6A240 240 0 0 1 64 624c0-123.136 93.12-223.488 212.608-237.248A239.81 239.81 0 0 1 512 192a239.87 239.87 0 0 1 235.456 194.752c119.488 13.76 212.48 114.112 212.48 237.248a240 240 0 0 1-240 240c-5.376 0-10.56-1.28-16-1.6v1.6z">
-          </path>
-        </svg>
-      </el-icon>
-      <div class="el-upload__text">拖动文件或<em>点击上传</em></div>
-      <template #tip>
-        <div class="el-upload__tip">
-          jpg/png files with a size less than 10M
-        </div>
-      </template>
-    </el-upload>
-  </el-dialog>
+  <UploadDialog
+    v-model:dialog-visible="dialogVisible"
+    v-model:upload-tab="uploadTab"
+    v-model:upload-page-name="uploadPageName"
+    v-model:media-keyword="mediaKeyword"
+    v-model:selected-media-id="selectedMediaId"
+    v-model:page="page"
+    :uploading="uploading"
+    :media-loading="mediaLoading"
+    :has-upload-page-name="hasUploadPageName"
+    :loading="loading"
+    :rows="rows"
+    :total="total"
+    :total-pages="totalPages"
+    :searched="searched"
+    :get-file-full-url="getFileFullUrl"
+    @before-upload="handleBeforeUpload"
+    @media-search="handleMediaSearch"
+    @confirm-select="confirmSelectMedia"
+    @page-change="handlePageChange"
+  />
 </template>
 <script setup>
-import { ref, reactive, onMounted, nextTick, watch } from "vue";
-import {
-  getPageById,
-  updatePageById,
-  upload_bind_img,
-  get_bind_img,
-} from "@/apis/index.js";
-import DataExtractor from "./DataExtractor.vue";
+import { ref, reactive, onMounted, nextTick, watch, computed } from "vue";
+import { storeToRefs } from "pinia";
+import { ElMessage } from "element-plus";
+import { getPageById, getFileFullUrl } from "@/apis/index.js";
 import { useGlobalStore } from "@/stores/global";
+import PreviewPanel from "@/components/module-mode/PreviewPanel.vue";
+import EditorPanel from "@/components/module-mode/EditorPanel.vue";
+import UploadDialog from "@/components/module-mode/UploadDialog.vue";
+import { extractEditableData, updateField, mapToObject } from "@/utils/dataExtractor.js";
+import { normalizeElementorRoots, pickFieldModule } from "@/utils/elementorFieldUi.js";
+import { buildUrlMatchTokens, hasSafeContainsMatch, hasTokenIntersection } from "@/utils/imageBlacklist.js";
 
-const dialogVisible = ref(false);
-const moduleImages = ref({}); // 存储每个模块的图片
-let currentModuleIndex = null; // 当前上传图片的模块索引
+
+
+import { useModuleParts } from "@/composables/useModuleParts.js";
+import { useModuleUpload } from "@/composables/useModuleUpload.js";
+import { useDemoConfig } from "@/composables/useDemoConfig.js";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** 输出数组结构，供 POST /api/page_config/save_sizes */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 const props = defineProps({
   pageId: {
     type: [Number, String],
     required: true,
   },
-  isTranslate: {
-    type: Boolean,
-    default: false
-  },
-  sourceLanguage: {
-    type: String,
-    default: 'zh'
-  },
-  targetLanguage: {
-    type: String,
-    default: 'en'
-  }
 });
 
 const state = reactive({
-  moduleData: null,
+  pageData: null,
   originData: null,
+  editableMap: null,
   moduleId: null,
   meta_id: null,
   ImageList: [],
 });
 
-onMounted(async () => { });
+const globalStore = useGlobalStore();
+const { websiteInfo, isAdmin } = storeToRefs(globalStore);
 
-function handleNodeUpdate(moduleIndex, index1, updatedNode) {
-  state.moduleData[moduleIndex].elements[index1] = updatedNode;
+// 板块高亮 + 截图管理（从 composable 提取）
+const {
+  activePartIndex,
+  activeCollapseName,
+  editorScrollRef,
+  moduleImages,
+  handlePreviewClick,
+  getModuleImage,
+} = useModuleParts({
+  websiteInfo,
+  pageId: computed(() => props.pageId),
+});
+
+
+
+// ── 与 PageMode 相同的 visibleParts：左右列共用，保证一一对应 ────────────────
+
+const fieldModules = import.meta.glob("/src/components/ElementorFields/**/*.vue", {
+  eager: true,
+});
+
+function hasFieldComponent(widgetType) {
+  return pickFieldModule(fieldModules, widgetType) != null;
 }
 
-const openUploadDialog = (moduleIndex) => {
-  currentModuleIndex = moduleIndex;
-  dialogVisible.value = true;
-};
-
-const handleBeforeUpload = (file) => {
-  const isImage = file.type === "image/jpeg" || file.type === "image/png";
-  const isLt10M = file.size / 1024 / 1024 < 10;
-
-  if (!isImage) {
-    ElMessage.error("仅支持上传 jpg/png 格式的图片！");
-    return false;
+function hasRenderableEditableInTree(node, editableMap) {
+  if (!node || !editableMap) return false;
+  if (node.id && editableMap.has(node.id)) {
+    const editableNode = editableMap.get(node.id);
+    if (hasFieldComponent(editableNode?.widgetType)) return true;
   }
-  if (!isLt10M) {
-    ElMessage.error("图片大小不能超过 10MB!");
-    return false;
-  }
-  customUpload(file);
-  return false;
-};
-
-const customUpload = async (file) => {
-  if (currentModuleIndex === null) {
-    ElMessage.error("未选择模块");
-    return;
-  }
-  
-  try {
-    const { user } = useGlobalStore();
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("demo", user.demo);
-    formData.append("bind_mode", user.mode); // 模块模式
-    // 使用当前模块的ID
-    const currentModule = state.originData[currentModuleIndex];
-    formData.append("bind_id", currentModule.id);
-
-    const res = await upload_bind_img(formData);
-
-    if (res.code === 0) {
-      // 保存当前模块的图片
-      moduleImages.value[currentModuleIndex] = res.data;
-      ElMessage.success("图片上传成功！");
-      dialogVisible.value = false;
-    } else {
-      ElMessage.error("上传失败：" + res.message);
+  const children = node.elements;
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      if (hasRenderableEditableInTree(child, editableMap)) return true;
     }
-  } catch (err) {
-    ElMessage.error("上传失败：" + err.message);
   }
-};
+  return false;
+}
+
+const visibleParts = computed(() => {
+  const parts = normalizeElementorRoots(state.originData);
+  const editableMap = state.editableMap;
+  if (!editableMap) return [];
+  return parts.filter((part) => part && hasRenderableEditableInTree(part, editableMap));
+});
+
+// Demo 配置管理（从 composable 提取，最复杂的部分）
+const {
+  demoConfigState,
+  bindingDemoImageKey,
+  bindingDemoSizeKey,
+  sectionSizes,
+  removingImageKey,
+  currentDemoName,
+  fetchDemoConfigState,
+  buildPageMaterialsPayload,
+  buildDemoImagePayloadByModuleId,
+  buildModuleImageUrlPayload,
+  buildPageSizesPayload,
+  buildDemoSizePayloadByNodeId,
+  findDemoImageRecord,
+  applyPageConfigState,
+  refreshPageConfigState,
+  isDemoScreenshotBound,
+  isDemoSizeBound,
+  saveSectionSizes,
+  removeModuleImage,
+  bindDemoScreenshot,
+  toggleDemoScreenshot,
+  bindAllDemoScreenshots,
+  bindDemoSizeByNodeId,
+  toggleDemoSizeByNodeId,
+  bindAllDemoSizes,
+  applyDemoScreenshots,
+  applyDemoSizes,
+} = useDemoConfig({
+  websiteInfo,
+  pageId: computed(() => props.pageId),
+  moduleImages,
+  getModuleImage,
+  visibleParts,
+});
+
+// 上传弹窗 + 媒体库（从 composable 提取）
+const {
+  dialogVisible,
+  uploading,
+  uploadTab,
+  mediaLoading,
+  mediaKeyword,
+  uploadPageName,
+  selectedMediaId,
+  hasUploadPageName,
+  filteredMediaList,
+  queryDemo,
+  page_name,
+  loading,
+  rows,
+  page,
+  total,
+  totalPages,
+  searched,
+  openUploadDialog,
+  openUploadDialogFromHeader,
+  handleMediaSearch,
+  getFileName,
+  confirmSelectMedia,
+  handleBeforeUpload,
+  customUpload,
+  loadMedia,
+  handleQuery,
+  handlePageChange,
+  handleSizeChange,
+} = useModuleUpload({
+  websiteInfo,
+  pageId: computed(() => props.pageId),
+  moduleImages,
+  visibleParts,
+  mediaDemoName: currentDemoName,
+  buildPageMaterialsPayload,
+});
+
+onMounted(async () => {
+
+  queryDemo.value = currentDemoName();
+  await loadMedia();
+});
+
+// ── 递归更新原始数据中的节点 ─────────────────────────────────────────────────
+
+function updateNodeInOriginalData(data, nodeId, fieldName, value) {
+  if (!data) return false;
+
+  if (Array.isArray(data)) {
+    for (let i = 0; i < data.length; i++) {
+      if (updateNodeInOriginalData(data[i], nodeId, fieldName, value)) return true;
+    }
+    return false;
+  }
+
+  const node = data;
+  if (String(node?.id) === String(nodeId)) {
+    if (!node.settings || Array.isArray(node.settings)) node.settings = {};
+    node.settings[fieldName] = value;
+    return true;
+  }
+
+  if (node?.elements && Array.isArray(node.elements)) {
+    return updateNodeInOriginalData(node.elements, nodeId, fieldName, value);
+  }
+
+  return false;
+}
+
+// ── 字段更新 ─────────────────────────────────────────────────────────────────
+
+function handleFieldUpdate(payload) {
+  const { nodeId, fieldName, value } = payload;
+  if (!nodeId || !fieldName) return;
+  try {
+    updateNodeInOriginalData(state.pageData, nodeId, fieldName, value);
+    updateNodeInOriginalData(state.originData, nodeId, fieldName, value);
+  } catch (error) {
+    console.error("更新字段时出错:", error);
+  }
+}
+
+// ── 批量更新 ─────────────────────────────────────────────────────────────────
+
+function applyBulkFieldUpdates(updates = []) {
+  if (!Array.isArray(updates) || updates.length === 0) return;
+  if (!state.editableMap || !state.pageData) return;
+  for (const item of updates) {
+    const { nodeId, fieldName, value } = item;
+    if (!nodeId || !fieldName) continue;
+    try {
+      updateField(state.editableMap, nodeId, fieldName, value);
+      updateNodeInOriginalData(state.pageData, nodeId, fieldName, value);
+      updateNodeInOriginalData(state.originData, nodeId, fieldName, value);
+    } catch (e) {
+      console.error("applyBulkFieldUpdates error:", e);
+    }
+  }
+}
+
+// ── 获取最终保存数据 ─────────────────────────────────────────────────────────
+
+function getFinalData() {
+  if (!state.pageData) {
+    console.warn("[ModuleMode] getFinalData: pageData 为 null", {
+      moduleId: state.moduleId,
+      meta_id: state.meta_id,
+      editableMapSize: state.editableMap?.size,
+    });
+  }
+  return state.pageData;
+}
+
+// ── 提取可编辑数据 ───────────────────────────────────────────────────────────
+
+function extractData(data) {
+
+  const editableMap = extractEditableData(data);
+
+
+  return editableMap;
+}
+
+// ── 上传截图 ─────────────────────────────────────────────────────────────────
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ── 监听 pageId 变化加载数据 ───────────────────────────────────────────────────
 
 watch(
   () => props.pageId,
-  async (newId, oldId) => {
-    if (newId) {
-      const loadingInstance = ElLoading.service({ fullscreen: true });
-      const { user } = useGlobalStore();
-      const res1 = await getPageById(newId);
-      if (res1.code === 0 && res1.data.post_id) {
-        state.moduleId = res1.data.post_id;
-        state.moduleData = JSON.parse(res1.data.meta_value);
-        state.originData = JSON.parse(res1.data.meta_value);
-        state.meta_id = res1.data.meta_id;
-        
-        // 获取每个模块的图片
-        for (let i = 0; i < state.originData.length; i++) {
-          const module = state.originData[i];
-          const res2 = await get_bind_img(user.demo, module.id, user.mode);
-          if (res2.code === 0) {
-            moduleImages.value[i] = res2.data;
-          }
-        }
+  async (newId) => {
+    if (!newId) return;
+    const loadingInstance = ElLoading.service({ fullscreen: true });
+    const site_id = websiteInfo.value?.site_id;
+
+    const res1 = await getPageById(newId, site_id);
+    if (res1.code === 0 && res1.data.post_id) {
+      state.moduleId = res1.data.post_id;
+      state.meta_id = res1.data.meta_id;
+      try {
+        const parsedData = JSON.parse(res1.data.meta_value);
+        state.pageData = parsedData;
+        state.originData = parsedData;
+        state.editableMap = extractData(parsedData);
+      } catch (error) {
+        console.error("JSON 解析错误:", error);
+        state.pageData = null;
+        state.originData = null;
+        state.editableMap = null;
+        ElMessage.error("数据格式错误，无法解析 JSON");
       }
-      nextTick(() => {
-        loadingInstance.close();
-      });
     }
+
+    moduleImages.value = {};
+    sectionSizes.value = {};
+    if (site_id && newId) {
+      await refreshPageConfigState(newId);
+    }
+
+    nextTick(() => {
+      loadingInstance.close();
+    });
   },
-  { immediate: true }
+  { immediate: true },
 );
+
+watch(
+  () => currentDemoName(),
+  () => {
+    fetchDemoConfigState();
+  },
+  { immediate: true },
+);
+
+// ── 监听高亮索引：展开后滚动（等折叠动画/layout 稳定再滚，避免错位） ────────────
+
+
+
+
+
+
 
 defineExpose({
   state,
+  getFinalData,
+  applyBulkFieldUpdates,
+  applyDemoScreenshots,
+  applyDemoSizes,
+  saveSectionSizes,
+  bindDemoScreenshot,
+  bindAllDemoScreenshots,
+  bindDemoSizeByNodeId,
+  bindAllDemoSizes,
 });
 </script>
+
+<style scoped>
+.page-mode-container {
+  display: flex;
+  gap: 2rem;
+  padding: 2.5rem;
+  background: #f5f7fa;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+</style>

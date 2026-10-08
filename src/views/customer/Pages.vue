@@ -1,131 +1,349 @@
-<template>
-  <main class="flex-1 flex flex-col">
-    <header
-      class="bg-card-light/80 dark:bg-card-dark/80 backdrop-blur-sm sticky top-0 z-10 px-6 lg:px-8 border-b border-border-light dark:border-border-dark h-[6.25rem] flex items-center"
-    >
-      <div class="flex justify-between items-center w-full">
-        <div class="flex flex-col gap-1">
-          <p class="text-xl font-semibold text-gray-900 dark:text-white">
-            客户详情
-          </p>
-          <div class="flex flex-wrap gap-1.5 items-center">
-            <a
-              class="text-gray-500 dark:text-gray-400 text-sm font-medium leading-normal hover:text-primary"
-              href="#"
-              >客户管理</a
-            >
-            <span
-              class="material-symbols-outlined text-gray-400 dark:text-gray-500 text-base"
-              style="font-size: 16px"
-              >></span
-            >
-            <span
-              class="text-gray-800 dark:text-gray-200 text-sm font-medium leading-normal"
-              >{{ websiteInfo.nickname }}</span
-            >
-          </div>
-        </div>
-        <div class="flex gap-4 items-center">
-          <div class="flex items-center gap-2">
-            <span>从:</span>
-            <el-select v-model="translateConfig.sourceLanguage" placeholder="请选择源语言" style="width: 120px">
-              <el-option label="中文" value="zh" />
-              <el-option label="英语" value="en" />
-              <el-option label="日语" value="ja" />
-              <el-option label="韩语" value="ko" />
-            </el-select>
-          </div>
-          <div class="flex items-center gap-2">
-            <span>到:</span>
-            <el-select v-model="translateConfig.targetLanguage" placeholder="请选择目标语言" style="width: 120px">
-              <el-option label="中文" value="zh" />
-              <el-option label="英语" value="en" />
-              <el-option label="日语" value="ja" />
-              <el-option label="韩语" value="ko" />
-            </el-select>
-          </div>
-          <el-button type="success" @click="toggleTranslate">一键翻译</el-button>
-          <el-button type="primary" @click="handleSave">保存</el-button>
-        </div>
-      </div>
-    </header>
-    <!-- 页面数据 -->
-    <div v-if="pageData?.id">
-      <template v-if="websiteInfo.mode === 1">
-        <ModuleMode :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
-      </template>
-      <template v-else>
-        <PageMode ref="PageModeNode" :pageId="pageData.id" :is-translate="isTranslating" :source-language="translateConfig.sourceLanguage" :target-language="translateConfig.targetLanguage" />
-      </template>
-    </div>
-  </main>
-</template>
 <script setup>
-import { ref, reactive, onMounted, watch, nextTick } from "vue";
+import { computed, reactive, ref, watch, nextTick, provide } from "vue";
+import { storeToRefs } from "pinia";
 import { useGlobalStore } from "@/stores/global.js";
-import { updatePageById, translate } from "@/apis/index";
+import { updatePageById, translate, getBlacklistConfig, getDemoConfig } from "@/apis/index";
+import { ElLoading, ElMessage } from "element-plus";
 import ModuleMode from "@/components/ModuleMode.vue";
-import PageMode from "@/components/PageMode.vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import {
+  Document, House, ArrowRight, Check, Sort
+} from '@element-plus/icons-vue';
+import PageContainer from "@/components/common/PageContainer.vue";
+
+const router = useRouter();
 
 let pageData = ref(null);
-const PageModeNode = ref(null);
-const { user, websiteInfo } = useGlobalStore();
+const ModuleModeNode = ref(null);
+const globalStore = useGlobalStore();
+const { user, websiteInfo, isAdmin } = storeToRefs(globalStore);
 const route = useRoute();
 
-// 翻译配置
+// 翻译配置（旧版：通过 provide 给子组件/字段用）
 const translateConfig = reactive({
-  sourceLanguage: 'zh',
-  targetLanguage: 'en'
+  sourceLanguage: "en",
+  targetLanguage: "fr",
+});
+const isTranslating = ref(false);
+const isSavingSizes = ref(false);
+const isBindingAllDemoScreenshots = ref(false);
+const isBindingAllDemoSizes = ref(false);
+provide("translateConfig", translateConfig);
+provide("isTranslate", isTranslating);
+
+const blacklist = ref([]);
+provide("blacklist", blacklist);
+
+const currentDemo = computed(() => {
+  return websiteInfo.value?.demo_site || "";
 });
 
-// 是否正在翻译状态
-const isTranslating = ref(false);
+async function fetchBlacklist(demo) {
+  const demoName = typeof demo === "string" ? demo.trim() : "";
+  if (!demoName) {
+    blacklist.value = [];
+    return;
+  }
 
-// 切换翻译状态
-function toggleTranslate() {
-  if (translateConfig.sourceLanguage === translateConfig.targetLanguage) {
+  try {
+    const res = await getBlacklistConfig(demoName);
+    blacklist.value = res.code === 0 && Array.isArray(res.data?.blacklist)
+      ? res.data.blacklist
+      : [];
+  } catch {
+    blacklist.value = [];
+  }
+}
+
+watch(
+  currentDemo,
+  (demo) => {
+    fetchBlacklist(demo);
+  },
+  { immediate: true },
+);
+
+function sameLang() {
+  return translateConfig.sourceLanguage && translateConfig.sourceLanguage === translateConfig.targetLanguage;
+}
+
+// 切换翻译状态（旧版：扫描 DOM 的 __field-item 输入框/文本域/Quill）
+async function toggleTranslate() {
+  if (sameLang()) {
     ElMessage({
       message: "源语言和目标语言不能相同",
       type: "warning",
     });
     return;
   }
-  isTranslating.value = true;
+
+  await nextTick();
+
+  const elementsToTranslate = [];
+  const translationMap = new Map();
+
+  const inputs = document.querySelectorAll('.__field-item input[type="text"]');
+  inputs.forEach((input, index) => {
+    if (input.value && input.value.trim()) {
+      elementsToTranslate.push({
+        element: input,
+        text: input.value.trim(),
+        originalText: input.value.trim(),
+        type: 'input',
+        index,
+      });
+    }
+  });
+
+  const textareas = document.querySelectorAll('.__field-item textarea');
+  textareas.forEach((textarea, index) => {
+    if (textarea.value && textarea.value.trim()) {
+      elementsToTranslate.push({
+        element: textarea,
+        text: textarea.value.trim(),
+        originalText: textarea.value.trim(),
+        type: 'textarea',
+        index,
+      });
+    }
+  });
+
+  const qlEditors = document.querySelectorAll('.__field-item .ql-editor');
+  qlEditors.forEach((editor, index) => {
+    const htmlContent = editor.innerHTML || '';
+    const textContent = editor.innerText || editor.textContent || '';
+    if (textContent.trim()) {
+      elementsToTranslate.push({
+        element: editor,
+        text: textContent.trim(),
+        originalText: htmlContent,
+        type: 'ql-editor',
+        index,
+      });
+    }
+  });
+
+  if (elementsToTranslate.length === 0) {
+    ElMessage({
+      message: "未找到需要翻译的内容",
+      type: "warning",
+    });
+    return;
+  }
+
+  const loadingInstance = ElLoading.service({
+    fullscreen: true,
+    text: `正在翻译 0/${elementsToTranslate.length} 个元素...`,
+  });
+
+  let successCount = 0;
+  let failCount = 0;
+
+  try {
+    for (let i = 0; i < elementsToTranslate.length; i++) {
+      const item = elementsToTranslate[i];
+      loadingInstance.setText(`正在翻译 ${i + 1}/${elementsToTranslate.length} 个元素...`);
+
+      try {
+        const payload = {
+          text: item.text,
+          target_language: translateConfig.targetLanguage,
+          source_language: translateConfig.sourceLanguage,
+          format_type: item.type === "ql-editor" ? "text" : "text",
+        };
+        const translateRes = await translate(payload);
+
+        if (translateRes?.code === 0 && translateRes?.data?.translated_text) {
+          const translatedText = translateRes.data.translated_text;
+          translationMap.set(item.originalText, translatedText);
+
+          if (item.type === 'input' || item.type === 'textarea') {
+            item.element.value = translatedText;
+            item.element.dispatchEvent(new InputEvent('input', {
+              bubbles: true,
+              cancelable: true,
+              composed: true,
+            }));
+            item.element.dispatchEvent(new Event('change', { bubbles: true }));
+          } else if (item.type === 'ql-editor') {
+            const htmlText = translatedText.replace(/\n/g, '<br>');
+            item.element.innerHTML = htmlText;
+            item.element.dispatchEvent(new Event('input', { bubbles: true }));
+            item.element.dispatchEvent(new Event('blur', { bubbles: true }));
+          }
+
+          successCount++;
+        } else {
+          failCount++;
+        }
+      } catch (error) {
+        console.error(`翻译错误 (元素 ${i + 1}):`, error);
+        failCount++;
+      }
+
+      if (i < elementsToTranslate.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    await syncDomToVueData(translationMap);
+
+    if (successCount > 0) {
+      ElMessage({
+        message: `成功翻译 ${successCount} 个元素${failCount > 0 ? `，失败 ${failCount} 个` : ''}`,
+        type: failCount > 0 ? "warning" : "success",
+      });
+    } else {
+      ElMessage({
+        message: "翻译失败，请稍后重试",
+        type: "error",
+      });
+    }
+  } catch (error) {
+    console.error('翻译过程发生错误:', error);
+    ElMessage({
+      message: "翻译过程中发生错误",
+      type: "error",
+    });
+  } finally {
+    loadingInstance.close();
+  }
+}
+
+async function syncDomToVueData(translationMap) {
+  const targetNode = ModuleModeNode.value;
+  if (!targetNode?.state?.pageData && !targetNode?.state?.originData) return;
+  await nextTick();
+  const data = targetNode.state.pageData ?? targetNode.state.originData;
+  updateDataWithTranslation(data, translationMap);
+}
+
+function updateDataWithTranslation(data, translationMap) {
+  if (!Array.isArray(data)) return;
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    if (item.settings) {
+      if (item.settings.title && translationMap.has(item.settings.title)) {
+        item.settings.title = translationMap.get(item.settings.title);
+      }
+      if (item.settings.editor && translationMap.has(item.settings.editor)) {
+        item.settings.editor = translationMap.get(item.settings.editor);
+      }
+      if (item.settings.content && translationMap.has(item.settings.content)) {
+        item.settings.content = translationMap.get(item.settings.content);
+      }
+    }
+    if (item.elements && item.elements.length > 0) {
+      updateDataWithTranslation(item.elements, translationMap);
+    }
+  }
+}
+
+async function handleSaveSizes() {
+  const fn = ModuleModeNode.value?.saveSectionSizes;
+  if (typeof fn !== "function") {
+    ElMessage({ message: "当前页面不支持保存尺寸", type: "warning" });
+    return;
+  }
+  isSavingSizes.value = true;
+  try {
+    await fn();
+  } finally {
+    isSavingSizes.value = false;
+  }
+}
+
+async function handleBindAllDemoScreenshots() {
+  const fn = ModuleModeNode.value?.applyDemoScreenshots;
+  if (typeof fn !== "function") {
+    ElMessage({ message: "当前页面不支持同步 Demo 截图", type: "warning" });
+    return;
+  }
+
+  const demoName = String(currentDemo.value || "").trim();
+  if (!demoName) {
+    ElMessage({ message: "当前站点还未绑定 Demo，无法获取截图", type: "warning" });
+    return;
+  }
+
+  isBindingAllDemoScreenshots.value = true;
+  try {
+    const res = await getDemoConfig(demoName);
+    if (res?.code !== 0) {
+      ElMessage({ message: res?.message || "获取 Demo 截图失败", type: "error" });
+      return;
+    }
+
+    await fn(Array.isArray(res?.data?.imgs) ? res.data.imgs : []);
+  } catch (error) {
+    ElMessage({ message: error?.message || "获取 Demo 截图失败", type: "error" });
+  } finally {
+    isBindingAllDemoScreenshots.value = false;
+  }
+}
+
+async function handleBindAllDemoSizes() {
+  const fn = ModuleModeNode.value?.applyDemoSizes;
+  if (typeof fn !== "function") {
+    ElMessage({ message: "当前页面不支持同步 Demo 图片尺寸", type: "warning" });
+    return;
+  }
+
+  const demoName = String(currentDemo.value || "").trim();
+  if (!demoName) {
+    ElMessage({ message: "当前站点还未绑定 Demo，无法获取图片尺寸", type: "warning" });
+    return;
+  }
+
+  isBindingAllDemoSizes.value = true;
+  try {
+    const res = await getDemoConfig(demoName);
+    if (res?.code !== 0) {
+      ElMessage({ message: res?.message || "获取 Demo 图片尺寸失败", type: "error" });
+      return;
+    }
+
+    await fn(res?.data?.sizes);
+  } catch (error) {
+    ElMessage({ message: error?.message || "获取 Demo 图片尺寸失败", type: "error" });
+  } finally {
+    isBindingAllDemoSizes.value = false;
+  }
 }
 
 async function handleSave() {
   const loadingInstance = ElLoading.service({ fullscreen: true });
   try {
-    console.log(PageModeNode.value.state.pageData);
-    return;
-    const res = await updatePageById({
-      meta_value: JSON.stringify(PageModeNode.value.state.pageData),
-      post_id: Number(PageModeNode.value.state.pageId),
-    });
-    
-    nextTick(() => {
+    const targetNode = ModuleModeNode.value;
+    const finalData = targetNode?.getFinalData?.();
+    const siteId = websiteInfo.value?.site_id;
+
+    if (!finalData) {
+      ElMessage({ message: "没有数据可保存", type: "warning" });
       loadingInstance.close();
+      return;
+    }
+    if (!siteId) {
+      ElMessage({ message: "站点信息未加载，site_id 为空", type: "warning" });
+      loadingInstance.close();
+      return;
+    }
+    const res = await updatePageById({
+      site_id: siteId,
+      id: String(targetNode.state.moduleId),
+      data: finalData,
     });
+
     if (res.code === 0) {
-      ElMessage({
-        message: "保存成功",
-        type: "success",
-      });
+      ElMessage({ message: res.message || "保存成功", type: "success" });
     } else {
-      ElMessage({
-        message: "保存失败",
-        type: "error",
-      });
+      ElMessage({ message: res.message || "保存失败", type: "error" });
     }
   } catch (error) {
-    ElMessage({
-      message: "保存失败",
-      type: "error",
-    });
-    nextTick(() => {
-      loadingInstance.close();
-    });
+    console.error('保存错误:', error);
+    ElMessage({ message: "保存失败", type: "error" });
+  } finally {
+    nextTick(() => { loadingInstance.close(); });
   }
 }
 
@@ -133,9 +351,9 @@ watch(
   () => route.params.id,
   (newId, oldId) => {
     if (newId) {
-      pageData.value = JSON.parse(user.page_list).find(
-        (item) => item.id === route.params.id
-      );
+      pageData.value = {
+        id: newId,
+      }
     }
     if (!newId) {
       pageData.value = null;
@@ -144,6 +362,131 @@ watch(
   { immediate: true }
 );
 </script>
+
+<template>
+  <PageContainer>
+    <template #header>
+      <div class="flex justify-between items-center w-full flex-wrap gap-4">
+        <div class="flex flex-col gap-2 min-w-0">
+          <div class="flex items-center gap-3">
+            <el-icon class="text-primary text-2xl"><Document /></el-icon>
+            <h1 class="text-2xl font-semibold text-gray-900">页面编辑</h1>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <a
+              href="#"
+              @click.prevent="router.push({ name: 'CustomerHome' })"
+              class="text-gray-500 hover:text-primary transition-colors flex items-center gap-1"
+            >
+              <el-icon><House /></el-icon>
+              网站信息
+            </a>
+            <el-icon class="text-gray-400"><ArrowRight /></el-icon>
+            <span class="text-gray-700 font-medium truncate">{{ websiteInfo.nickname || '页面编辑' }}</span>
+          </div>
+        </div>
+
+        <!-- 工具栏 -->
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- 翻译工具（仅 admin 可见） -->
+          <div
+            v-if="isAdmin"
+            class="flex items-center gap-3 bg-surface-hover rounded-lg px-4 py-2 border border-border"
+          >
+            <div class="flex items-center gap-2">
+              <el-icon class="text-gray-500"><Sort /></el-icon>
+              <span class="text-sm text-gray-600 whitespace-nowrap">从:</span>
+              <el-select
+                v-model="translateConfig.sourceLanguage"
+                placeholder="源语言"
+                size="default"
+                style="width: 120px"
+              >
+                <el-option label="中文" value="zh" />
+                <el-option label="俄语" value="ru" />
+                <el-option label="法语" value="fr" />
+                <el-option label="英语" value="en" />
+                <el-option label="日语" value="ja" />
+                <el-option label="韩语" value="ko" />
+                <el-option label="阿拉伯语" value="ar" />
+              </el-select>
+            </div>
+            <el-icon class="text-gray-400"><ArrowRight /></el-icon>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600 whitespace-nowrap">到:</span>
+              <el-select
+                v-model="translateConfig.targetLanguage"
+                placeholder="目标语言"
+                size="default"
+                style="width: 120px"
+              >
+                <el-option label="中文" value="zh" />
+                <el-option label="俄语" value="ru" />
+                <el-option label="法语" value="fr" />
+                <el-option label="英语" value="en" />
+                <el-option label="日语" value="ja" />
+                <el-option label="韩语" value="ko" />
+                <el-option label="阿拉伯语" value="ar" />
+              </el-select>
+            </div>
+            <el-button
+              type="success"
+              :icon="Sort"
+              :loading="isTranslating"
+              @click="toggleTranslate"
+              size="default"
+            >
+              一键翻译
+            </el-button>
+          </div>
+
+          <!-- 保存尺寸按钮（仅 admin 可见） -->
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            @click="handleSaveSizes"
+            :loading="isSavingSizes"
+            size="large"
+          >
+            保存尺寸
+          </el-button>
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            @click="handleBindAllDemoScreenshots"
+            :loading="isBindingAllDemoScreenshots"
+            size="large"
+          >
+            一键获取截图
+          </el-button>
+          <el-button
+            v-if="pageData?.id && isAdmin"
+            @click="handleBindAllDemoSizes"
+            :loading="isBindingAllDemoSizes"
+            size="large"
+          >
+            一键获取图片尺寸
+          </el-button>
+          <el-button type="primary" :icon="Check" @click="handleSave" size="large">保存</el-button>
+        </div>
+      </div>
+    </template>
+
+    <!-- 页面数据：模块模式沿用整区滚动 -->
+    <div class="flex-1 min-h-0 overflow-hidden flex flex-col" v-if="pageData?.id">
+      <ModuleMode ref="ModuleModeNode" :pageId="pageData.id" />
+    </div>
+
+    <!-- 空状态 -->
+    <div v-else class="flex-1 flex items-center justify-center">
+      <div class="text-center">
+        <el-icon class="text-6xl text-gray-300 mb-4">
+          <Document />
+        </el-icon>
+        <p class="text-gray-500">请选择要编辑的页面</p>
+      </div>
+    </div>
+  </PageContainer>
+</template>
+
 <style scoped>
 :deep(.el-tabs__content) {
   overflow-y: auto;

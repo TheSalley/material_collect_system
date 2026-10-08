@@ -1,6 +1,6 @@
 <template>
-  <section class="app-main overflow-y-auto h-full">
-      <router-view></router-view>
+  <section class="app-main overflow-y-auto overflow-x-hidden flex-1">
+    <router-view></router-view>
     <el-backtop />
   </section>
 </template>
@@ -8,5 +8,6 @@
 .app-main {
   width: 100%;
   display: flex;
+  max-width: 100%;
 }
 </style>

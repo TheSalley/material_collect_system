@@ -1,196 +1,431 @@
+<script setup>
+import { ref, reactive, onMounted, nextTick } from "vue";
+import { getSiteList, createSite, updateSite, deleteSite, bindSiteUrl, bindSite } from "@/apis/index.js";
+import { ElMessage, ElMessageBox } from "element-plus";
+import "element-plus/theme-chalk/el-message-box.css";
+import { useRouter } from "vue-router";
+import { useGlobalStore } from "@/stores/global.js";
+import { Search, Plus, Setting, Link, Clock, Delete, UserFilled, CircleCheck, CircleClose, Check, Grid, Document } from "@element-plus/icons-vue";
+import PageContainer from "@/components/common/PageContainer.vue";
+import PanelCard from "@/components/common/PanelCard.vue";
+
+const tableData = reactive([]);
+const searchValue = ref("");
+const loading = ref(false);
+const currentPage = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
+
+const addDrawer = ref(false);
+const addFormRef = ref(null);
+const addSaving = ref(false);
+const editDrawer = ref(false);
+const editFormRef = ref(null);
+const editSaving = ref(false);
+
+const addForm = reactive({
+  site_name: "",
+  demo_site: "",
+  site_url: "",
+});
+
+const editForm = reactive({
+  site_id: "",
+  site_name: "",
+  demo_site: "",
+});
+
+const addFormRules = {
+  site_name: [
+    { required: true, message: "请输入站点名称", trigger: "blur" },
+    { min: 1, message: "站点名称不能为空", trigger: "blur" },
+  ],
+  demo_site: [
+    { required: true, message: "请输入 Demo 名称", trigger: "blur" },
+    { min: 1, message: "Demo 名称不能为空", trigger: "blur" },
+  ],
+  site_url: [
+    { required: true, message: "请输入站点 URL", trigger: "blur" },
+    { type: "url", message: "请输入有效的 URL 地址", trigger: "blur" },
+  ],
+};
+
+const router = useRouter();
+const globalStore = useGlobalStore();
+
+// 格式化时间
+const formatDate = (dateString) => {
+  if (!dateString) return "-";
+
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+// 删除站点
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(`确定要删除站点 "${row.site_name || row.site_id}" 吗？此操作不可恢复。`, "确认删除", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+      type: "warning",
+      center: false,
+      distinguishCancelAndClose: true,
+      lockScroll: true,
+      closeOnClickModal: false,
+      closeOnPressEscape: true,
+    });
+
+    const res = await deleteSite(row.site_id);
+    if (res.code === 0) {
+      ElMessage.success(res.message || "删除成功");
+      await fetchList();
+    } else {
+      ElMessage.error(res.message || "删除失败");
+    }
+  } catch (error) {
+    if (error !== "cancel" && error !== "close") {
+      ElMessage.error("删除失败：" + (error.message || "网络错误"));
+    }
+  }
+}
+
+async function fetchList() {
+  loading.value = true;
+  try {
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value,
+    };
+    if (searchValue.value) {
+      params.keyword = searchValue.value;
+    }
+    const res = await getSiteList(params);
+    if (res.code === 0) {
+      const list = res.data.list || [];
+      const nextTotal = Number(res.data?.total ?? list.length);
+      const maxPage = Math.max(1, Math.ceil(nextTotal / pageSize.value));
+
+      if (nextTotal > 0 && currentPage.value > maxPage) {
+        currentPage.value = maxPage;
+        return await fetchList();
+      }
+      total.value = nextTotal;
+      tableData.length = 0;
+      tableData.push(...list);
+    } else {
+      ElMessage.error(res.message || "获取站点列表失败");
+    }
+    return res;
+  } catch (error) {
+    ElMessage.error("获取站点列表失败：" + (error.message || "网络错误"));
+    return { code: -1, message: error.message };
+  } finally {
+    loading.value = false;
+  }
+}
+
+function handleSearch() {
+  currentPage.value = 1;
+  fetchList();
+}
+
+function handleCurrentChange(page) {
+  currentPage.value = page;
+  fetchList();
+}
+
+function handleSizeChange(size) {
+  pageSize.value = size;
+  currentPage.value = 1;
+  fetchList();
+}
+
+function openAddDrawer() {
+  addForm.site_name = "";
+  addForm.demo_site = "";
+  addDrawer.value = true;
+  nextTick(() => {
+    addFormRef.value?.clearValidate();
+  });
+}
+
+function openEditDrawer(row) {
+  editForm.site_id = row.site_id;
+  editForm.site_name = row.site_name;
+  editForm.demo_site = row.demo_site;
+  editDrawer.value = true;
+  nextTick(() => {
+    editFormRef.value?.clearValidate();
+  });
+}
+
+async function onAddSubmit() {
+  if (!addFormRef.value) return;
+  await addFormRef.value.validate(async (valid) => {
+    if (!valid) return;
+    addSaving.value = true;
+    try {
+      const res = await createSite({
+        site_name: addForm.site_name,
+        demo_site: addForm.demo_site,
+      });
+      if (res.code === 0) {
+        const bindRes = await bindSiteUrl({
+          site_id: res.data.site_id,
+          site_url: addForm.site_url,
+          plugin_token: res.data.plugin_token,
+        });
+        if (bindRes.code === 0) {
+          ElMessage.success(res.message || "创建成功");
+        } else {
+          ElMessage.error(bindRes.message || "绑定站点 URL 失败");
+        }
+        addDrawer.value = false;
+        await fetchList();
+      } else {
+        ElMessage.error(res.message || "创建失败");
+      }
+    } catch (error) {
+      ElMessage.error("创建失败：" + (error.message || "网络错误"));
+    } finally {
+      addSaving.value = false;
+    }
+  });
+}
+
+async function onEditSubmit() {
+  if (!editFormRef.value) return;
+  await editFormRef.value.validate(async (valid) => {
+    if (!valid) return;
+    editSaving.value = true;
+    try {
+      const res = await updateSite({
+        site_id: editForm.site_id,
+        site_name: editForm.site_name,
+        demo_site: editForm.demo_site,
+      });
+      if (res.code === 0) {
+        ElMessage.success(res.message || "更新成功");
+        editDrawer.value = false;
+        await fetchList();
+      } else {
+        ElMessage.error(res.message || "更新失败");
+      }
+    } catch (error) {
+      ElMessage.error("更新失败：" + (error.message || "网络错误"));
+    } finally {
+      editSaving.value = false;
+    }
+  });
+}
+
+onMounted(() => {
+  fetchList();
+});
+
+function config(data) {
+  globalStore.setWebsiteInfo({ ...data });
+  router.push({ name: "AdminDetail", query: { id: data.site_id } });
+}
+
+async function reBind(row) {
+  const res = await bindSite({
+    site_id: row.site_id
+  });
+  if (res.code === 0) {
+    ElMessage.success(res.message || "重新绑定成功");
+    await fetchList();
+  } else {
+    ElMessage.error(res.message || "重新绑定失败");
+  }
+}
+</script>
+
 <template>
-  <div class="mx-auto w-full">
-    <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
-      <h1
-        class="text-[#111418] dark:text-white text-3xl font-bold leading-tight"
-      >
-        客户管理
-      </h1>
-    </div>
-    <div class="bg-white dark:bg-gray-900/50 rounded-lg">
-      <div class="py-4 border-gray-200 dark:border-gray-700">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex-1 min-w-[300px]">
-            <el-input
-              v-model="searchValue"
-              style="width: 240px"
-              size="large"
-              placeholder="搜索"
-            />
+  <PageContainer title="站点管理" subtitle="管理和配置所有客户站点信息" :icon="UserFilled">
+    <PanelCard flush>
+      <template #header>
+        <div class="flex justify-between items-center w-full gap-4">
+          <div class="flex-1 min-w-0">
+            <el-input v-model="searchValue" class="max-w-md" size="large" placeholder="搜索站点名称" clearable @keyup.enter="fetchList">
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+              <template #append>
+                <el-button :icon="Search" @click="handleSearch" />
+              </template>
+            </el-input>
           </div>
-          <div class="flex items-center gap-3">
-            <el-button type="primary" disabled>添加新客户</el-button>
-          </div>
+          <el-button type="primary" size="large" :icon="Plus" @click="openAddDrawer">添加站点</el-button>
         </div>
-      </div>
-      <div class="overflow-x-auto w-full">
-        <el-table :data="tableData" border height="350">
-          <el-table-column prop="id" label="ID" />
-          <el-table-column prop="username" label="客户账号"/>
-          <el-table-column prop="nickname" label="客户名称"/>
-          <el-table-column prop="demo" label="demo 名称"/>
-          <el-table-column prop="url" label="网址" width="180" />
-          <el-table-column prop="mode" label="模式">
+      </template>
+
+      <div class="flex-1 overflow-auto min-h-0">
+        <el-table :data="tableData" :stripe="true" :highlight-current-row="true" class="w-full" empty-text="暂无数据" style="width: 100%" v-loading="loading">
+          <el-table-column prop="site_id" label="ID" width="280">
             <template #default="scope">
-              <el-tag>{{ scope.row.mode === 1 ? "组件" : "页面" }}</el-tag>
+              <span class="font-mono text-xs text-gray-500">{{ scope.row.site_id }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态">
+          <el-table-column prop="wp_auth_token" label="Token" width="280">
             <template #default="scope">
-              <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">{{
-                scope.row.status === 1 ? "启用" : "禁用"
-              }}</el-tag>
+              <span class="font-mono text-xs text-gray-500">{{ scope.row.wp_auth_token }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="create_time" label="创建时间" width="180" />
-          <el-table-column fixed="right" label="操作" min-width="120">
+
+          <el-table-column prop="site_name" label="站点名称" min-width="150" show-overflow-tooltip>
             <template #default="scope">
-              <el-button
-                link
-                type="primary"
-                size="small"
-                @click="edit(scope.row)"
-                >编辑</el-button
-              >
-              <el-button
-                link
-                type="primary"
-                size="small"
-                @click="config(scope.row)"
-                >配置</el-button
-              >
+              <div class="flex items-center gap-2">
+                <el-icon class="text-primary text-base flex-shrink-0"><Link /></el-icon>
+                <span class="font-medium text-gray-900 truncate">{{ scope.row.site_name || "-" }}</span>
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="demo_site" label="Demo 名称" width="120">
+            <template #default="scope">
+              <el-tag v-if="scope.row.demo_site" size="small" effect="plain">
+                {{ scope.row.demo_site }}
+              </el-tag>
+              <span v-else class="text-gray-400">-</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="wp_base_url" label="网址" min-width="200" show-overflow-tooltip>
+            <template #default="scope">
+              <a :href="scope.row.wp_base_url" target="_blank" class="flex items-center gap-1.5 text-primary hover:text-primary-hover hover:underline transition-colors truncate">
+                <el-icon><Link /></el-icon>
+                <span class="truncate">{{ scope.row.wp_base_url }}</span>
+              </a>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="updated_at" label="创建时间" width="280">
+            <template #default="scope">
+              <div class="flex items-center gap-1.5 text-gray-500 text-sm">
+                <el-icon class="text-gray-400"><Clock /></el-icon>
+                <span>{{ formatDate(scope.row.updated_at) }}</span>
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column fixed="right" label="操作" width="350" align="center">
+            <template #default="scope">
+              <div class="flex gap-2 justify-center">
+                <el-button size="small" :icon="Setting" link @click="reBind(scope.row)">重新绑定</el-button>
+                <el-button type="primary" size="small" :icon="Setting" link @click="openEditDrawer(scope.row)">编辑</el-button>
+                <el-button type="success" size="small" :icon="Setting" link @click="config(scope.row)">配置</el-button>
+                <el-button type="danger" size="small" :icon="Delete" link @click="handleDelete(scope.row)">删除</el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
       </div>
-      <div class="flex items-center justify-between p-4">
+
+      <template #footer>
         <el-pagination
-          :page-size="20"
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
           :pager-count="11"
-          layout="prev, pager, next"
-          :total="1000"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
+          background
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
         />
-      </div>
-    </div>
-  </div>
+      </template>
+    </PanelCard>
 
-  <el-drawer v-model="drawer" title="客户配置">
-    <template #default>
-      <el-form :model="form" label-width="auto" style="max-width: 600px">
-        <el-form-item label="客户名称">
-          <el-input v-model="form.username" />
-        </el-form-item>
-        <el-form-item label="demo 名称">
-          <el-input v-model="form.demo" />
-        </el-form-item>
-        <el-form-item label="网址">
-          <el-input v-model="form.url" />
-        </el-form-item>
-        <el-form-item label="模式">
-          <el-radio-group v-model="form.mode">
-            <el-radio :value="1">组件</el-radio>
-            <el-radio :value="2">页面</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-switch v-model="form.status" />
-        </el-form-item>
-      </el-form>
-    </template>
-    <template #footer>
-      <div style="flex: auto">
-        <el-button @click="drawer = false">取消</el-button>
-        <el-button type="primary" @click="onSubmit">保存</el-button>
-      </div>
-    </template>
-  </el-drawer>
+    <!-- 添加站点抽屉 -->
+    <el-drawer v-model="addDrawer" title="添加站点" direction="rtl" size="500px" :close-on-click-modal="false">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <el-icon class="text-success text-xl"><Plus /></el-icon>
+          <span class="text-lg font-semibold text-gray-900">添加站点</span>
+        </div>
+      </template>
+      <template #default>
+        <el-form ref="addFormRef" :model="addForm" :rules="addFormRules" label-width="100px" class="py-5" label-position="left">
+          <el-form-item label="站点名称" prop="site_name">
+            <el-input v-model="addForm.site_name" placeholder="请输入站点名称" clearable />
+          </el-form-item>
+          <el-form-item label="Demo 名称" prop="demo_site">
+            <el-input v-model="addForm.demo_site" placeholder="请输入 Demo 名称" clearable />
+          </el-form-item>
+          <el-form-item label="站点 URL" prop="site_url">
+            <el-input v-model="addForm.site_url" placeholder="请输入站点 URL，无需后面加/" clearable />
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200">
+          <el-button @click="addDrawer = false" size="large">取消</el-button>
+          <el-button type="primary" @click="onAddSubmit" size="large" :icon="Check" :loading="addSaving">确定添加</el-button>
+        </div>
+      </template>
+    </el-drawer>
+
+    <el-drawer v-model="editDrawer" title="编辑站点" direction="rtl" size="500px" :close-on-click-modal="false">
+      <template #header>
+        <div class="flex items-center gap-3">
+          <el-icon class="text-primary text-xl"><Setting /></el-icon>
+          <span class="text-lg font-semibold text-gray-900">编辑站点</span>
+        </div>
+      </template>
+      <template #default>
+        <el-form ref="editFormRef" :model="editForm" :rules="editFormRules" label-width="100px" class="py-5" label-position="left">
+          <el-form-item label="站点名称" prop="site_name">
+            <el-input v-model="editForm.site_name" placeholder="请输入站点名称" clearable />
+          </el-form-item>
+          <el-form-item label="Demo 名称" prop="demo_site">
+            <el-input v-model="editForm.demo_site" placeholder="请输入 Demo 名称" clearable />
+          </el-form-item>
+        </el-form>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200">
+          <el-button @click="editDrawer = false" size="large">取消</el-button>
+          <el-button type="primary" @click="onEditSubmit" size="large" :icon="Check" :loading="editSaving">保存修改</el-button>
+        </div>
+      </template>
+    </el-drawer>
+  </PageContainer>
 </template>
-<script setup>
-import { ref, reactive, onMounted } from "vue";
-import { getList, updateUser } from "@/apis/index.js";
-import { useRouter } from "vue-router";
-import { useGlobalStore } from "@/stores/global.js";
 
-const tableData = reactive([]);
-
-const searchValue = ref("");
-
-let pageList = reactive([]);
-
-const drawer = ref(false);
-
-const router = useRouter();
-
-const { setUser } = useGlobalStore();
-
-const form = reactive({
-  id: "",
-  username: "",
-  demo: "",
-  url: "",
-  mode: 2,
-  status: true,
-});
-
-async function onSubmit() {
-  if(form.url.endsWith('/')) {
-    return ElMessage.error("网址不能以斜杠结尾");
-  }
-  const res = await updateUser({
-    id: form.id,
-    username: form.username,
-    demo: form.demo,
-    url: form.url,
-    mode: form.mode,
-    status: form.status ? 1 : 2,
-  });
-  if (res.code === 0) {
-    ElMessage({
-      message: "保存成功",
-      type: "success",
-    });
-    tableData.forEach((item, index) => {
-      if (item.id == res.data.id) {
-        tableData[index] = res.data;
-      }
-    });
-    setUser(res.data);
-    drawer.value = false;
-  } else {
-    ElMessage({
-      message: "保存失败",
-      type: "error",
-    });
-  }
+<style scoped>
+/* 表格样式优化 */
+:deep(.el-table__header) {
+  background: var(--color-surface-hover);
 }
 
-onMounted(async () => {
-  const res = await getList();
-  if (res.code === 0) {
-    tableData.push(...res.data);
-  } else {
-    if (res.code === 403) {
-      ElMessage.error("账号已过期，请重新登录");
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      router.push("/login");
-    } else {
-    }
-  }
-});
-
-function edit(data) {
-  form.id = data.id;
-  form.username = data.username;
-  form.demo = data.demo;
-  form.url = data.url;
-  form.mode = data.mode;
-  form.status = data.status === 1 ? true : false;
-  drawer.value = true;
+:deep(.el-table__header th) {
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  border-bottom: 2px solid var(--color-border);
 }
 
-function config(data) {
-  const { setWebsiteInfo } = useGlobalStore();
-  setWebsiteInfo(data);
-  router.push({ path: "/detail", query: { id: data.id } });
+:deep(.el-table__row) {
+  transition: all 0.2s;
 }
-</script>
+
+:deep(.el-table__row:hover) {
+  background: var(--color-primary-light);
+}
+
+:deep(.el-table__row:hover td) {
+  background: var(--color-primary-light);
+}
+
+:deep(.el-table__body-wrapper) {
+  overflow-y: auto;
+}
+</style>
