@@ -2,9 +2,10 @@
   <div
     class="sidebar-shell flex flex-col border-r border-gray-200/70 dark:border-gray-700/60 p-4 w-64 h-screen overflow-hidden"
   >
-    <div class="flex items-center gap-3 px-3 py-2">
-      <a href="/"><img class="logo" src="/logo.webp" /></a>
-    </div>
+    <a class="flex flex-col items-center gap-3 py-2" href="/">
+      <img class="" src="/logo.webp" />
+      <div>网站素材收集系统</div>
+    </a>
     <div class="flex flex-col justify-between flex-1 min-h-0">
       <!-- 菜单区（分组 + 子菜单 + 页面列表） -->
       <SideBarMenu
@@ -38,13 +39,6 @@ const { isUserRole, accessibleRoutes, activeMenu } = useSidebarMenu();
 }
 .dark .sidebar-shell {
   background: linear-gradient(180deg, #131b26 0%, #10161f 60%, #0d131b 100%);
-}
-
-.logo {
-  padding-inline: 10px;
-  height: 85px;
-  object-fit: contain;
-  width: 100%;
 }
 
 .sidebar-footer {

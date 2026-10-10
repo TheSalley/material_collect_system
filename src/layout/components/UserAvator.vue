@@ -1,6 +1,6 @@
 <script setup>
 // UserAvator
-// 底部用户卡 + 三点菜单：使用说明 / 设置 / 退出登录
+// 底部用户卡 + 三点菜单
 import { useUserAvator } from "@/composables/useUserAvator";
 
 defineProps({
@@ -53,25 +53,6 @@ const { user, userCardRef, menuOpen, toggleMenu, logout, goTo } = useUserAvator(
         role="menu"
         aria-label="用户操作"
       >
-        <button
-          v-if="isUserRole"
-          class="user-menu-item"
-          role="menuitem"
-          type="button"
-          @click="goTo('/instruction')"
-        >
-          使用说明
-        </button>
-        <button
-          v-if="isUserRole"
-          class="user-menu-item"
-          role="menuitem"
-          type="button"
-          @click="goTo('/siteInfo')"
-        >
-          设置
-        </button>
-        <div v-if="isUserRole" class="user-menu-divider"></div>
         <button
           class="user-menu-item danger"
           role="menuitem"

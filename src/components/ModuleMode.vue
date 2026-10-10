@@ -504,7 +504,6 @@ defineExpose({
 .page-mode-container {
   display: flex;
   gap: 2rem;
-  padding: 2.5rem;
   background: #f5f7fa;
   flex: 1;
   min-height: 0;

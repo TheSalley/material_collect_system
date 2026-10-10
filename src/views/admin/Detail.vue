@@ -147,6 +147,32 @@ function buildAllowMapFromPermissionList(list) {
 }
 
 /**
+ * 拉取全部用户（兼容分页结构 { list, total } 与旧数组结构）
+ */
+async function fetchAllUsers() {
+  const all = [];
+  const pageSize = 100;
+  let page = 1;
+  for (;;) {
+    const res = await getUserList({ page, page_size: pageSize });
+    const data = res?.code === 0 ? res.data : null;
+    const list = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.list)
+        ? data.list
+        : [];
+    if (list.length === 0) break;
+    all.push(...list);
+    const total = Number(data?.total ?? 0);
+    // 有 total 按 total 判断；无 total 时看是否拉满一页
+    const hasMore = total > 0 ? all.length < total : list.length >= pageSize;
+    if (!hasMore || page >= 100) break;
+    page += 1;
+  }
+  return all;
+}
+
+/**
  * 从用户列表中解析绑定当前站点的客户用户（用于 id）
  */
 function pickBoundUserForSite(users, siteId) {
@@ -160,11 +186,18 @@ function pickBoundUserForSite(users, siteId) {
     if (u) return u;
   }
   return (
-    users.find(
-      (u) =>
+    users.find((u) => {
+      if (
         Array.isArray(u.site_ids) &&
         u.site_ids.some((sid) => String(sid) === String(siteId))
-    ) || null
+      ) {
+        return true;
+      }
+      return (
+        Array.isArray(u.sites) &&
+        u.sites.some((s) => String(s?.site_id) === String(siteId))
+      );
+    }) || null
   );
 }
 
@@ -181,12 +214,10 @@ async function loadPagesAndPermissions() {
   }
 
   try {
-    const [pagesRes, listRes] = await Promise.all([
+    const [pagesRes, users] = await Promise.all([
       getPages(siteId),
-      getUserList(),
+      fetchAllUsers(),
     ]);
-
-    const users = listRes.code === 0 && Array.isArray(listRes.data) ? listRes.data : [];
     const boundUser = pickBoundUserForSite(users, siteId);
     customerProfile.value = boundUser || null;
     if (boundUser?.id != null) {

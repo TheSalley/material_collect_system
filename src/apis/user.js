@@ -8,6 +8,8 @@ export const getUserList = async (params = {}) => {
   const queryParams = new URLSearchParams();
   if (params.id) queryParams.append('id', params.id);
   if (params.username) queryParams.append('username', params.username);
+  if (params.page) queryParams.append('page', params.page);
+  if (params.page_size) queryParams.append('page_size', params.page_size);
   
   const url = config.baseUrl + "/api/user/list" + (queryParams.toString() ? `?${queryParams.toString()}` : '');
   

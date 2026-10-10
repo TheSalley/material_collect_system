@@ -1,6 +1,6 @@
 <template>
   <!-- 主内容卡片：左截图 + 右表单 -->
-  <div class="flex-1 flex flex-col m-6 bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden min-h-0">
+  <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm overflow-hidden min-h-0">
     <div class="flex-1 p-6 md:p-10 overflow-auto" v-loading="loading">
       <div class="space-y-6">
         <!-- 左截图 + 右表单 -->

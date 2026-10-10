@@ -5,7 +5,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { useRouter } from "vue-router";
 import {
   Search, Plus, Edit, Delete, Clock,
-  User, UserFilled, Check, Lock, Link, WarningFilled
+  User, UserFilled, Check, Lock, Link, WarningFilled, Loading
 } from '@element-plus/icons-vue';
 import { useGlobalStore } from "@/stores/global.js";
 import PageContainer from "@/components/common/PageContainer.vue";
@@ -14,6 +14,9 @@ import PanelCard from "@/components/common/PanelCard.vue";
 const tableData = reactive([]);
 const searchValue = ref("");
 const loading = ref(false);
+const currentPage = ref(1);
+const pageSize = ref(20);
+const total = ref(0);
 const saving = ref(false);
 const statusSwitchingId = ref(null);
 
@@ -32,6 +35,15 @@ const editFormRef = ref(null);
 const addSaving = ref(false);
 const siteList = ref([]);
 const siteListLoading = ref(false);
+const siteKeyword = ref("");
+const sitePageSize = 20;
+const siteListPage = ref(1);
+const siteTotal = ref(0);
+const siteNoMore = ref(false);
+// 编辑时预置的已选中站点，保证标签在任意搜索/翻页后仍能显示
+const sitePinned = ref([]);
+// 请求序号：只认最后一次请求，防止竞态
+let siteRequestSeq = 0;
 
 const addForm = reactive({
   username: "",
@@ -87,6 +99,7 @@ let searchDebounceTimer = null;
 watch(searchValue, () => {
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => {
+    currentPage.value = 1;
     fetchUserList();
   }, 400);
 });
@@ -106,20 +119,98 @@ const formatDate = (dateString) => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
 
-// 获取站点列表（用于添加用户时选择站点）
-async function fetchSiteList() {
+// 合并站点列表（按 site_id 去重，保留已选中的站点）
+function mergeSiteList(list) {
+  const seen = new Set();
+  const merged = [];
+  for (const site of [...sitePinned.value, ...siteList.value, ...list]) {
+    if (site && !seen.has(site.site_id)) {
+      seen.add(site.site_id);
+      merged.push(site);
+    }
+  }
+  siteList.value = merged;
+  return merged;
+}
+
+// 请求站点列表（分页）
+async function requestSiteList(page, reset) {
+  const seq = ++siteRequestSeq;
   siteListLoading.value = true;
   try {
-    const res = await getSiteList();
-    if (res.code === 0 && Array.isArray(res.data?.list)) {
-      siteList.value = res.data.list;
-    } else {
-      siteList.value = [];
+    if (reset) {
+      siteList.value = [...sitePinned.value];
     }
+    const params = {
+      page,
+      page_size: sitePageSize,
+    };
+    if (siteKeyword.value) {
+      params.keyword = siteKeyword.value;
+    }
+    const res = await getSiteList(params);
+    if (seq !== siteRequestSeq) return res; // 旧请求丢弃
+    if (res.code === 0) {
+      const list = res.data?.list || [];
+      const nextTotal = Number(res.data?.total ?? list.length);
+      siteTotal.value = nextTotal;
+      const merged = mergeSiteList(list);
+      siteNoMore.value = merged.length >= nextTotal || list.length < sitePageSize;
+    } else {
+      if (reset) {
+        siteList.value = [...sitePinned.value];
+      }
+    }
+    return res;
   } catch {
-    siteList.value = [];
+    if (seq === siteRequestSeq && reset) {
+      siteList.value = [...sitePinned.value];
+    }
+    return null;
   } finally {
-    siteListLoading.value = false;
+    if (seq === siteRequestSeq) {
+      siteListLoading.value = false;
+    }
+  }
+}
+
+// 获取站点列表（用于添加用户时选择站点）
+async function fetchSiteList() {
+  siteListPage.value = 1;
+  return requestSiteList(1, true);
+}
+
+// 远程搜索站点
+function handleSiteSearch(query) {
+  siteKeyword.value = (query || "").trim();
+  fetchSiteList();
+}
+
+// 触底加载下一页
+function loadMoreSites() {
+  if (siteListLoading.value || siteNoMore.value) return;
+  siteListPage.value += 1;
+  requestSiteList(siteListPage.value, false);
+}
+
+// 下拉展开：有残留搜索词或列表为空时重置
+function onSitePopupVisibleChange(visible) {
+  if (!visible) return;
+  if (siteKeyword.value || siteList.value.length === 0) {
+    siteKeyword.value = "";
+    fetchSiteList();
+  }
+}
+
+// 下拉滚动触底检测
+function onSitePopupScroll({ scrollTop }, popperClass) {
+  if (siteListLoading.value || siteNoMore.value) return;
+  const wrap = document.querySelector(
+    `.${popperClass} .el-select-dropdown__wrap`
+  );
+  if (!wrap) return;
+  if (wrap.scrollHeight - scrollTop - wrap.clientHeight < 24) {
+    loadMoreSites();
   }
 }
 
@@ -129,6 +220,8 @@ async function openAddDrawer() {
   addForm.password = "";
   addForm.role = "user";
   addForm.site_id = "";
+  siteKeyword.value = "";
+  sitePinned.value = [];
   addDrawer.value = true;
   await fetchSiteList();
   nextTick(() => {
@@ -174,6 +267,8 @@ async function edit(data) {
   form.site_ids = Array.isArray(data.site_ids)
     ? data.site_ids.map((id) => String(id))
     : [];
+  siteKeyword.value = "";
+  sitePinned.value = Array.isArray(data.sites) ? data.sites.slice() : [];
   drawer.value = true;
   await fetchSiteList();
   nextTick(() => {
@@ -322,11 +417,26 @@ async function fetchUserList() {
   loading.value = true;
   try {
     const username = searchValue.value?.trim();
-    const params = username ? { username } : {};
+    const params = {
+      page: currentPage.value,
+      page_size: pageSize.value,
+    };
+    if (username) {
+      params.username = username;
+    }
     const res = await getUserList(params);
     if (res.code === 0) {
+      const list = res.data?.list || res.data || [];
+      const nextTotal = Number(res.data?.total ?? list.length);
+      const maxPage = Math.max(1, Math.ceil(nextTotal / pageSize.value));
+
+      if (nextTotal > 0 && currentPage.value > maxPage) {
+        currentPage.value = maxPage;
+        return await fetchUserList();
+      }
+      total.value = nextTotal;
       tableData.length = 0;
-      tableData.push(...(res.data || []));
+      tableData.push(...list);
     } else {
       ElMessage({
         message: res.message || "获取用户列表失败",
@@ -341,6 +451,17 @@ async function fetchUserList() {
   } finally {
     loading.value = false;
   }
+}
+
+function handleCurrentChange(page) {
+  currentPage.value = page;
+  fetchUserList();
+}
+
+function handleSizeChange(size) {
+  pageSize.value = size;
+  currentPage.value = 1;
+  fetchUserList();
 }
 
 onMounted(() => {
@@ -461,11 +582,15 @@ onMounted(() => {
 
       <template #footer>
         <el-pagination
-          :page-size="20"
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50, 100]"
           :pager-count="11"
-          layout="total, prev, pager, next, jumper"
-          :total="tableData.length"
+          :total="total"
+          layout="total, sizes, prev, pager, next, jumper"
           background
+          @current-change="handleCurrentChange"
+          @size-change="handleSizeChange"
         />
       </template>
     </PanelCard>
@@ -497,7 +622,30 @@ onMounted(() => {
             </el-select>
           </el-form-item>
           <el-form-item label="站点" prop="site_id" required>
-            <el-select v-model="addForm.site_id" filterable clearable placeholder="请选择站点（必填）" class="w-full" :loading="siteListLoading">
+            <el-select
+              v-model="addForm.site_id"
+              filterable
+              remote
+              clearable
+              placeholder="请选择站点（必填）"
+              class="w-full"
+              :loading="siteListLoading"
+              popper-class="user-add-site-popper"
+              :remote-method="handleSiteSearch"
+              @visible-change="onSitePopupVisibleChange"
+              @popup-scroll="(e) => onSitePopupScroll(e, 'user-add-site-popper')"
+            >
+              <template #footer>
+                <div class="flex items-center justify-center gap-1.5 text-xs text-gray-400 select-none py-0.5">
+                  <template v-if="siteListLoading">
+                    <el-icon class="is-loading"><Loading /></el-icon>加载中…
+                  </template>
+                  <template v-else-if="siteNoMore">
+                    {{ siteTotal > 0 ? `已加载全部 ${siteTotal} 个站点` : "暂无站点" }}
+                  </template>
+                  <template v-else>继续滚动加载更多</template>
+                </div>
+              </template>
               <el-option v-for="site in siteList" :key="site.site_id" :label="`${site.site_name || site.site_id}${site.demo_site ? ' (' + site.demo_site + ')' : ''}`" :value="site.site_id" />
             </el-select>
             <div class="text-xs text-gray-500 mt-1">新增用户必须选择一个站点。</div>
@@ -539,7 +687,32 @@ onMounted(() => {
             </el-select>
           </el-form-item>
           <el-form-item label="站点" prop="site_ids" required>
-            <el-select v-model="form.site_ids" multiple filterable collapse-tags collapse-tags-tooltip placeholder="请选择站点（可多选）" class="w-full" :loading="siteListLoading">
+            <el-select
+              v-model="form.site_ids"
+              multiple
+              filterable
+              remote
+              collapse-tags
+              collapse-tags-tooltip
+              placeholder="请选择站点（可多选）"
+              class="w-full"
+              :loading="siteListLoading"
+              popper-class="user-edit-site-popper"
+              :remote-method="handleSiteSearch"
+              @visible-change="onSitePopupVisibleChange"
+              @popup-scroll="(e) => onSitePopupScroll(e, 'user-edit-site-popper')"
+            >
+              <template #footer>
+                <div class="flex items-center justify-center gap-1.5 text-xs text-gray-400 select-none py-0.5">
+                  <template v-if="siteListLoading">
+                    <el-icon class="is-loading"><Loading /></el-icon>加载中…
+                  </template>
+                  <template v-else-if="siteNoMore">
+                    {{ siteTotal > 0 ? `已加载全部 ${siteTotal} 个站点` : "暂无站点" }}
+                  </template>
+                  <template v-else>继续滚动加载更多</template>
+                </div>
+              </template>
               <el-option v-for="site in siteList" :key="site.site_id" :label="`${site.site_name || site.site_id}${site.demo_site ? ' (' + site.demo_site + ')' : ''}`" :value="site.site_id" />
             </el-select>
             <div class="text-xs text-gray-500 mt-1">至少选择一个站点；与列表接口返回的站点一致，可多选。</div>
