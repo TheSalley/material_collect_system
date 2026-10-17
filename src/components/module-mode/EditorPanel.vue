@@ -7,15 +7,27 @@
           :key="part.id"
           :name="`part-${index}`"
           class="module-section-card"
-          :class="{ 'is-active-part': activePartIndex === index }"
+          :class="{ 'is-active-part': activePartIndex === index, 'is-hidden-part': isPartHidden(part) }"
         >
           <template #title>
             <div class="collapse-title">
               <el-icon class="collapse-icon">
                 <Grid />
               </el-icon>
-              <span class="collapse-text">板块 {{ index + 1 }}</span>
+              <span class="collapse-text">
+                板块 {{ index + 1
+                }}<template v-if="part?.settings?._title"> — {{ part.settings._title }}</template>
+              </span>
               <el-tag size="small" type="info">{{ part.elType || "section" }}</el-tag>
+              <button
+                type="button"
+                class="hidden-toggle-btn"
+                :class="{ 'is-hidden': isPartHidden(part) }"
+                :title="isPartHidden(part) ? '恢复显示' : '隐藏板块'"
+                @click.stop="emit('toggle-hidden', part.id)"
+              >
+                {{ isPartHidden(part) ? "已隐藏" : "显示" }}
+              </button>
             </div>
           </template>
           <div class="collapse-content">
@@ -24,6 +36,7 @@
               :original-node="part"
               :editable-map="state.editableMap"
               @update:field="(nodeId, fieldName, value) => $emit('field-update', nodeId, fieldName, value)"
+              @toggle-hidden="$emit('toggle-hidden', $event)"
             />
           </div>
         </el-collapse-item>
@@ -40,6 +53,7 @@
 <script setup>
 import { Grid } from "@element-plus/icons-vue";
 import DataExtractor from "@/components/DataExtractor.vue";
+import { isPartHidden } from "@/utils/moduleModeUtils.js";
 
 const activeCollapseName = defineModel("activeCollapseName", { type: String, default: "" });
 
@@ -62,7 +76,7 @@ defineProps({
   },
 });
 
-defineEmits(["field-update"]);
+const emit = defineEmits(["field-update", "toggle-hidden"]);
 </script>
 
 <style scoped>
@@ -104,6 +118,37 @@ defineEmits(["field-update"]);
 
 .collapse-text {
   font-size: 1rem;
+}
+
+.hidden-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid #d3dae4;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #5b6472;
+  background: #ffffff;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+.hidden-toggle-btn:hover {
+  color: #2b7cee;
+  border-color: rgba(43, 124, 238, 0.4);
+  background: rgba(43, 124, 238, 0.05);
+}
+.hidden-toggle-btn.is-hidden {
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.45);
+  background: rgba(217, 119, 6, 0.08);
+}
+
+/* 隐藏板块：标题行淡显提示 */
+.module-section-card.is-hidden-part :deep(.el-collapse-item__header) {
+  opacity: 0.62;
+  filter: saturate(0.85);
 }
 
 .collapse-content {

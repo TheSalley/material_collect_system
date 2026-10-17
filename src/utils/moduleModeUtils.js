@@ -5,6 +5,18 @@
 import { buildUrlMatchTokens, hasSafeContainsMatch, hasTokenIntersection } from "./imageBlacklist.js";
 
 /**
+ * 板块隐藏标记：隐藏时写入 settings._title 的值
+ */
+export const HIDDEN_PART_TITLE = "客户隐藏组件";
+
+/**
+ * 判断板块是否处于隐藏状态
+ */
+export function isPartHidden(part) {
+  return part?.settings?._title === HIDDEN_PART_TITLE;
+}
+
+/**
  * 生成模块图片的 key
  */
 export function moduleImageKey(id) {

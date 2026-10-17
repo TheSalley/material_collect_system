@@ -10,6 +10,7 @@
       :binding-demo-image-key="bindingDemoImageKey"
       :is-demo-screenshot-bound="isDemoScreenshotBound"
       @preview-click="handlePreviewClick"
+      @update-title="handleUpdatePartTitle"
       @open-upload="openUploadDialog"
       @remove-image="removeModuleImage"
       @toggle-demo-screenshot="toggleDemoScreenshot"
@@ -23,6 +24,7 @@
       :state="state"
       :editor-scroll-ref="editorScrollRef"
       @field-update="handleFieldUpdate"
+      @toggle-hidden="handleTogglePartHidden"
     />
   </div>
 
@@ -60,6 +62,7 @@ import EditorPanel from "@/components/module-mode/EditorPanel.vue";
 import UploadDialog from "@/components/module-mode/UploadDialog.vue";
 import { extractEditableData, updateField, mapToObject } from "@/utils/dataExtractor.js";
 import { normalizeElementorRoots, pickFieldModule } from "@/utils/elementorFieldUi.js";
+import { HIDDEN_PART_TITLE } from "@/utils/moduleModeUtils.js";
 import { buildUrlMatchTokens, hasSafeContainsMatch, hasTokenIntersection } from "@/utils/imageBlacklist.js";
 
 
@@ -365,6 +368,80 @@ function handleFieldUpdate(payload) {
     updateNodeInOriginalData(state.originData, nodeId, fieldName, value);
   } catch (error) {
     console.error("更新字段时出错:", error);
+  }
+}
+
+// ── 板块标题（_title）更新 ────────────────────────────────────────────────────
+
+function handleUpdatePartTitle({ id, title }) {
+  if (!id) return;
+  const value = typeof title === "string" ? title.trim() : "";
+  try {
+    updateNodeInOriginalData(state.pageData, id, "_title", value);
+    updateNodeInOriginalData(state.originData, id, "_title", value);
+  } catch (error) {
+    console.error("更新板块标题时出错:", error);
+  }
+}
+
+// ── 板块隐藏状态切换 ──────────────────────────────────────────────────────────
+
+function findNodeInData(data, nodeId) {
+  if (!data) return null;
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const found = findNodeInData(item, nodeId);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (String(data?.id) === String(nodeId)) return data;
+  return findNodeInData(data?.elements, nodeId);
+}
+
+/**
+ * 幂等写入隐藏状态：重复应用到同一份数据也不会来回翻转
+ * hidden=true  写入隐藏标记（仅当还不是隐藏状态，避免覆盖备份）
+ * hidden=false 还原标题并清理备份（仅当仍是隐藏状态）
+ */
+function applyPartHiddenState(node, hidden) {
+  if (!node) return;
+  if (!node.settings || Array.isArray(node.settings)) node.settings = {};
+  if (hidden) {
+    if (node.settings._title !== HIDDEN_PART_TITLE) {
+      node.settings._title_backup = node.settings._title || "";
+      node.settings._title = HIDDEN_PART_TITLE;
+    }
+  } else {
+    if (node.settings._title === HIDDEN_PART_TITLE) {
+      const backup = node.settings._title_backup;
+      if (backup) node.settings._title = backup;
+      else delete node.settings._title;
+    }
+    delete node.settings._title_backup;
+  }
+}
+
+/** 对 pageData 与 originData 应用同一目标状态（幂等，无需关心是否同引用） */
+function setPartHiddenState(id, hidden) {
+  if (!id) return;
+  for (const data of [state.pageData, state.originData]) {
+    if (!data) continue;
+    applyPartHiddenState(findNodeInData(data, id), hidden);
+  }
+}
+
+function handleTogglePartHidden(id) {
+  if (!id) return;
+  try {
+    const node =
+      findNodeInData(state.pageData, id) ||
+      findNodeInData(state.originData, id);
+    if (!node) return;
+    const hidden = node.settings?._title !== HIDDEN_PART_TITLE;
+    setPartHiddenState(id, hidden);
+  } catch (error) {
+    console.error("切换板块隐藏状态时出错:", error);
   }
 }
 

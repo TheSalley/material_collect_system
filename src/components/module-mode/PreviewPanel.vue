@@ -6,7 +6,7 @@
           v-for="(part, index) in visibleParts"
           :key="part.id"
           class="section-block section-preview-block"
-          :class="{ 'is-active-part': activePartIndex === index }"
+          :class="{ 'is-active-part': activePartIndex === index, 'is-hidden-part': isPartHidden(part) }"
           @click="$emit('preview-click', index)"
         >
           <div class="preview-block-header">
@@ -14,7 +14,61 @@
               <el-icon class="collapse-icon">
                 <Grid />
               </el-icon>
-              <span class="collapse-text">板块 {{ index + 1 }}</span>
+              <span class="collapse-text">
+                板块 {{ index + 1 }}
+              </span>
+              <template v-if="editingPartId === part.id">
+                <el-input
+                  :ref="(el) => setTitleInputRef(part.id, el)"
+                  v-model="draftTitle"
+                  size="small"
+                  class="title-edit-input"
+                  placeholder="输入板块标题"
+                  @click.stop
+                  @mousedown.stop
+                  @keyup.enter="commitTitle(part)"
+                  @keyup.esc="cancelTitle"
+                  @blur="commitTitle(part)"
+                />
+              </template>
+              <button
+                v-else
+                type="button"
+                class="title-edit-btn"
+                :title="part?.settings?._title ? '修改标题' : '添加标题'"
+                @click.stop="startEdit(part)"
+              >
+                <template v-if="part?.settings?._title">
+                  <span class="title-edit-btn__text">— {{ part.settings._title }}</span>
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.4,3 17.16,3.1 16.97,3.29L15.13,5.13L18.87,8.87L20.71,7.03C21.1,6.63 21.1,6 20.71,5.59L18.41,3.29C18.22,3.1 17.98,3 17.66,3Z"
+                    />
+                  </svg>
+                </template>
+                <template v-else>
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M14.06,9L15,9.94L5.92,19H5V18.08L14.06,9M17.66,3C17.4,3 17.16,3.1 16.97,3.29L15.13,5.13L18.87,8.87L20.71,7.03C21.1,6.63 21.1,6 20.71,5.59L18.41,3.29C18.22,3.1 17.98,3 17.66,3Z"
+                    />
+                  </svg>
+                  加标题
+                </template>
+              </button>
               <el-tag v-if="isDemoScreenshotBound(part.id, index)" size="small" type="success" effect="plain">
                 已绑定 Demo
               </el-tag>
@@ -90,8 +144,9 @@
 </template>
 
 <script setup>
+import { nextTick, ref } from "vue";
 import { Grid, Upload, ZoomIn, Delete } from "@element-plus/icons-vue";
-import { moduleImageKey } from "@/utils/moduleModeUtils.js";
+import { moduleImageKey, isPartHidden } from "@/utils/moduleModeUtils.js";
 
 defineProps({
   visibleParts: {
@@ -124,7 +179,35 @@ defineProps({
   },
 });
 
-defineEmits(["preview-click", "open-upload", "remove-image", "toggle-demo-screenshot"]);
+const emit = defineEmits(["preview-click", "open-upload", "remove-image", "toggle-demo-screenshot", "update-title"]);
+
+const editingPartId = ref(null);
+const draftTitle = ref("");
+const titleInputRefs = ref({});
+
+function setTitleInputRef(id, el) {
+  if (el) titleInputRefs.value[id] = el;
+}
+
+function startEdit(part) {
+  editingPartId.value = part.id;
+  draftTitle.value = part?.settings?._title ?? "";
+  nextTick(() => {
+    const input = titleInputRefs.value?.[part.id];
+    if (input?.focus) input.focus();
+  });
+}
+
+function commitTitle(part) {
+  if (editingPartId.value !== part.id) return;
+  emit("update-title", { id: part.id, title: draftTitle.value });
+  editingPartId.value = null;
+}
+
+function cancelTitle() {
+  editingPartId.value = null;
+  draftTitle.value = "";
+}
 </script>
 
 <style scoped>
@@ -194,6 +277,43 @@ defineEmits(["preview-click", "open-upload", "remove-image", "toggle-demo-screen
 
 .collapse-text {
   font-size: 1rem;
+}
+
+.title-edit-input {
+  width: 220px;
+}
+
+.title-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #5b6472;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+.title-edit-btn:hover {
+  color: #2b7cee;
+  border-color: rgba(43, 124, 238, 0.35);
+  background: rgba(43, 124, 238, 0.06);
+}
+.title-edit-btn__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 隐藏板块：卡片半透明 + 虚线描边提示 */
+.section-preview-block.is-hidden-part {
+  opacity: 0.62;
+  border: 1px dashed #d4a05a;
+  filter: saturate(0.85);
 }
 
 .preview-block-header {
