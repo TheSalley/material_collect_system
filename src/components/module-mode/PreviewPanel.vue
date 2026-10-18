@@ -6,7 +6,10 @@
           v-for="(part, index) in visibleParts"
           :key="part.id"
           class="section-block section-preview-block"
-          :class="{ 'is-active-part': activePartIndex === index, 'is-hidden-part': isPartHidden(part) }"
+          :class="{
+            'is-active-part': activePartIndex === index,
+            'is-hidden-part': isPartHidden(part),
+          }"
           @click="$emit('preview-click', index)"
         >
           <div class="preview-block-header">
@@ -148,7 +151,7 @@ import { nextTick, ref } from "vue";
 import { Grid, Upload, ZoomIn, Delete } from "@element-plus/icons-vue";
 import { moduleImageKey, isPartHidden } from "@/utils/moduleModeUtils.js";
 
-defineProps({
+const props = defineProps({
   visibleParts: {
     type: Array,
     required: true,
@@ -230,7 +233,7 @@ function cancelTitle() {
 .editor-content {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.875rem;
 }
 
 .section-block {
@@ -322,7 +325,7 @@ function cancelTitle() {
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
-  padding: 1.25rem 1.5rem;
+  padding: 0.75rem 1rem;
   background: #fff;
   border-bottom: 1px solid #ebeef5;
 }
@@ -342,7 +345,7 @@ function cancelTitle() {
 }
 
 .preview-block-body {
-  padding: 1.5rem;
+  padding: 1rem;
   background: #fafbfc;
   min-height: 140px;
   display: flex;

@@ -91,6 +91,27 @@ export const savePageSizes = async (site_id, pageId, sizesData = []) => {
   });
 };
 
+/**
+ * 保存页面附件数据
+ * POST /api/page_config/save_attach_data
+ * body: { site_id, data: { [pageId]: [...] } }
+ * @param {string} site_id - 站点 ID
+ * @param {string} pageId - 页面 ID
+ * @param {Array} attachData - 附件数据数组（如 [{ module_id, url }]，无附件时传 []）
+ */
+export const savePageAttachData = async (site_id, pageId, attachData = []) => {
+  const payload = {
+    site_id,
+    data: {
+      [pageId]: attachData,
+    },
+  };
+  return await fetchWithAuth(config.baseUrl + "/api/page_config/save_attach_data", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
 // 向后兼容的别名
 export const upload_bind_img = uploadFile;
 export const get_bind_img = (site_id, elementor_id, page_id, component_id) => {

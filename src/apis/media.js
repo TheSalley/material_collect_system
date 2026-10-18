@@ -1,6 +1,7 @@
 import { config, fetchWithAuth } from "@/utils/http";
 import { useGlobalStore } from "@/stores/global";
 import { ElMessage } from "element-plus";
+import { fileToWebp } from "@/utils/webp";
 
 /**
  * Query media list by demo.
@@ -80,8 +81,11 @@ export const deleteDemoConfig = async (demo) => {
  * body: FormData { file, demo, page }
  */
 export const saveMedia = async ({ file, demo, page }) => {
+  // png/jpg 自动转 webp（gif/svg/webp 原样上传）
+  const fileToUpload = await fileToWebp(file);
+
   const fd = new FormData();
-  fd.append("file", file);
+  fd.append("file", fileToUpload);
   fd.append("demo", demo);
   fd.append("page", page);
 

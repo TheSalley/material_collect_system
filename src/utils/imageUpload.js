@@ -7,6 +7,7 @@ import { uploadImage } from "@/apis";
 import { ElMessage } from "element-plus";
 import { useGlobalStore } from "@/stores/global";
 import { STRICT_IMAGE_DIMENSION_ENABLED } from "@/config/index";
+import { fileToWebp } from "@/utils/webp";
 
 /** 默认上传规则 */
 export const IMAGE_UPLOAD_DEFAULTS = {
@@ -210,15 +211,19 @@ export async function uploadImageFile(file) {
   try {
     const { websiteInfo } = useGlobalStore();
 
+    // png/jpg 自动转 webp（gif/svg/webp 原样上传）
+    const fileToUpload = await fileToWebp(file);
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
     formData.append("site_id", websiteInfo.site_id);
 
     const res = await uploadImage(formData);
 
     const parsed = parseWpUploadResult(res);
     if (parsed) {
-      ElMessage.success("图片上传成功！");
+      const convertedHint = fileToUpload === file ? "" : "（已自动转 WEBP）";
+      ElMessage.success(`图片上传成功${convertedHint}！`);
       return parsed;
     }
     const msg = res?.data?.[0]?.message || res?.message || "上传失败";

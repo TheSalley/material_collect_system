@@ -26,6 +26,7 @@ import {
   getPageConfig,
   savePageConfig,
   savePageSizes,
+  savePageAttachData,
   getFileFullUrl,
 } from "@/apis/index.js";
 import {
@@ -200,6 +201,13 @@ export function useDemoConfig({
       const detailRes = await getDemoConfig(demoName);
       const payload = cloneDemoConfigRecord(detailRes?.code === 0 ? detailRes.data : {}, demoName);
 
+      // imgs 已迁移到附加数据接口：以内存中的最新状态为基准，避免覆盖已保存的数据
+      if (fields.includes("imgs")) {
+        payload.imgs = Array.isArray(demoConfigState.value?.imgs)
+          ? [...demoConfigState.value.imgs]
+          : [];
+      }
+
       await mutator(payload);
 
       const savePayload = { demo: demoName };
@@ -208,6 +216,23 @@ export function useDemoConfig({
           savePayload[field] = payload[field];
         }
       });
+
+      // 迁移：imgs → /api/page_config/save_attach_data
+      const hasImgs = Object.prototype.hasOwnProperty.call(savePayload, "imgs");
+      const site_id = websiteInfo.value?.site_id;
+      const currentPageId = pageId.value;
+      if (hasImgs && site_id && currentPageId) {
+        delete savePayload.imgs;
+        const attachRes = await savePageAttachData(
+          site_id,
+          String(currentPageId),
+          Array.isArray(payload.imgs) ? payload.imgs : [],
+        );
+        if (attachRes?.code !== 0) {
+          ElMessage.error(attachRes?.message || "保存截图附加数据失败");
+          return { ok: false };
+        }
+      }
 
       const saveRes = await saveDemoConfig(savePayload);
       if (saveRes?.code === 0) {

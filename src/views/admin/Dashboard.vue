@@ -1,8 +1,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { Calendar, TrendCharts } from "@element-plus/icons-vue";
+import { Calendar, TrendCharts, Grid } from "@element-plus/icons-vue";
 import StatCard from "@/components/common/StatCard.vue";
 import PanelCard from "@/components/common/PanelCard.vue";
+import PageContainer from "@/components/common/PageContainer.vue";
 import { getHolidayCountdown } from "@/apis/holiday.js";
 
 const summary = {
@@ -146,50 +147,45 @@ const activities = [
 </script>
 
 <template>
-  <div class="dashboard-page">
-    <!-- Hero 区域：保留自定义深色渐变设计 -->
-    <header class="dashboard-hero">
-      <div>
-        <p class="dashboard-eyebrow">Admin Dashboard</p>
-        <h1 class="dashboard-title">素材协作看板</h1>
-        <p class="dashboard-subtitle">
-          这里先使用静态演示数据，方便页面联调和布局确认。后续可以把各板块替换成真实接口。
-        </p>
+  <PageContainer
+    title="面板"
+    subtitle="站点进度、截图同步与尺寸回填概览"
+    :icon="Grid"
+    class="dashboard-container"
+  >
+    <template #actions>
+      <div class="dashboard-badge">
+        <el-icon><Calendar /></el-icon>
+        <span>{{ summary.dateLabel }}</span>
       </div>
-
-      <div class="dashboard-hero__meta">
-        <div class="dashboard-badge">
-          <el-icon><Calendar /></el-icon>
-          <span>{{ summary.dateLabel }}</span>
-        </div>
-        <div class="dashboard-badge dashboard-badge--success">
-          <el-icon><TrendCharts /></el-icon>
-          <span>今日同步成功率 {{ summary.syncRate }}</span>
-        </div>
+      <div class="dashboard-badge dashboard-badge--success">
+        <el-icon><TrendCharts /></el-icon>
+        <span>今日同步成功率 {{ summary.syncRate }}</span>
       </div>
-    </header>
+    </template>
 
-    <!-- 统计卡片：接入 StatCard 公共组件 -->
-    <section class="metric-grid">
-      <StatCard
-        v-for="item in metricCards"
-        :key="item.label"
-        :label="item.label"
-        :value="item.value"
-        :hint="item.hint"
-        :accent="item.accent"
-      >
-        <template #actions>
-          <span class="metric-trend" :class="{ 'is-down': item.trendDirection === 'down' }">
-            {{ item.trend }}
-          </span>
-        </template>
-      </StatCard>
-    </section>
+    <div class="dashboard-scroll">
+      <!-- 统计卡片：接入 StatCard 公共组件 -->
+      <section class="metric-grid">
+        <StatCard
+          v-for="item in metricCards"
+          :key="item.label"
+          :label="item.label"
+          :value="item.value"
+          :hint="item.hint"
+          :accent="item.accent"
+        >
+          <template #actions>
+            <span class="metric-trend" :class="{ 'is-down': item.trendDirection === 'down' }">
+              {{ item.trend }}
+            </span>
+          </template>
+        </StatCard>
+      </section>
 
-    <!-- 主内容区：接入 PanelCard 公共组件 -->
-    <section class="dashboard-main">
-      <PanelCard class="panel--wide">
+      <!-- 主内容区：接入 PanelCard 公共组件 -->
+      <section class="dashboard-main">
+        <PanelCard class="panel--wide">
         <template #header>
           <div>
             <h2 class="panel__title">近 7 日交付节奏</h2>
@@ -221,9 +217,9 @@ const activities = [
             </div>
           </div>
         </div>
-      </PanelCard>
+        </PanelCard>
 
-      <PanelCard>
+        <PanelCard>
         <template #header>
           <div>
             <h2 class="panel__title">流量来源占比</h2>
@@ -250,9 +246,9 @@ const activities = [
             演示数据中，主要风险集中在尺寸未保存和待补截图页面。
           </p>
         </div>
-      </PanelCard>
+        </PanelCard>
 
-      <PanelCard>
+        <PanelCard>
         <template #header>
           <div>
             <h2 class="panel__title">站点推进列表</h2>
@@ -278,9 +274,9 @@ const activities = [
             </div>
           </div>
         </div>
-      </PanelCard>
+        </PanelCard>
 
-      <PanelCard>
+        <PanelCard>
         <template #header>
           <div>
             <h2 class="panel__title">最近动态</h2>
@@ -300,9 +296,9 @@ const activities = [
             </div>
           </div>
         </div>
-      </PanelCard>
+        </PanelCard>
 
-      <PanelCard>
+        <PanelCard>
         <template #header>
           <div>
             <h2 class="panel__title">节假日倒计时</h2>
@@ -322,83 +318,53 @@ const activities = [
             暂无节假日数据
           </div>
         </div>
-      </PanelCard>
-    </section>
-  </div>
+        </PanelCard>
+      </section>
+    </div>
+  </PageContainer>
 </template>
 
 <style scoped>
-.dashboard-page {
-  width: 100%;
-  min-height: 100%;
-  background:
-    radial-gradient(circle at top left, rgba(16, 185, 129, 0.1), transparent 28%),
-    radial-gradient(circle at top right, rgba(43, 124, 238, 0.1), transparent 24%),
-    linear-gradient(180deg, var(--color-background-light) 0%, #eef4f7 100%);
-  overflow-y: auto;
-  overflow-x: hidden;
+.dashboard-container {
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* Hero 区域：保留自定义深色渐变设计 */
-.dashboard-hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
-  flex-wrap: wrap;
-  gap: 24px;
-  padding: 28px 32px;
-  border-radius: var(--radius-card);
-  background: linear-gradient(135deg, #07253a 0%, #0f3d5e 58%, #155d74 100%);
-  color: var(--color-text-inverse);
-  box-shadow: 0 24px 60px rgba(10, 37, 58, 0.18);
-}
-
-.dashboard-eyebrow {
-  margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(226, 244, 255, 0.72);
-}
-
-.dashboard-title {
-  margin: 0;
-  font-size: 34px;
-  line-height: 1.1;
-  font-weight: 800;
-}
-
-.dashboard-subtitle {
-  margin: 14px 0 0;
-  max-width: 620px;
-  font-size: 14px;
-  line-height: 1.75;
-  color: rgba(232, 245, 255, 0.8);
-}
-
-.dashboard-hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
+/* 顶部操作区徽章：与全局浅色工具栏保持一致 */
 .dashboard-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: var(--radius-badge);
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(10px);
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-field);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.dashboard-badge .el-icon {
   font-size: 13px;
-  color: var(--color-text-inverse);
+  color: var(--color-primary);
 }
 
 .dashboard-badge--success {
-  background: rgba(16, 185, 129, 0.16);
+  color: var(--color-success);
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.dashboard-badge--success .el-icon {
+  color: var(--color-success);
+}
+
+/* 内容滚动区：视口内滚动，与其他 admin 页面一致 */
+.dashboard-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* 统计卡片趋势标签 */
@@ -416,15 +382,16 @@ const activities = [
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 20px;
+  gap: 16px;
+  margin-top: 16px;
 }
 
 .dashboard-main {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.9fr);
-  gap: 18px;
-  margin-top: 20px;
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
 }
 
 .panel--wide {
@@ -433,14 +400,14 @@ const activities = [
 
 .panel__title {
   margin: 0;
-  font-size: 20px;
+  font-size: 17px;
   color: var(--color-text-primary);
 }
 
 .panel__desc {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--color-text-muted);
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -716,19 +683,6 @@ const activities = [
 }
 
 @media (max-width: 768px) {
-  .dashboard-hero {
-    flex-direction: column;
-    padding: 22px;
-  }
-
-  .dashboard-title {
-    font-size: 28px;
-  }
-
-  .dashboard-hero__meta {
-    justify-content: flex-start;
-  }
-
   .metric-grid {
     grid-template-columns: 1fr;
   }

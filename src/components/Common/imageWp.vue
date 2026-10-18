@@ -37,6 +37,7 @@
         </el-button>
       </p>
       <p class="__hint-line">{{ uploadTip }}</p>
+      <p class="__hint-line __webp-hint">能裁切，png/jpg 会自动转成 WEBP 再上传。</p>
 
       <div
         v-if="isAdmin && showSizeConfig && sizeConfigKey"
@@ -63,6 +64,17 @@
         <span class="__target-size-hint__unit">px</span>
       </div>
     </div>
+
+    <ImageCropDialog
+      v-model="cropVisible"
+      :src="cropSrc"
+      :aspect="cropAspect"
+      :default-width="configuredDims?.width || 0"
+      :default-height="configuredDims?.height || 0"
+      :filename="pendingFileName"
+      @confirm="handleCropConfirm"
+      @cancel="handleCropClose"
+    />
   </div>
 </template>
 
@@ -78,6 +90,7 @@ import {
   getImageNaturalSizeFromUrl,
 } from "@/utils/imageUpload";
 import { isImageBlacklisted } from "@/utils/imageBlacklist";
+import ImageCropDialog from "@/components/Common/ImageCropDialog.vue";
 
 defineOptions({
   inheritAttrs: false,
@@ -105,6 +118,12 @@ const uploadTip = buildImageUploadTip({ ...IMAGE_UPLOAD_DEFAULTS });
 const naturalSizeInfo = ref({ width: "", height: "" });
 
 const { isAdmin } = useGlobalStore();
+
+/** 裁切弹窗状态 */
+const cropVisible = ref(false);
+const cropSrc = ref("");
+let pendingRawFile = null;
+const pendingFileName = ref("");
 
 const sectionSizes = inject("sectionSizes", ref({}));
 const blacklist = inject("blacklist", ref([]));
@@ -218,6 +237,12 @@ function getOrCreateSizeConfig(id) {
 
 const imageUrl = computed(() => props.modelValue?.url);
 
+const cropAspect = computed(() => {
+  const dims = configuredDims.value;
+  if (dims?.width && dims?.height) return `${dims.width}/${dims.height}`;
+  return "free";
+});
+
 const isBlacklisted = computed(() => {
   return isImageBlacklisted(imageUrl.value, blacklist.value);
 });
@@ -237,6 +262,18 @@ watch(
 );
 
 const handleBeforeUpload = (file) => {
+  pendingRawFile = file;
+  pendingFileName.value = file.name || "";
+  if (cropSrc.value) URL.revokeObjectURL(cropSrc.value);
+  cropSrc.value = URL.createObjectURL(file);
+  cropVisible.value = true;
+  return false;
+};
+
+function startUpload(file) {
+  const target = file || pendingRawFile;
+  if (!target) return;
+
   const refDim = configuredDims.value || naturalSizeInfo.value;
   const opts = refDim?.width && refDim?.height
     ? { strictMatch: true, refDimensions: refDim }
@@ -248,7 +285,7 @@ const handleBeforeUpload = (file) => {
   });
 
   handleImageUpload(
-    file,
+    target,
     (url, id) => {
       loading.close();
       emit("update:modelValue", { ...props.modelValue, url, id });
@@ -259,7 +296,23 @@ const handleBeforeUpload = (file) => {
       loading.close();
     }
   });
+}
 
-  return false;
-};
+function handleCropConfirm(file) {
+  startUpload(file);
+}
+
+function handleCropClose() {
+  if (cropSrc.value) {
+    URL.revokeObjectURL(cropSrc.value);
+    cropSrc.value = "";
+  }
+}
 </script>
+
+<style scoped>
+.__webp-hint {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+</style>

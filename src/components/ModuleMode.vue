@@ -50,6 +50,12 @@
     @confirm-select="confirmSelectMedia"
     @page-change="handlePageChange"
   />
+
+  <SortPartsDialog
+    v-model:visible="sortDialogVisible"
+    :parts="visibleParts"
+    @reorder="handleReorderParts"
+  />
 </template>
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch, computed } from "vue";
@@ -60,6 +66,7 @@ import { useGlobalStore } from "@/stores/global";
 import PreviewPanel from "@/components/module-mode/PreviewPanel.vue";
 import EditorPanel from "@/components/module-mode/EditorPanel.vue";
 import UploadDialog from "@/components/module-mode/UploadDialog.vue";
+import SortPartsDialog from "@/components/module-mode/SortPartsDialog.vue";
 import { extractEditableData, updateField, mapToObject } from "@/utils/dataExtractor.js";
 import { normalizeElementorRoots, pickFieldModule } from "@/utils/elementorFieldUi.js";
 import { HIDDEN_PART_TITLE } from "@/utils/moduleModeUtils.js";
@@ -199,6 +206,8 @@ const state = reactive({
   meta_id: null,
   ImageList: [],
 });
+
+const sortDialogVisible = ref(false);
 
 const globalStore = useGlobalStore();
 const { websiteInfo, isAdmin } = storeToRefs(globalStore);
@@ -445,6 +454,30 @@ function handleTogglePartHidden(id) {
   }
 }
 
+// ── 板块排序 ──────────────────────────────────────────────────────────────────
+
+function handleReorderParts({ fromId, toId }) {
+  if (!fromId || !toId || String(fromId) === String(toId)) return;
+  try {
+    // pageData 与 originData 可能是同一个引用，去重避免同一份数据被移动两次
+    const seen = new Set();
+    for (const data of [state.pageData, state.originData]) {
+      if (!data || seen.has(data)) continue;
+      seen.add(data);
+      const roots = normalizeElementorRoots(data);
+      if (!Array.isArray(roots) || roots.length <= 1) continue;
+      const fromIndex = roots.findIndex((r) => String(r?.id) === String(fromId));
+      const toIndex = roots.findIndex((r) => String(r?.id) === String(toId));
+      if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) continue;
+      const [moved] = roots.splice(fromIndex, 1);
+      const target = toIndex > fromIndex ? toIndex - 1 : toIndex;
+      roots.splice(target, 0, moved);
+    }
+  } catch (error) {
+    console.error("调整板块顺序时出错:", error);
+  }
+}
+
 // ── 批量更新 ─────────────────────────────────────────────────────────────────
 
 function applyBulkFieldUpdates(updates = []) {
@@ -574,6 +607,9 @@ defineExpose({
   bindAllDemoScreenshots,
   bindDemoSizeByNodeId,
   bindAllDemoSizes,
+  openSortDialog: () => {
+    sortDialogVisible.value = true;
+  },
 });
 </script>
 

@@ -152,7 +152,7 @@ const emit = defineEmits(["field-update", "toggle-hidden"]);
 }
 
 .collapse-content {
-  padding: 1.5rem;
+  padding: 1rem;
   background: #fafbfc;
 }
 
@@ -170,7 +170,7 @@ const emit = defineEmits(["field-update", "toggle-hidden"]);
   border: none;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 :deep(.module-parts-collapse > .module-section-card.el-collapse-item) {
@@ -186,7 +186,7 @@ const emit = defineEmits(["field-update", "toggle-hidden"]);
 }
 
 :deep(.module-parts-collapse .el-collapse-item__header) {
-  padding: 1.25rem 1.5rem;
+  padding: 0.75rem 1rem;
   background: white;
   border: none;
   font-weight: 500;

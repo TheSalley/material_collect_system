@@ -253,6 +253,10 @@ async function handleSaveSizes() {
   }
 }
 
+function openSortDialog() {
+  ModuleModeNode.value?.openSortDialog?.();
+}
+
 async function handleBindAllDemoScreenshots() {
   const fn = ModuleModeNode.value?.applyDemoScreenshots;
   if (typeof fn !== "function") {
@@ -464,6 +468,9 @@ watch(
             size="large"
           >
             一键获取图片尺寸
+          </el-button>
+          <el-button v-if="pageData?.id" :icon="Sort" @click="openSortDialog" size="large">
+            板块排序
           </el-button>
           <el-button type="primary" :icon="Check" @click="handleSave" size="large">保存</el-button>
         </div>
