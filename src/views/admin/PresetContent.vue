@@ -42,6 +42,10 @@ import {
  * ------------------------------------------------------------------------
  */
 
+/* ---------------- 初始演示数据（来自共享模块） ---------------- */
+const initialCategories = INITIAL_CATEGORIES;
+const initialGroups = INITIAL_PRESET_GROUPS;
+
 /* ---------------- 状态 ---------------- */
 const loadingList = ref(false);
 const saving = ref(false);
