@@ -37,6 +37,7 @@
               :editable-map="state.editableMap"
               @update:field="(nodeId, fieldName, value) => $emit('field-update', nodeId, fieldName, value)"
               @toggle-hidden="$emit('toggle-hidden', $event)"
+              @apply-preset-node="(e) => emit('apply-preset-node', e)"
             />
           </div>
         </el-collapse-item>
@@ -51,13 +52,14 @@
 </template>
 
 <script setup>
+import { provide } from "vue";
 import { Grid } from "@element-plus/icons-vue";
 import DataExtractor from "@/components/DataExtractor.vue";
 import { isPartHidden } from "@/utils/moduleModeUtils.js";
 
 const activeCollapseName = defineModel("activeCollapseName", { type: String, default: "" });
 
-defineProps({
+const props = defineProps({
   visibleParts: {
     type: Array,
     required: true,
@@ -74,9 +76,16 @@ defineProps({
     type: Object,
     default: null,
   },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const emit = defineEmits(["field-update", "toggle-hidden"]);
+const emit = defineEmits(["field-update", "toggle-hidden", "apply-preset-node"]);
+
+// 透传管理员身份给字段组件（DataExtractor），用于显示「用预设替换」按钮
+provide("fieldPresetAdmin", props.isAdmin);
 </script>
 
 <style scoped>

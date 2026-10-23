@@ -23,8 +23,10 @@
       :active-part-index="activePartIndex"
       :state="state"
       :editor-scroll-ref="editorScrollRef"
+      :is-admin="isAdmin"
       @field-update="handleFieldUpdate"
       @toggle-hidden="handleTogglePartHidden"
+      @apply-preset-node="handleApplyPresetNode"
     />
   </div>
 
@@ -494,6 +496,15 @@ function applyBulkFieldUpdates(updates = []) {
       console.error("applyBulkFieldUpdates error:", e);
     }
   }
+}
+
+// ── 行业预设替换：把弹窗选中的图片/文案批量应用到当前板块 ───────────────────
+
+function handleApplyPresetNode({ nodeId, updates = [] }) {
+  const count = Array.isArray(updates) ? updates.length : 0;
+  if (count === 0) return;
+  applyBulkFieldUpdates(updates);
+  ElMessage.success("已把 " + count + " 处预设素材填入当前组件");
 }
 
 // ── 获取最终保存数据 ─────────────────────────────────────────────────────────

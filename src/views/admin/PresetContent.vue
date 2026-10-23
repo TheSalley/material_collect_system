@@ -6,6 +6,7 @@ import {
   CopyDocument,
   Delete,
   EditPen,
+  FolderOpened,
   Plus,
   Refresh,
   Search,
@@ -18,6 +19,13 @@ import PageContainer from "@/components/common/PageContainer.vue";
 import PanelCard from "@/components/common/PanelCard.vue";
 import StatCard from "@/components/common/StatCard.vue";
 import ImageUploader from "@/components/common/ImageUploader.vue";
+import {
+  INITIAL_CATEGORIES,
+  INITIAL_PRESET_GROUPS,
+  loadPresetData,
+  savePresetData,
+  clearPresetData,
+} from "@/utils/presetContentData.js";
 
 /**
  * 预设内容（静态演示页）
@@ -25,58 +33,24 @@ import ImageUploader from "@/components/common/ImageUploader.vue";
  * 目的：管理员维护一批「预设内容包」，每个包内含图片素材 + 文案素材，
  *      客户端按包 id 取用（例如首页首屏、产品宣传、活动促销等场景）。
  *
+ * 数据组织：内容包按「行业分类」归类（新能源、家居、智能机器人、工业等），
+ *      分类用于批量下发与客户端场景匹配；数据源见 presetContentData.js，
+ *      页面编辑（ModuleMode）可直接调用同一份预设内容替换板块素材。
+ *
  * 说明：本页当前为静态演示，数据保存在本地状态（刷新即重置），
  *      接口对接点在 handleLoad / handleSave 两处，后续接入真实后端即可。
  * ------------------------------------------------------------------------
  */
-
-/* ---------------- 静态演示数据 ---------------- */
-const initialGroups = [
-  {
-    id: 1,
-    name: "首页首屏",
-    desc: "客户端首页顶部主视觉与标题，用于开场展示",
-    enabled: true,
-    images: [
-      { url: "https://picsum.photos/seed/home1/640/400", name: "主视觉背景" },
-      { url: "https://picsum.photos/seed/home2/640/400", name: "产品横幅" },
-    ],
-    texts: [
-      { title: "品牌主张", content: "把复杂留给我们，把简单交给你" },
-      { title: "副标题", content: "一站式素材服务，随取随用" },
-    ],
-  },
-  {
-    id: 2,
-    name: "产品宣传",
-    desc: "产品详情页的卖点图与文案，客户端按产品分类拉取",
-    enabled: true,
-    images: [
-      { url: "https://picsum.photos/seed/pro1/640/400", name: "核心卖点图" },
-    ],
-    texts: [
-      { title: "卖点一", content: "加载快，肉眼几乎无感知" },
-      { title: "卖点二", content: "安全稳定，数据不出端" },
-    ],
-  },
-  {
-    id: 3,
-    name: "活动促销",
-    desc: "营销活动页的素材，客户端活动期间调用",
-    enabled: false,
-    images: [],
-    texts: [
-      { title: "活动口号", content: "限时特惠，先到先得" },
-    ],
-  },
-];
 
 /* ---------------- 状态 ---------------- */
 const loadingList = ref(false);
 const saving = ref(false);
 const searching = ref(false);
 const searchKeyword = ref("");
-const presetGroups = ref(JSON.parse(JSON.stringify(initialGroups)));
+const categoryFilter = ref("all"); // all | 分类 key
+const loadedPreset = loadPresetData();
+const presetGroups = ref(loadedPreset.groups.length > 0 ? loadedPreset.groups : JSON.parse(JSON.stringify(initialGroups)));
+const presetCategories = ref(loadedPreset.categories.length > 0 ? loadedPreset.categories : JSON.parse(JSON.stringify(initialCategories)));
 const activeGroupId = ref(initialGroups[0]?.id ?? null);
 
 // 抽屉：新增 / 编辑预设内容包
@@ -87,10 +61,18 @@ const editingId = ref(null);
 const editorForm = reactive({
   name: "",
   desc: "",
+  category: "",
   enabled: true,
 });
 const editorImages = ref([]); // 上传的图片文件
 const editorTexts = ref([]); // [{title, content}]
+
+// 抽屉：新增 / 编辑行业分类
+const categoryDrawerVisible = ref(false);
+const categoryMode = ref("create"); // create | edit
+const categorySaving = ref(false);
+const editingCategoryKey = ref("");
+const categoryForm = reactive({ name: "", desc: "" });
 
 // 文案编辑弹窗
 const textDialogVisible = ref(false);
@@ -103,16 +85,60 @@ const previewVisible = ref(false);
 const previewUrl = ref("");
 
 /* ---------------- 计算 ---------------- */
+const categoryMap = computed(() =>
+  Object.fromEntries(presetCategories.value.map((c) => [c.key, c]))
+);
+
+const categoryOptions = computed(() =>
+  presetCategories.value.map((c) => ({ value: c.key, label: c.name }))
+);
+
+const categoryCounts = computed(() => {
+  const counts = { all: presetGroups.value.length };
+  presetCategories.value.forEach((c) => {
+    counts[c.key] = presetGroups.value.filter((g) => g.category === c.key).length;
+  });
+  return counts;
+});
+
 const filteredGroups = computed(() => {
   const kw = searchKeyword.value.trim().toLowerCase();
-  if (!kw) return presetGroups.value;
-  return presetGroups.value.filter((g) =>
-    (g.name.toLowerCase().includes(kw) || g.desc.toLowerCase().includes(kw))
+  return presetGroups.value.filter((g) => {
+    if (categoryFilter.value !== "all" && g.category !== categoryFilter.value) return false;
+    if (!kw) return true;
+    const catName = categoryMap.value[g.category]?.name || "";
+    return (
+      g.name.toLowerCase().includes(kw) ||
+      g.desc.toLowerCase().includes(kw) ||
+      catName.toLowerCase().includes(kw)
+    );
+  });
+});
+
+// 左侧列表按分类分组展示
+const groupedList = computed(() => {
+  const groups = [];
+  presetCategories.value.forEach((c) => {
+    const items = filteredGroups.value.filter((g) => g.category === c.key);
+    if (items.length > 0) groups.push({ category: c, items });
+  });
+  const uncategorized = filteredGroups.value.filter(
+    (g) => !categoryMap.value[g.category]
   );
+  if (uncategorized.length > 0) {
+    groups.push({ category: null, items: uncategorized });
+  }
+  return groups;
 });
 
 const activeGroup = computed(() =>
   presetGroups.value.find((g) => g.id === activeGroupId.value) || null
+);
+
+const activeCategoryName = computed(() =>
+  activeGroup.value
+    ? categoryMap.value[activeGroup.value.category]?.name || "未分类"
+    : ""
 );
 
 const totalImages = computed(() =>
@@ -130,7 +156,11 @@ const enabledCount = computed(() =>
 async function handleLoad() {
   loadingList.value = true;
   try {
-    // const res = await getPresetGroups(); if (res?.code === 0) presetGroups.value = res.data
+    // 接入真实后端时替换为接口调用：
+    // const res = await getPresetGroups(); if (res?.code === 0) ...
+    const data = loadPresetData();
+    presetGroups.value = data.groups.length > 0 ? data.groups : JSON.parse(JSON.stringify(initialGroups));
+    presetCategories.value = data.categories.length > 0 ? data.categories : JSON.parse(JSON.stringify(initialCategories));
     await new Promise((r) => setTimeout(r, 200));
   } finally {
     loadingList.value = false;
@@ -141,9 +171,14 @@ async function handleLoad() {
 async function handleSave() {
   saving.value = true;
   try {
-    // const res = await savePresetGroups(presetGroups.value)
+    // 接入真实后端时替换为接口调用：
+    // const res = await savePresetGroups({ categories, groups })
     await new Promise((r) => setTimeout(r, 300));
-    ElMessage.success("保存成功（静态演示，刷新后恢复初始数据）");
+    savePresetData({
+      categories: presetCategories.value,
+      groups: presetGroups.value,
+    });
+    ElMessage.success("已保存，页面编辑处可直接调用这些预设内容");
   } finally {
     saving.value = false;
   }
@@ -153,11 +188,77 @@ function selectGroup(id) {
   activeGroupId.value = id;
 }
 
+function selectCategory(key) {
+  categoryFilter.value = key;
+}
+
+/* 行业分类管理 */
+function openCategoryDrawer() {
+  categoryMode.value = "create";
+  editingCategoryKey.value = "";
+  categoryForm.name = "";
+  categoryForm.desc = "";
+  categoryDrawerVisible.value = true;
+}
+
+function openCategoryEdit(cat) {
+  categoryMode.value = "edit";
+  editingCategoryKey.value = cat.key;
+  categoryForm.name = cat.name;
+  categoryForm.desc = cat.desc || "";
+  categoryDrawerVisible.value = true;
+}
+
+function submitCategory() {
+  const name = categoryForm.name.trim();
+  if (!name) {
+    ElMessage.warning("请填写分类名称");
+    return;
+  }
+  const payload = {
+    key: editingCategoryKey.value || "cat" + Date.now(),
+    name,
+    desc: categoryForm.desc.trim(),
+  };
+  if (categoryMode.value === "create") {
+    presetCategories.value.push(payload);
+    ElMessage.success("行业分类已新增");
+  } else {
+    const idx = presetCategories.value.findIndex((c) => c.key === editingCategoryKey.value);
+    if (idx > -1) presetCategories.value[idx] = payload;
+    ElMessage.success("行业分类已更新");
+  }
+  categoryDrawerVisible.value = false;
+}
+
+async function deleteCategory(cat) {
+  const used = presetGroups.value.filter((g) => g.category === cat.key).length;
+  if (used > 0) {
+    ElMessage.warning(
+      `分类「${cat.name}」下还有 ${used} 个内容包，先移走再删`
+    );
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确认删除行业分类「${cat.name}」吗？`,
+      "删除行业分类",
+      { type: "warning", confirmButtonText: "确认删除", cancelButtonText: "取消" }
+    );
+  } catch {
+    return;
+  }
+  presetCategories.value = presetCategories.value.filter((x) => x.key !== cat.key);
+  if (categoryFilter.value === cat.key) categoryFilter.value = "all";
+  ElMessage.success("已删除分类");
+}
+
 function openCreateEditor() {
   editorMode.value = "create";
   editingId.value = null;
   editorForm.name = "";
   editorForm.desc = "";
+  editorForm.category = categoryFilter.value !== "all" ? categoryFilter.value : (presetCategories.value[0]?.key ?? "");
   editorForm.enabled = true;
   editorImages.value = [];
   editorTexts.value = [];
@@ -171,6 +272,7 @@ function openEditEditor() {
   editingId.value = g.id;
   editorForm.name = g.name;
   editorForm.desc = g.desc;
+  editorForm.category = g.category || "";
   editorForm.enabled = g.enabled;
   editorImages.value = [];
   editorTexts.value = JSON.parse(JSON.stringify(g.texts || []));
@@ -194,6 +296,7 @@ async function submitEditor() {
 
     const payload = {
       id: editingId.value || Date.now(),
+      category: editorForm.category || presetCategories.value[0]?.key || "",
       name,
       desc: editorForm.desc.trim(),
       enabled: editorForm.enabled,
@@ -286,7 +389,10 @@ async function removeText(index) {
 }
 
 function handleRefresh() {
+  clearPresetData();
   presetGroups.value = JSON.parse(JSON.stringify(initialGroups));
+  presetCategories.value = JSON.parse(JSON.stringify(initialCategories));
+  categoryFilter.value = "all";
   activeGroupId.value = initialGroups[0]?.id ?? null;
   ElMessage.info("已恢复初始演示数据");
 }
@@ -304,10 +410,11 @@ function copyGroupId(g) {
 <template>
   <PageContainer
     title="预设内容"
-    subtitle="按场景维护图片与文案素材包，客户端按包 id 直接调用"
+    subtitle="按行业分类维护图片与文案素材包，客户端按包 id 直接调用"
     :icon="Collection"
   >
     <template #actions>
+      <el-button type="primary" plain :icon="FolderOpened" @click="openCategoryDrawer">行业分类</el-button>
       <el-button type="primary" plain :icon="Plus" @click="openCreateEditor">新增内容包</el-button>
       <el-button :icon="Refresh" @click="handleRefresh">恢复演示数据</el-button>
       <el-button type="primary" :icon="Check" :loading="saving" @click="handleSave">保存</el-button>
@@ -332,30 +439,62 @@ function copyGroupId(g) {
           <el-input
             v-model="searchKeyword"
             clearable
-            placeholder="搜索内容包名称"
+            placeholder="搜索内容包名称或行业"
             class="preset-search"
             :prefix-icon="Search"
           />
 
-          <div v-if="filteredGroups.length > 0" class="preset-list" v-loading="loadingList">
-            <div
-              v-for="g in filteredGroups"
-              :key="g.id"
-              class="preset-list__item"
-              :class="{ 'is-active': g.id === activeGroupId }"
-              @click="selectGroup(g.id)"
+          <div class="preset-cats">
+            <button
+              type="button"
+              class="preset-cats__item"
+              :class="{ 'is-active': categoryFilter === 'all' }"
+              @click="selectCategory('all')"
             >
-              <div class="preset-list__main">
-                <strong>{{ g.name }}</strong>
-                <span class="preset-list__desc">{{ g.desc || "暂无描述" }}</span>
+              <span>全部</span>
+              <em>{{ categoryCounts.all }}</em>
+            </button>
+            <button
+              v-for="cat in presetCategories"
+              :key="cat.key"
+              type="button"
+              class="preset-cats__item"
+              :class="{ 'is-active': categoryFilter === cat.key }"
+              @click="selectCategory(cat.key)"
+            >
+              <span>{{ cat.name }}</span>
+              <em>{{ categoryCounts[cat.key] || 0 }}</em>
+            </button>
+          </div>
+          <el-button text size="small" :icon="EditPen" class="preset-cats__manage" @click="openCategoryDrawer">
+            管理行业分类
+          </el-button>
+
+          <div v-if="filteredGroups.length > 0" class="preset-list" v-loading="loadingList">
+            <template v-for="group in groupedList" :key="group.category ? group.category.key : 'uncat'">
+              <div class="preset-list__group">
+                <span class="preset-list__group-name">{{ group.category ? group.category.name : "未分类" }}</span>
+                <span class="preset-list__group-count">{{ group.items.length }}</span>
               </div>
-              <div class="preset-list__meta">
-                <span>{{ g.images?.length || 0 }} 图 · {{ g.texts?.length || 0 }} 文</span>
-                <el-tag :type="g.enabled ? 'success' : 'info'" size="small" effect="plain">
-                  {{ g.enabled ? "启用" : "停用" }}
-                </el-tag>
+              <div
+                v-for="g in group.items"
+                :key="g.id"
+                class="preset-list__item"
+                :class="{ 'is-active': g.id === activeGroupId }"
+                @click="selectGroup(g.id)"
+              >
+                <div class="preset-list__main">
+                  <strong>{{ g.name }}</strong>
+                  <span class="preset-list__desc">{{ g.desc || "暂无描述" }}</span>
+                </div>
+                <div class="preset-list__meta">
+                  <span>{{ g.images?.length || 0 }} 图 · {{ g.texts?.length || 0 }} 文</span>
+                  <el-tag :type="g.enabled ? 'success' : 'info'" size="small" effect="plain">
+                    {{ g.enabled ? "启用" : "停用" }}
+                  </el-tag>
+                </div>
               </div>
-            </div>
+            </template>
           </div>
           <el-empty v-else :description="searchKeyword ? '没有匹配的内容包' : '暂时没有内容包'" :image-size="72" />
         </div>
@@ -366,7 +505,10 @@ function copyGroupId(g) {
         <template #header>
           <div class="preset-editor-head">
             <div class="preset-editor-title">
-              <h3>{{ activeGroup?.name || "未选择内容包" }}</h3>
+              <div class="preset-editor-title__row">
+                <h3>{{ activeGroup?.name || "未选择内容包" }}</h3>
+                <el-tag v-if="activeCategoryName" size="small" effect="plain" type="info">{{ activeCategoryName }}</el-tag>
+              </div>
               <p>{{ activeGroup?.desc || "在左侧选择或新建一个内容包开始编辑" }}</p>
             </div>
             <div class="preset-editor-actions" v-if="activeGroup">
@@ -448,7 +590,12 @@ function copyGroupId(g) {
     <el-drawer v-model="editorVisible" :title="editorMode === 'create' ? '新增预设内容包' : '编辑预设内容包'" size="440px">
       <el-form label-position="top">
         <el-form-item label="内容包名称" required>
-          <el-input v-model="editorForm.name" placeholder="例如：首页首屏" maxlength="30" show-word-limit />
+          <el-input v-model="editorForm.name" placeholder="例如：光伏电站" maxlength="30" show-word-limit />
+        </el-form-item>
+        <el-form-item label="行业分类" required>
+          <el-select v-model="editorForm.category" placeholder="选择行业分类" style="width: 100%">
+            <el-option v-for="opt in categoryOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="描述">
           <el-input v-model="editorForm.desc" type="textarea" :rows="2" placeholder="说明这个包用于哪个客户端场景" />
@@ -479,6 +626,43 @@ function copyGroupId(g) {
           <el-button type="primary" :loading="editorSaving" @click="submitEditor">保存</el-button>
         </div>
       </template>
+    </el-drawer>
+
+    <!-- 行业分类管理抽屉 -->
+    <el-drawer v-model="categoryDrawerVisible" title="行业分类管理" size="440px">
+      <p class="category-tip">分类用于给内容包分行业，客户端按行业批量下发。</p>
+
+      <div class="category-form">
+        <el-form label-position="top">
+          <el-form-item label="分类名称" required>
+            <el-input v-model="categoryForm.name" placeholder="例如：新能源" maxlength="20" show-word-limit />
+          </el-form-item>
+          <el-form-item label="分类描述">
+            <el-input v-model="categoryForm.desc" type="textarea" :rows="2" placeholder="说明这个行业包含哪些场景" />
+          </el-form-item>
+        </el-form>
+        <div class="editor-footer">
+          <el-button @click="categoryDrawerVisible = false">关闭</el-button>
+          <el-button type="primary" :loading="categorySaving" @click="submitCategory">
+            {{ categoryMode === "create" ? "新增分类" : "保存修改" }}
+          </el-button>
+        </div>
+      </div>
+
+      <div class="category-list">
+        <div v-for="cat in presetCategories" :key="cat.key" class="category-list__item">
+          <div class="category-list__main">
+            <strong>{{ cat.name }}</strong>
+            <span>{{ cat.desc || "暂无描述" }}</span>
+            <em>{{ categoryCounts[cat.key] || 0 }} 个内容包</em>
+          </div>
+          <div class="category-list__ops">
+            <el-button type="primary" link size="small" :icon="EditPen" @click="openCategoryEdit(cat)">编辑</el-button>
+            <el-button type="danger" link size="small" :icon="Delete" @click="deleteCategory(cat)">删除</el-button>
+          </div>
+        </div>
+        <el-empty v-if="presetCategories.length === 0" description="还没有行业分类，先新增一个" :image-size="64" />
+      </div>
     </el-drawer>
 
     <!-- 文案编辑弹窗 -->
@@ -591,6 +775,125 @@ function copyGroupId(g) {
 .preset-list__meta > span {
   color: var(--color-text-muted);
   font-size: 12px;
+}
+
+
+/* 行业分类筛选 */
+.preset-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.preset-cats__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.preset-cats__item:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.preset-cats__item.is-active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+.preset-cats__item em {
+  font-style: normal;
+  font-size: 11px;
+  opacity: 0.75;
+}
+.preset-cats__manage {
+  align-self: flex-start;
+}
+
+/* 分组列表 */
+.preset-list__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px 0;
+  margin-top: 6px;
+}
+.preset-list__group-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+.preset-list__group-count {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: var(--color-surface-hover);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+/* 分类管理 */
+.category-tip {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0 0 16px;
+}
+.category-form {
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--color-border-light);
+  margin-bottom: 16px;
+}
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.category-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+}
+.category-list__main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.category-list__main strong {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+.category-list__main span {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.category-list__main em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+.category-list__ops {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* 右侧标题行 */
+.preset-editor-title__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* 右侧编辑区 */
