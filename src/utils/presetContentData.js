@@ -10,6 +10,12 @@
  * ------------------------------------------------------------------------
  */
 
+import {
+  listPresetCategories,
+  listPresets,
+  resolvePresetMediaUrl,
+} from "@/apis/presets";
+
 // 行业分类：{ key, name, desc }
 export const INITIAL_CATEGORIES = [
   { key: "energy", name: "新能源", desc: "光伏、储能、充电桩、电池等新能源场景" },
@@ -28,8 +34,8 @@ export const INITIAL_PRESET_GROUPS = [
     desc: "光伏项目业主的首页主视觉与开场文案",
     enabled: true,
     images: [
-      { url: "https://picsum.photos/seed/solar1/640/400", name: "光伏电站航拍" },
-      { url: "https://picsum.photos/seed/solar2/640/400", name: "逆变器特写" },
+      { url: "/seed/solar1.svg", name: "光伏电站航拍" },
+      { url: "/seed/solar2.svg", name: "逆变器特写" },
     ],
     texts: [
       { title: "品牌主张", content: "阳光入网，收益看得见" },
@@ -43,7 +49,7 @@ export const INITIAL_PRESET_GROUPS = [
     desc: "工商业储能的卖点图与方案文案",
     enabled: true,
     images: [
-      { url: "https://picsum.photos/seed/battery1/640/400", name: "储能柜外观" },
+      { url: "/seed/battery1.svg", name: "储能柜外观" },
     ],
     texts: [
       { title: "卖点一", content: "峰谷价差套利，回本周期 3.2 年" },
@@ -57,8 +63,8 @@ export const INITIAL_PRESET_GROUPS = [
     desc: "全屋定制门店的样板间图片与话术",
     enabled: true,
     images: [
-      { url: "https://picsum.photos/seed/kitchen1/640/400", name: "厨房样板间" },
-      { url: "https://picsum.photos/seed/wardrobe1/640/400", name: "衣帽间" },
+      { url: "/seed/kitchen1.svg", name: "厨房样板间" },
+      { url: "/seed/wardrobe1.svg", name: "衣帽间" },
     ],
     texts: [
       { title: "主推", content: "28 天交付，甲醛低于国标" },
@@ -72,7 +78,7 @@ export const INITIAL_PRESET_GROUPS = [
     desc: "全屋智能的场景联动演示素材",
     enabled: false,
     images: [
-      { url: "https://picsum.photos/seed/smarthome1/640/400", name: "智能客厅" },
+      { url: "/seed/smarthome1.svg", name: "智能客厅" },
     ],
     texts: [
       { title: "场景", content: "离家一键，灯、锁、空调全关" },
@@ -85,7 +91,7 @@ export const INITIAL_PRESET_GROUPS = [
     desc: "六轴协作机械臂的应用案例素材",
     enabled: true,
     images: [
-      { url: "https://picsum.photos/seed/cobot1/640/400", name: "产线装配" },
+      { url: "/seed/cobot1.svg", name: "产线装配" },
     ],
     texts: [
       { title: "参数", content: "负载 12kg，重复精度 ±0.02mm" },
@@ -111,8 +117,8 @@ export const INITIAL_PRESET_GROUPS = [
     desc: "机床企业的产品宣传与展会素材",
     enabled: true,
     images: [
-      { url: "https://picsum.photos/seed/cnc1/640/400", name: "五轴加工中心" },
-      { url: "https://picsum.photos/seed/cnc2/640/400", name: "车间实拍" },
+      { url: "/seed/cnc1.svg", name: "五轴加工中心" },
+      { url: "/seed/cnc2.svg", name: "车间实拍" },
     ],
     texts: [
       { title: "精度", content: "定位精度 0.005mm，24 小时连续加工" },
@@ -137,13 +143,114 @@ export const INITIAL_PRESET_GROUPS = [
     desc: "不区分行业的通用首页主视觉",
     enabled: true,
     images: [
-      { url: "https://picsum.photos/seed/home1/640/400", name: "主视觉背景" },
+      { url: "/seed/home1.svg", name: "主视觉背景" },
     ],
     texts: [
       { title: "主张", content: "把复杂留给我们，把简单交给你" },
     ],
   },
 ];
+
+/* ---------------- 接口数据适配 ---------------- */
+
+function parsePresetContent(content) {
+  if (content && typeof content === "object") return content;
+  if (typeof content === "string") {
+    try {
+      return JSON.parse(content);
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+/** 接口分类 → 页面分类 */
+export function mapPresetCategory(item = {}) {
+  return {
+    key: item.key || "",
+    name: item.name || item.key || "未命名分类",
+    desc: item.description || "",
+  };
+}
+
+/** 接口内容包 → 页面内容包 */
+export function mapPresetGroup(item = {}) {
+  const content = parsePresetContent(item.content);
+  return {
+    id: item.id,
+    category: item.category || "",
+    categoryName: item.category_name || "",
+    name: item.name || "",
+    desc: item.description || "",
+    enabled: item.enabled !== false,
+    images: Array.isArray(content.images) ? content.images : [],
+    texts: Array.isArray(content.texts) ? content.texts : [],
+    sort: item.sort ?? 10,
+    remark: item.remark || "",
+  };
+}
+
+/** 页面内容包 → 接口请求体 */
+export function toPresetPayload(group = {}) {
+  return {
+    category: group.category,
+    name: String(group.name || "").trim(),
+    description: group.desc || "",
+    content: {
+      texts: (group.texts || [])
+        .map((item) => ({
+          title: String(item.title || "").trim(),
+          content: String(item.content || "").trim(),
+        }))
+        .filter((item) => item.content),
+      images: (group.images || [])
+        .map((item) => ({
+          name: String(item.name || "").trim(),
+          url: String(item.url || "").trim(),
+        }))
+        .filter((item) => item.url),
+    },
+    sort: group.sort ?? 10,
+    enabled: group.enabled !== false,
+    remark: group.remark || "",
+  };
+}
+
+/**
+ * 从预设后端读取分类 + 内容包。
+ * 调用方读取失败时仍可使用 loadPresetData() 的内置示例数据兜底。
+ */
+export async function fetchPresetData() {
+  const [categoriesRes, groupsRes] = await Promise.all([
+    listPresetCategories(),
+    listPresets({ page: 1, page_size: 200 }),
+  ]);
+
+  if (categoriesRes?.code !== 0) {
+    throw new Error(categoriesRes?.message || "预设分类读取失败");
+  }
+  if (groupsRes?.code !== 0) {
+    throw new Error(groupsRes?.message || "预设内容读取失败");
+  }
+
+  const categories = (categoriesRes.data || []).map(mapPresetCategory);
+  const groups = (groupsRes.data?.list || []).map(mapPresetGroup);
+
+  // 内容包引用了未知分类时补一个占位分类，避免编辑时选不到
+  for (const group of groups) {
+    if (!group.category) continue;
+    if (!categories.some((item) => item.key === group.category)) {
+      categories.push({
+        key: group.category,
+        name: group.categoryName || group.category,
+        desc: "",
+      });
+    }
+  }
+
+  return { categories, groups };
+}
 
 /**
  * 本地存储键：管理端「预设内容」保存后写入，页面编辑读取同一份数据。
@@ -242,7 +349,7 @@ export function isImageFieldValue(value) {
  * - 原值是字符串，直接替换为 url 字符串
  */
 export function buildImageFieldValue(originalValue, presetImage) {
-  const url = presetImage?.url || "";
+  const url = resolvePresetMediaUrl(presetImage?.url || "");
   if (typeof originalValue === "object" && originalValue !== null && !Array.isArray(originalValue)) {
     return { ...originalValue, url, id: originalValue.id ?? null };
   }

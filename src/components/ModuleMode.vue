@@ -520,6 +520,14 @@ function getFinalData() {
   return state.pageData;
 }
 
+function replacePageData(data) {
+  if (!Array.isArray(data)) return false;
+  state.pageData = data;
+  state.originData = data;
+  state.editableMap = extractData(data);
+  return true;
+}
+
 // ── 提取可编辑数据 ───────────────────────────────────────────────────────────
 
 function extractData(data) {
@@ -610,6 +618,7 @@ watch(
 defineExpose({
   state,
   getFinalData,
+  replacePageData,
   applyBulkFieldUpdates,
   applyDemoScreenshots,
   applyDemoSizes,

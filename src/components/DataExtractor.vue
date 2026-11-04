@@ -39,7 +39,11 @@ import DataExtractor from "@/components/DataExtractor.vue";
 import PresetPickerDialog from "@/components/module-mode/PresetPickerDialog.vue";
 import { pickFieldModule } from "@/utils/elementorFieldUi.js";
 import { isPartHidden } from "@/utils/moduleModeUtils.js";
-import { loadPresetData, collectReplaceableFields } from "@/utils/presetContentData.js";
+import {
+  loadPresetData,
+  fetchPresetData,
+  collectReplaceableFields,
+} from "@/utils/presetContentData.js";
 import { useGlobalStore } from "@/stores/global";
 
 const modules = import.meta.glob("/src/components/ElementorFields/**/*.vue", { eager: true });
@@ -82,7 +86,7 @@ const replaceableFields = computed(() => {
   return collectReplaceableFields(editableNode.value.widgetType, editableNode.value.fields);
 });
 
-function openPresetPicker() {
+async function openPresetPicker() {
   presetData.value = loadPresetData();
   // 补上 nodeId：弹窗应用时才能定位到当前组件节点写入
   presetFields.value = replaceableFields.value.map((f) => ({
@@ -90,6 +94,11 @@ function openPresetPicker() {
     nodeId: editableNode.value?.id || "",
   }));
   presetVisible.value = true;
+  try {
+    presetData.value = await fetchPresetData();
+  } catch {
+    // 接口不可用时继续使用内置示例，保证编辑不中断
+  }
 }
 
 function handleApplyPreset(updates) {

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
   Collection,
@@ -10,7 +10,6 @@ import {
   Plus,
   Refresh,
   Search,
-  UploadFilled,
   Picture,
   Tickets,
   Check,
@@ -20,25 +19,33 @@ import PanelCard from "@/components/common/PanelCard.vue";
 import StatCard from "@/components/common/StatCard.vue";
 import ImageUploader from "@/components/common/ImageUploader.vue";
 import {
+  createPreset,
+  createPresetCategory,
+  deletePreset,
+  deletePresetCategory,
+  resolvePresetMediaUrl,
+  updatePreset,
+  updatePresetCategory,
+  uploadPresetMedia,
+} from "@/apis/presets";
+import {
   INITIAL_CATEGORIES,
   INITIAL_PRESET_GROUPS,
+  fetchPresetData,
   loadPresetData,
-  savePresetData,
-  clearPresetData,
+  mapPresetCategory,
+  mapPresetGroup,
+  toPresetPayload,
 } from "@/utils/presetContentData.js";
 
 /**
- * 预设内容（静态演示页）
+ * 预设内容（接口驱动）
  * ------------------------------------------------------------------------
  * 目的：管理员维护一批「预设内容包」，每个包内含图片素材 + 文案素材，
  *      客户端按包 id 取用（例如首页首屏、产品宣传、活动促销等场景）。
  *
  * 数据组织：内容包按「行业分类」归类（新能源、家居、智能机器人、工业等），
- *      分类用于批量下发与客户端场景匹配；数据源见 presetContentData.js，
- *      页面编辑（ModuleMode）可直接调用同一份预设内容替换板块素材。
- *
- * 说明：本页当前为静态演示，数据保存在本地状态（刷新即重置），
- *      接口对接点在 handleLoad / handleSave 两处，后续接入真实后端即可。
+ *      分类与内容包都来自 /api/presets/*，页面编辑（ModuleMode）读取同一份数据。
  * ------------------------------------------------------------------------
  */
 
@@ -48,8 +55,6 @@ const initialGroups = INITIAL_PRESET_GROUPS;
 
 /* ---------------- 状态 ---------------- */
 const loadingList = ref(false);
-const saving = ref(false);
-const searching = ref(false);
 const searchKeyword = ref("");
 const categoryFilter = ref("all"); // all | 分类 key
 const loadedPreset = loadPresetData();
@@ -156,36 +161,27 @@ const enabledCount = computed(() =>
 );
 
 /* ---------------- 操作 ---------------- */
-// TODO: 接入真实后端时替换为接口调用
-async function handleLoad() {
+async function loadFromApi(showMessage = false) {
   loadingList.value = true;
   try {
-    // 接入真实后端时替换为接口调用：
-    // const res = await getPresetGroups(); if (res?.code === 0) ...
-    const data = loadPresetData();
-    presetGroups.value = data.groups.length > 0 ? data.groups : JSON.parse(JSON.stringify(initialGroups));
-    presetCategories.value = data.categories.length > 0 ? data.categories : JSON.parse(JSON.stringify(initialCategories));
-    await new Promise((r) => setTimeout(r, 200));
+    const data = await fetchPresetData();
+    presetCategories.value = data.categories;
+    presetGroups.value = data.groups;
+    if (!presetGroups.value.some((g) => g.id === activeGroupId.value)) {
+      activeGroupId.value = presetGroups.value[0]?.id ?? null;
+    }
+    if (showMessage) ElMessage.success("已从接口刷新预设内容");
+  } catch (error) {
+    if (showMessage) {
+      ElMessage.error(error?.message || "预设内容读取失败，已显示内置示例");
+    }
   } finally {
     loadingList.value = false;
   }
 }
 
-// TODO: 接入真实后端时替换为接口调用
-async function handleSave() {
-  saving.value = true;
-  try {
-    // 接入真实后端时替换为接口调用：
-    // const res = await savePresetGroups({ categories, groups })
-    await new Promise((r) => setTimeout(r, 300));
-    savePresetData({
-      categories: presetCategories.value,
-      groups: presetGroups.value,
-    });
-    ElMessage.success("已保存，页面编辑处可直接调用这些预设内容");
-  } finally {
-    saving.value = false;
-  }
+function handleRefresh() {
+  loadFromApi(true);
 }
 
 function selectGroup(id) {
@@ -213,26 +209,42 @@ function openCategoryEdit(cat) {
   categoryDrawerVisible.value = true;
 }
 
-function submitCategory() {
+async function submitCategory() {
   const name = categoryForm.name.trim();
   if (!name) {
     ElMessage.warning("请填写分类名称");
     return;
   }
-  const payload = {
-    key: editingCategoryKey.value || "cat" + Date.now(),
-    name,
-    desc: categoryForm.desc.trim(),
-  };
-  if (categoryMode.value === "create") {
-    presetCategories.value.push(payload);
-    ElMessage.success("行业分类已新增");
-  } else {
-    const idx = presetCategories.value.findIndex((c) => c.key === editingCategoryKey.value);
-    if (idx > -1) presetCategories.value[idx] = payload;
-    ElMessage.success("行业分类已更新");
+  categorySaving.value = true;
+  try {
+    const payload = {
+      name,
+      description: categoryForm.desc.trim(),
+    };
+    const res =
+      categoryMode.value === "create"
+        ? await createPresetCategory({
+            ...payload,
+            sort: presetCategories.value.length * 10 + 10,
+          })
+        : await updatePresetCategory({ key: editingCategoryKey.value, ...payload });
+
+    if (res?.code !== 0) {
+      ElMessage.error(res?.message || "分类保存失败");
+      return;
+    }
+
+    const mapped = mapPresetCategory(res.data);
+    const idx = presetCategories.value.findIndex((c) => c.key === mapped.key);
+    if (idx > -1) presetCategories.value[idx] = mapped;
+    else presetCategories.value.push(mapped);
+    categoryDrawerVisible.value = false;
+    ElMessage.success(categoryMode.value === "create" ? "行业分类已新增" : "行业分类已更新");
+  } catch (error) {
+    ElMessage.error(error?.message || "分类保存失败");
+  } finally {
+    categorySaving.value = false;
   }
-  categoryDrawerVisible.value = false;
 }
 
 async function deleteCategory(cat) {
@@ -250,6 +262,11 @@ async function deleteCategory(cat) {
       { type: "warning", confirmButtonText: "确认删除", cancelButtonText: "取消" }
     );
   } catch {
+    return;
+  }
+  const res = await deletePresetCategory(cat.key);
+  if (res?.code !== 0) {
+    ElMessage.error(res?.message || "删除分类失败");
     return;
   }
   presetCategories.value = presetCategories.value.filter((x) => x.key !== cat.key);
@@ -289,39 +306,80 @@ async function submitEditor() {
     ElMessage.warning("请填写预设内容包名称");
     return;
   }
+  if (!editorForm.category) {
+    ElMessage.warning("请选择行业分类");
+    return;
+  }
+  const emptyTextRow = editorTexts.value.find(
+    (t) => String(t.title || "").trim() && !String(t.content || "").trim(),
+  );
+  if (emptyTextRow) {
+    ElMessage.warning("文案标题填写后，内容不能为空");
+    return;
+  }
+  const existingImageCount =
+    editorMode.value === "edit" ? activeGroup.value?.images?.length || 0 : 0;
+  const hasText = editorTexts.value.some((t) => String(t.content || "").trim());
+  if (existingImageCount + editorImages.value.length === 0 && !hasText) {
+    ElMessage.warning("请至少添加一张图片或一条文案");
+    return;
+  }
 
   editorSaving.value = true;
   try {
-    // 静态演示：图片先以占位图形式落库；真实场景走上传接口拿到 url 后再写入
-    const newImages = editorImages.value.map((f, i) => ({
-      url: `https://picsum.photos/seed/new${Date.now()}-${i}/640/400`,
-      name: f.name || `图片 ${i + 1}`,
-    }));
+    const existingImages =
+      editorMode.value === "edit" ? activeGroup.value?.images || [] : [];
+    const newImages = [];
+    for (const [index, file] of editorImages.value.entries()) {
+      const raw = file.raw || file;
+      if (!raw) continue;
+      const uploadRes = await uploadPresetMedia(raw);
+      if (uploadRes?.code !== 0 || !uploadRes.data?.url) {
+        throw new Error(uploadRes?.message || `图片 ${index + 1} 上传失败`);
+      }
+      newImages.push({
+        url: uploadRes.data.url,
+        name: file.name || raw.name || `图片 ${index + 1}`,
+      });
+    }
 
-    const payload = {
-      id: editingId.value || Date.now(),
-      category: editorForm.category || presetCategories.value[0]?.key || "",
+    const group = {
+      category: editorForm.category,
       name,
       desc: editorForm.desc.trim(),
       enabled: editorForm.enabled,
-      images: newImages,
-      texts: editorTexts.value.filter((t) => t.title.trim() || t.content.trim()),
+      images: [...existingImages, ...newImages],
+      texts: editorTexts.value.filter(
+        (t) => String(t.title || "").trim() || String(t.content || "").trim(),
+      ),
+      sort:
+        editorMode.value === "edit"
+          ? activeGroup.value?.sort ?? 10
+          : presetGroups.value.length * 10 + 10,
     };
 
-    if (editorMode.value === "create") {
-      presetGroups.value.unshift(payload);
-      activeGroupId.value = payload.id;
-      ElMessage.success("预设内容包已创建");
+    const res =
+      editorMode.value === "create"
+        ? await createPreset(toPresetPayload(group))
+        : await updatePreset({ id: editingId.value, ...toPresetPayload(group) });
+
+    if (res?.code !== 0) {
+      ElMessage.error(res?.message || "内容包保存失败");
+      return;
+    }
+
+    const mapped = mapPresetGroup(res.data);
+    const idx = presetGroups.value.findIndex((g) => g.id === mapped.id);
+    if (idx > -1) {
+      presetGroups.value[idx] = mapped;
     } else {
-      const idx = presetGroups.value.findIndex((g) => g.id === editingId.value);
-      if (idx > -1) {
-        // 编辑时保留原有图片，合并本次新增
-        payload.images = [...(presetGroups.value[idx].images || []), ...newImages];
-        presetGroups.value[idx] = payload;
-      }
-      ElMessage.success("预设内容包已更新");
+      presetGroups.value.unshift(mapped);
+      activeGroupId.value = mapped.id;
     }
     editorVisible.value = false;
+    ElMessage.success(editorMode.value === "create" ? "预设内容包已创建" : "预设内容包已更新");
+  } catch (error) {
+    ElMessage.error(error?.message || "内容包保存失败");
   } finally {
     editorSaving.value = false;
   }
@@ -337,6 +395,11 @@ async function deleteGroup(g) {
   } catch {
     return;
   }
+  const res = await deletePreset(g.id);
+  if (res?.code !== 0) {
+    ElMessage.error(res?.message || "删除失败");
+    return;
+  }
   presetGroups.value = presetGroups.value.filter((x) => x.id !== g.id);
   if (activeGroupId.value === g.id) {
     activeGroupId.value = presetGroups.value[0]?.id ?? null;
@@ -345,14 +408,32 @@ async function deleteGroup(g) {
 }
 
 /* 图片素材 */
+async function persistActiveGroup(successMessage = "") {
+  if (!activeGroup.value) return;
+  const res = await updatePreset({
+    id: activeGroup.value.id,
+    ...toPresetPayload(activeGroup.value),
+  });
+  if (res?.code !== 0) {
+    ElMessage.error(res?.message || "保存失败");
+    await loadFromApi(false);
+    return;
+  }
+  const mapped = mapPresetGroup(res.data);
+  const idx = presetGroups.value.findIndex((g) => g.id === mapped.id);
+  if (idx > -1) presetGroups.value[idx] = mapped;
+  if (successMessage) ElMessage.success(successMessage);
+}
+
 function openPreview(url) {
-  previewUrl.value = url;
+  previewUrl.value = resolvePresetMediaUrl(url);
   previewVisible.value = true;
 }
 
 async function removeImage(index) {
   if (!activeGroup.value) return;
   activeGroup.value.images.splice(index, 1);
+  await persistActiveGroup("图片已移除");
 }
 
 /* 文案素材 */
@@ -369,11 +450,11 @@ function openTextDialog(mode, index = -1) {
   textDialogVisible.value = true;
 }
 
-function submitTextDialog() {
+async function submitTextDialog() {
   const title = textForm.title.trim();
   const content = textForm.content.trim();
-  if (!title && !content) {
-    ElMessage.warning("标题和内容至少填一项");
+  if (!content) {
+    ElMessage.warning("请填写文案内容");
     return;
   }
   const item = { title, content };
@@ -385,20 +466,13 @@ function submitTextDialog() {
     activeGroup.value.texts.push(item);
   }
   textDialogVisible.value = false;
+  await persistActiveGroup(textDialogMode.value === "edit" ? "文案已更新" : "文案已添加");
 }
 
 async function removeText(index) {
   if (!activeGroup.value) return;
   activeGroup.value.texts.splice(index, 1);
-}
-
-function handleRefresh() {
-  clearPresetData();
-  presetGroups.value = JSON.parse(JSON.stringify(initialGroups));
-  presetCategories.value = JSON.parse(JSON.stringify(initialCategories));
-  categoryFilter.value = "all";
-  activeGroupId.value = initialGroups[0]?.id ?? null;
-  ElMessage.info("已恢复初始演示数据");
+  await persistActiveGroup("文案已删除");
 }
 
 // 静态演示：占位图仍可正常预览
@@ -409,6 +483,8 @@ function copyGroupId(g) {
     ElMessage.info(`包 id：${g.id}`);
   });
 }
+
+onMounted(() => loadFromApi(false));
 </script>
 
 <template>
@@ -420,8 +496,7 @@ function copyGroupId(g) {
     <template #actions>
       <el-button type="primary" plain :icon="FolderOpened" @click="openCategoryDrawer">行业分类</el-button>
       <el-button type="primary" plain :icon="Plus" @click="openCreateEditor">新增内容包</el-button>
-      <el-button :icon="Refresh" @click="handleRefresh">恢复演示数据</el-button>
-      <el-button type="primary" :icon="Check" :loading="saving" @click="handleSave">保存</el-button>
+      <el-button :icon="Refresh" :loading="loadingList" @click="handleRefresh">刷新</el-button>
     </template>
 
     <!-- 统计卡片 -->
@@ -537,10 +612,10 @@ function copyGroupId(g) {
             <div v-if="activeGroup.images.length > 0" class="preset-images">
               <div v-for="(img, i) in activeGroup.images" :key="i" class="preset-images__item">
                 <el-image
-                  :src="img.url"
+                  :src="resolvePresetMediaUrl(img.url)"
                   fit="cover"
                   class="preset-images__thumb"
-                  :preview-src-list="[img.url]"
+                  :preview-src-list="[resolvePresetMediaUrl(img.url)]"
                   preview-teleported
                   @click="openPreview(img.url)"
                 />

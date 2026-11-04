@@ -7,6 +7,8 @@ export * from "./proxy";
 export * from "./translate";
 export * from "./media";
 export * from "./blacklist";
+export * from "./collection";
+export * from "./presets";
 
 // 导出请求工具函数（从 @/utils/http 导入）
 export {
@@ -24,6 +26,7 @@ export {
   STRICT_IMAGE_DIMENSION_ENABLED,
   API_TIMEOUT,
   API_BASE_URL,
+  PRESET_API_BASE_URL,
   HTTP_ERROR_MESSAGES,
   languageList,
 } from "@/config";

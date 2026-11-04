@@ -6,13 +6,15 @@ import { useRouter } from "vue-router";
 import SiteInfoPanel from "@/components/SiteInfoPanel.vue";
 import NewsListPanel from "@/components/NewsListPanel.vue";
 import ProductListPanel from "@/components/ProductListPanel.vue";
+import CustomerInfoPanel from "@/components/CustomerInfoPanel.vue";
+import BannerCollectionPanel from "@/components/BannerCollectionPanel.vue";
 import { useGlobalStore } from "@/stores/global.js";
 import PageContainer from "@/components/common/PageContainer.vue";
 import PanelCard from "@/components/common/PanelCard.vue";
 import {
   UserFilled, ArrowLeft, ArrowRight, Check, House,
   InfoFilled, User, Key, CircleCheck, CircleClose,
-  Calendar, Document, Edit, Box
+  Calendar, Document, Edit, Box, Postcard, PictureFilled
 } from '@element-plus/icons-vue';
 
 const { user } = useGlobalStore();
@@ -343,7 +345,7 @@ async function handleSave() {
         <div class="flex items-center gap-3 flex-shrink-0">
           <el-button :icon="ArrowLeft" @click="router.push({ name: 'AdminList' })">返回</el-button>
           <el-button
-            v-if="activeSubTab !== 'pages'"
+            v-if="!['pages', 'profile', 'banners'].includes(activeSubTab)"
             type="primary"
             :icon="Check"
             @click="handleSave"
@@ -352,7 +354,7 @@ async function handleSave() {
             保存更改
           </el-button>
           <el-tooltip
-            v-else
+            v-else-if="activeSubTab === 'pages'"
             content="页面权限通过右侧开关即时保存，无需点击保存"
             placement="bottom"
           >
@@ -423,7 +425,7 @@ async function handleSave() {
         <!-- 页面 / 站点 / 内容 Tab 区域 -->
         <div class="flex flex-col">
           <div class="border-b border-gray-200 mb-6">
-            <nav class="flex space-x-8">
+            <nav class="flex flex-wrap gap-x-8 gap-y-2">
               <!-- 站点信息 Tab -->
               <button
                 type="button"
@@ -437,6 +439,34 @@ async function handleSave() {
                   <InfoFilled />
                 </el-icon>
                 <span class="text-base">站点信息</span>
+              </button>
+              <!-- 客户资料 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
+                :class="activeSubTab === 'profile'
+                  ? 'border-primary text-primary font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                @click="activeSubTab = 'profile'"
+              >
+                <el-icon :class="activeSubTab === 'profile' ? 'text-primary' : 'text-gray-400'">
+                  <Postcard />
+                </el-icon>
+                <span class="text-base">客户资料</span>
+              </button>
+              <!-- Banner 收集 Tab -->
+              <button
+                type="button"
+                class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
+                :class="activeSubTab === 'banners'
+                  ? 'border-primary text-primary font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                @click="activeSubTab = 'banners'"
+              >
+                <el-icon :class="activeSubTab === 'banners' ? 'text-primary' : 'text-gray-400'">
+                  <PictureFilled />
+                </el-icon>
+                <span class="text-base">Banner</span>
               </button>
               <!-- 页面设置 Tab -->
               <button
@@ -554,6 +584,16 @@ async function handleSave() {
           <!-- 站点信息：复用 SiteInfoPanel -->
           <div v-else-if="activeSubTab === 'site'">
             <SiteInfoPanel />
+          </div>
+
+          <!-- 客户资料：客户提交内容只读查看 -->
+          <div v-else-if="activeSubTab === 'profile'">
+            <CustomerInfoPanel readonly />
+          </div>
+
+          <!-- Banner 收集：客户提交内容只读查看 -->
+          <div v-else-if="activeSubTab === 'banners'">
+            <BannerCollectionPanel readonly />
           </div>
 
           <!-- 新闻：新闻列表 -->

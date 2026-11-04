@@ -73,7 +73,7 @@
                 :title="img.name || img.url"
                 @click="selectForField(f, 'image', i)"
               >
-                <el-image :src="img.url" fit="cover" />
+                <el-image :src="resolvePresetMediaUrl(img.url)" fit="cover" />
                 <span v-if="img.name" class="preset-img-opt__name">{{ img.name }}</span>
               </button>
               <span v-if="!(selectedGroup.images || []).length" class="preset-field__empty">这个包里没有图片</span>
@@ -114,6 +114,7 @@
 <script setup>
 import { computed, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
+import { resolvePresetMediaUrl } from "@/apis/presets";
 import { getPresetData, buildImageFieldValue } from "@/utils/presetContentData.js";
 
 const props = defineProps({

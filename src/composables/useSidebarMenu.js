@@ -108,11 +108,14 @@ export function useSidebarMenu() {
       return true;
     });
 
-    // 处理用户页面列表
+    // 页面列表由 sitePageList 渲染，不能覆盖根路由的 children
     if (user?.page_list) {
       arr.forEach((item) => {
-        if (item.path === "/pages/:id" || (item.children && item.children.some((c) => c.path === "pages/:id"))) {
+        if (item.path !== "/pages/:id") return;
+        try {
           item.children = JSON.parse(user.page_list);
+        } catch {
+          item.children = [];
         }
       });
     }
@@ -124,6 +127,8 @@ export function useSidebarMenu() {
         root.children = root.children.filter((child) => {
           return (
             child.path === "siteInfo" ||
+            child.path === "customerInfo" ||
+            child.path === "bannerCollection" ||
             child.path === "pages/:id" ||
             child.path === "instruction"
           );

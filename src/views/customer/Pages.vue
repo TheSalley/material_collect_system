@@ -6,9 +6,7 @@ import { updatePageById, translate, getBlacklistConfig, getDemoConfig } from "@/
 import { ElLoading, ElMessage } from "element-plus";
 import ModuleMode from "@/components/ModuleMode.vue";
 import { useRoute, useRouter } from "vue-router";
-import {
-  Document, House, ArrowRight, Check, Sort
-} from '@element-plus/icons-vue';
+import { Document, House, ArrowRight, Check, Sort } from "@element-plus/icons-vue";
 import PageContainer from "@/components/common/PageContainer.vue";
 
 const router = useRouter();
