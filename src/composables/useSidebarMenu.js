@@ -3,6 +3,11 @@
 import { computed } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { useRouter, useRoute } from "vue-router";
+import {
+  canAccessCustomerRoute,
+  canAccessRoute,
+  normalizeRole,
+} from "@/router/permissions.js";
 
 /**
  * 侧边栏菜单数据逻辑
@@ -10,7 +15,8 @@ import { useRouter, useRoute } from "vue-router";
  * - activeMenu：根据当前路由计算出激活的菜单 index
  */
 export function useSidebarMenu() {
-  const { user } = useGlobalStore();
+  const globalStore = useGlobalStore();
+  const { user } = globalStore;
   const router = useRouter();
   const route = useRoute();
 
@@ -22,18 +28,14 @@ export function useSidebarMenu() {
 
   // 根据角色过滤路由，得到侧边栏可访问的菜单路由
   const accessibleRoutes = computed(() => {
-    const role = (user?.role ?? "user").toString().toLowerCase();
+    const role = normalizeRole(user?.role);
     const isAdmin = role === "admin";
     const isUser = role === "user";
 
     // 根据用户角色过滤路由
     let arr = router.getRoutes().filter((item) => {
-      // 检查路由的 role meta，确保用户有权限访问
-      const routeRole = item.meta?.role;
-      if (routeRole) {
-        if (routeRole === "admin" && !isAdmin) return false;
-        if (routeRole === "user" && !isUser && !isAdmin) return false;
-      }
+      // 统一读取 meta.allowRoles / meta.role 权限规则
+      if (!canAccessRoute(item.meta, role)) return false;
 
       // 管理员：只显示 /admin 路由及其子路由
       if (isAdmin) {
@@ -49,7 +51,7 @@ export function useSidebarMenu() {
         // 对于用户，保留根路由 /（即使 hidden），因为需要显示其子路由
         if (item.path === "/" || item.path === "") {
           // 确保这是用户路由
-          if (routeRole && routeRole !== "user") return false;
+          if (item.meta?.role && item.meta.role !== "user") return false;
           return true;
         }
         // 其他路由都不显示（子路由会通过父路由的 children 属性访问）
@@ -120,17 +122,15 @@ export function useSidebarMenu() {
       });
     }
 
-    // 用户身份：侧栏显示站点信息、页面列表；产品列表/新闻列表暂时隐藏（路由仍保留，可直链访问）
+    // 用户身份：只展示已开放的菜单；产品/新闻/客户资料等暂无入口
     if (isUser) {
       const root = arr.find((r) => r.path === "/" || r.path === "");
       if (root?.children?.length) {
         root.children = root.children.filter((child) => {
-          return (
-            child.path === "siteInfo" ||
-            child.path === "customerInfo" ||
-            child.path === "bannerCollection" ||
-            child.path === "pages/:id" ||
-            child.path === "instruction"
+          return canAccessCustomerRoute(
+            child.meta,
+            role,
+            globalStore.customerMenuPermissions
           );
         });
       }

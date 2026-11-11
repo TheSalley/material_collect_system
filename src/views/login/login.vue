@@ -107,6 +107,7 @@
 import { ref, nextTick } from "vue";
 import { login } from "@/apis/index.js";
 import { refreshUserSitePageListWithPermissions } from "@/utils/userSitePages.js";
+import { loadCustomerMenuPermissions } from "@/apis/collection.js";
 import { useRouter, useRoute } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
 import { User, Lock, Right, Refresh } from "@element-plus/icons-vue";
@@ -166,6 +167,10 @@ const handleLogin = async () => {
         // 用户身份：拉取页面列表 + 页面授权（与刷新时一致）
         if (role === "user" && globalStore.websiteInfo?.site_id) {
           await refreshUserSitePageListWithPermissions(globalStore);
+          const menuRes = await loadCustomerMenuPermissions();
+          globalStore.setCustomerMenuPermissions(
+            menuRes.ok ? menuRes.data : null
+          );
         }
 
         ElMessage.success("登录成功");

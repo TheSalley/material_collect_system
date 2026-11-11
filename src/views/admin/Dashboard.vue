@@ -147,12 +147,7 @@ const activities = [
 </script>
 
 <template>
-  <PageContainer
-    title="面板"
-    subtitle="站点进度、截图同步与尺寸回填概览"
-    :icon="Grid"
-    class="dashboard-container"
-  >
+  <PageContainer title="面板" subtitle="站点进度、截图同步与尺寸回填概览" :icon="Grid" class="dashboard-container">
     <template #actions>
       <div class="dashboard-badge">
         <el-icon><Calendar /></el-icon>
@@ -167,14 +162,7 @@ const activities = [
     <div class="dashboard-scroll">
       <!-- 统计卡片：接入 StatCard 公共组件 -->
       <section class="metric-grid">
-        <StatCard
-          v-for="item in metricCards"
-          :key="item.label"
-          :label="item.label"
-          :value="item.value"
-          :hint="item.hint"
-          :accent="item.accent"
-        >
+        <StatCard v-for="item in metricCards" :key="item.label" :label="item.label" :value="item.value" :hint="item.hint" :accent="item.accent">
           <template #actions>
             <span class="metric-trend" :class="{ 'is-down': item.trendDirection === 'down' }">
               {{ item.trend }}
@@ -186,138 +174,56 @@ const activities = [
       <!-- 主内容区：接入 PanelCard 公共组件 -->
       <section class="dashboard-main">
         <PanelCard class="panel--wide">
-        <template #header>
-          <div>
-            <h2 class="panel__title">近 7 日交付节奏</h2>
-            <p class="panel__desc">按天展示页面保存量、截图同步量和尺寸回填量。</p>
-          </div>
-          <div class="panel__legend">
-            <span><i class="legend-dot legend-dot--primary"></i>页面保存</span>
-            <span><i class="legend-dot legend-dot--info"></i>截图同步</span>
-            <span><i class="legend-dot legend-dot--warning"></i>尺寸回填</span>
-          </div>
-        </template>
+          <template #header>
+            <div>
+              <h2 class="panel__title">近 7 日交付节奏</h2>
+              <p class="panel__desc">按天展示页面保存量、截图同步量和尺寸回填量。</p>
+            </div>
+            <div class="panel__legend">
+              <span><i class="legend-dot legend-dot--primary"></i>页面保存</span>
+              <span><i class="legend-dot legend-dot--info"></i>截图同步</span>
+              <span><i class="legend-dot legend-dot--warning"></i>尺寸回填</span>
+            </div>
+          </template>
 
-        <div class="trend-chart">
-          <div v-for="item in weeklyTrend" :key="item.day" class="trend-chart__group">
-            <div class="trend-chart__bars">
-              <div class="trend-chart__track">
-                <div class="trend-chart__bar trend-chart__bar--primary" :style="{ height: `${item.pageSaveHeight}%` }"></div>
+          <div class="trend-chart">
+            <div v-for="item in weeklyTrend" :key="item.day" class="trend-chart__group">
+              <div class="trend-chart__bars">
+                <div class="trend-chart__track">
+                  <div class="trend-chart__bar trend-chart__bar--primary" :style="{ height: `${item.pageSaveHeight}%` }"></div>
+                </div>
+                <div class="trend-chart__track">
+                  <div class="trend-chart__bar trend-chart__bar--info" :style="{ height: `${item.screenshotHeight}%` }"></div>
+                </div>
+                <div class="trend-chart__track">
+                  <div class="trend-chart__bar trend-chart__bar--warning" :style="{ height: `${item.sizeHeight}%` }"></div>
+                </div>
               </div>
-              <div class="trend-chart__track">
-                <div class="trend-chart__bar trend-chart__bar--info" :style="{ height: `${item.screenshotHeight}%` }"></div>
+              <div class="trend-chart__footer">
+                <strong>{{ item.total }}</strong>
+                <span>{{ item.day }}</span>
               </div>
-              <div class="trend-chart__track">
-                <div class="trend-chart__bar trend-chart__bar--warning" :style="{ height: `${item.sizeHeight}%` }"></div>
-              </div>
-            </div>
-            <div class="trend-chart__footer">
-              <strong>{{ item.total }}</strong>
-              <span>{{ item.day }}</span>
             </div>
           </div>
-        </div>
         </PanelCard>
-
         <PanelCard>
-        <template #header>
-          <div>
-            <h2 class="panel__title">流量来源占比</h2>
-            <p class="panel__desc">演示素材来源和当前工作量分布。</p>
-          </div>
-        </template>
-
-        <div class="source-list">
-          <div v-for="item in sourceShare" :key="item.label" class="source-item">
-            <div class="source-item__meta">
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
+          <template #header>
+            <div>
+              <h2 class="panel__title">节假日倒计时</h2>
+              <p class="panel__desc">即将到来的节假日和节气</p>
             </div>
-            <div class="source-item__progress">
-              <div class="source-item__progress-bar" :style="{ width: item.percent, background: item.color }"></div>
-            </div>
-          </div>
-        </div>
+          </template>
 
-        <div class="quality-card">
-          <span class="quality-card__label">站点健康度</span>
-          <strong class="quality-card__value">92 / 100</strong>
-          <p class="quality-card__hint">
-            演示数据中，主要风险集中在尺寸未保存和待补截图页面。
-          </p>
-        </div>
-        </PanelCard>
-
-        <PanelCard>
-        <template #header>
-          <div>
-            <h2 class="panel__title">站点推进列表</h2>
-            <p class="panel__desc">用于模拟客户站点的当前制作状态。</p>
-          </div>
-        </template>
-
-        <div class="site-list">
-          <div v-for="item in siteProgress" :key="item.site" class="site-row">
-            <div class="site-row__top">
-              <div>
-                <strong>{{ item.site }}</strong>
-                <span>{{ item.owner }}</span>
+          <div class="holiday-list" v-loading="holidayLoading">
+            <div v-for="item in holidayList" :key="item.name" class="holiday-item">
+              <div class="holiday-item__info">
+                <strong>{{ item.name }}</strong>
+                <span>{{ item.date }}</span>
               </div>
-              <el-tag :type="item.tagType" effect="plain" round>{{ item.stage }}</el-tag>
+              <el-tag type="primary" effect="plain" round>{{ item.days }}</el-tag>
             </div>
-            <div class="site-row__bottom">
-              <el-progress :percentage="item.progress" :stroke-width="10" :show-text="false" :color="item.color" />
-              <div class="site-row__foot">
-                <span>{{ item.progress }}%</span>
-                <span>{{ item.detail }}</span>
-              </div>
-            </div>
+            <div v-if="!holidayLoading && holidayList.length === 0" class="holiday-empty">暂无节假日数据</div>
           </div>
-        </div>
-        </PanelCard>
-
-        <PanelCard>
-        <template #header>
-          <div>
-            <h2 class="panel__title">最近动态</h2>
-            <p class="panel__desc">这里是给看板预留的事件流区域。</p>
-          </div>
-        </template>
-
-        <div class="activity-list">
-          <div v-for="item in activities" :key="`${item.time}-${item.title}`" class="activity-item">
-            <div class="activity-item__dot"></div>
-            <div class="activity-item__content">
-              <div class="activity-item__head">
-                <strong>{{ item.title }}</strong>
-                <span>{{ item.time }}</span>
-              </div>
-              <p>{{ item.desc }}</p>
-            </div>
-          </div>
-        </div>
-        </PanelCard>
-
-        <PanelCard>
-        <template #header>
-          <div>
-            <h2 class="panel__title">节假日倒计时</h2>
-            <p class="panel__desc">即将到来的节假日和节气</p>
-          </div>
-        </template>
-
-        <div class="holiday-list" v-loading="holidayLoading">
-          <div v-for="item in holidayList" :key="item.name" class="holiday-item">
-            <div class="holiday-item__info">
-              <strong>{{ item.name }}</strong>
-              <span>{{ item.date }}</span>
-            </div>
-            <el-tag type="primary" effect="plain" round>{{ item.days }}</el-tag>
-          </div>
-          <div v-if="!holidayLoading && holidayList.length === 0" class="holiday-empty">
-            暂无节假日数据
-          </div>
-        </div>
         </PanelCard>
       </section>
     </div>

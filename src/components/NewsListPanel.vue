@@ -29,14 +29,14 @@
             size="large"
             placeholder="搜索新闻标题..."
             clearable
-            @clear="fetchList"
-            @keyup.enter="fetchList"
+            @clear="handleSearch"
+            @keyup.enter="handleSearch"
           >
             <template #prefix>
               <el-icon><Search /></el-icon>
             </template>
             <template #append>
-              <el-button :icon="Search" @click="fetchList" />
+              <el-button :icon="Search" @click="handleSearch" />
             </template>
           </el-input>
         </div>
@@ -114,7 +114,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
-import { getNewsList, deleteContent } from "@/apis/index.js";
+import { getNewsList, deleteNews } from "@/apis/index.js";
 import { ElMessage, ElMessageBox } from "element-plus";
 import "element-plus/theme-chalk/el-message-box.css";
 import { useRouter } from "vue-router";
@@ -164,11 +164,16 @@ async function fetchList() {
       site_id,
       page: currentPage.value,
       page_size: pageSize.value,
+      keyword: searchValue.value.trim() || undefined,
     };
 
     const res = await getNewsList(params);
     if (res?.code === 0) {
-      const list = res.data?.list || [];
+      const list = Array.isArray(res.data?.list)
+        ? res.data.list
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
       tableData.length = 0;
       tableData.push(...list);
       total.value = Number(res.data?.total ?? list.length);
@@ -180,6 +185,11 @@ async function fetchList() {
   } finally {
     loading.value = false;
   }
+}
+
+function handleSearch() {
+  currentPage.value = 1;
+  fetchList();
 }
 
 async function handleDelete(row) {
@@ -205,10 +215,9 @@ async function handleDelete(row) {
       return;
     }
 
-    const res = await deleteContent({
+    const res = await deleteNews({
       site_id,
-      post_id: row.id,
-      post_type: "post",
+      id: row.id,
     });
 
     if (res?.code === 0) {

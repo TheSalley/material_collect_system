@@ -18,10 +18,25 @@
     </div>
 
     <div :class="cardClass">
-      <!-- 工具栏（预留搜索，但当前 product_list 示例未包含 search 参数） -->
+      <!-- 工具栏：搜索产品标题 -->
       <div class="flex justify-between items-center px-6 py-5 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
-        <div class="text-sm text-gray-500 dark:text-gray-400">
-          产品
+        <div class="flex-1">
+          <el-input
+            v-model="searchValue"
+            class="w-full max-w-md"
+            size="large"
+            placeholder="搜索产品名称..."
+            clearable
+            @clear="handleSearch"
+            @keyup.enter="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+            <template #append>
+              <el-button :icon="Search" @click="handleSearch" />
+            </template>
+          </el-input>
         </div>
         <div v-if="!showHeader && showAddButton" class="flex items-center gap-2">
           <el-button type="primary" :icon="Plus" @click="goToUpload">添加产品</el-button>
@@ -87,7 +102,7 @@ import { getProductList } from "@/apis/index.js";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import { useGlobalStore } from "@/stores/global.js";
-import { Box, Plus, Clock } from "@element-plus/icons-vue";
+import { Box, Plus, Clock, Search } from "@element-plus/icons-vue";
 
 const props = defineProps({
   embedded: {
@@ -112,6 +127,7 @@ const loading = ref(false);
 const currentPage = ref(1);
 const pageSize = ref(20);
 const total = ref(0);
+const searchValue = ref("");
 
 const showHeader = computed(() => !props.embedded);
 
@@ -135,10 +151,15 @@ async function fetchList() {
       site_id,
       page: currentPage.value,
       page_size: pageSize.value,
+      keyword: searchValue.value.trim() || undefined,
       status: props.status,
     });
     if (res?.code === 0) {
-      const list = res.data?.list || [];
+      const list = Array.isArray(res.data?.list)
+        ? res.data.list
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
       tableData.length = 0;
       tableData.push(...list);
       total.value = Number(res.data?.total ?? list.length);
@@ -154,6 +175,11 @@ async function fetchList() {
 
 function handleSizeChange(val) {
   pageSize.value = val;
+  currentPage.value = 1;
+  fetchList();
+}
+
+function handleSearch() {
   currentPage.value = 1;
   fetchList();
 }

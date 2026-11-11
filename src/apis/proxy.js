@@ -115,50 +115,81 @@ export const getSiteTitle = async (site_id) => {
 
 /**
  * 6.10 获取新闻列表
- * GET /api/proxy/get_news_list
+ * GET /api/proxy/news_list
+ * 参数：site_id 必填；page、page_size、keyword、status 可选
  */
 export const getNewsList = async (params) => {
   const queryParams = new URLSearchParams();
   if (params.site_id) queryParams.append("site_id", params.site_id);
   if (params.page) queryParams.append("page", params.page);
   if (params.page_size) queryParams.append("page_size", params.page_size);
+  if (params.keyword) queryParams.append("keyword", params.keyword);
+  if (params.status) queryParams.append("status", params.status);
 
-  const url = config.baseUrl + "/api/proxy/get_news_list?" + queryParams.toString();
+  const url = config.baseUrl + "/api/proxy/news_list?" + queryParams.toString();
   return await fetchWithAuth(url, {
   });
 };
 
 /**
- * 6.11 删除内容
- * POST /api/proxy/content_delete
+ * 6.11 删除新闻
+ * POST /api/proxy/news_delete
+ * 参数：site_id、id 必填；force=false 移入回收站，true 永久删除
  */
-export const deleteContent = async (payload) => {
-  return await fetchWithAuth(config.baseUrl + "/api/proxy/content_delete", {
+export const deleteNews = async (payload) => {
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/news_delete", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 };
 
 /**
+ * 6.11.1 删除产品
+ * POST /api/proxy/product_delete
+ * 参数：site_id、id 必填；force=false 移入回收站，true 永久删除
+ */
+export const deleteProduct = async (payload) => {
+  return await fetchWithAuth(config.baseUrl + "/api/proxy/product_delete", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
+/**
+ * 6.11.2 删除内容（兼容旧调用）
+ * 旧接口 /api/proxy/content_delete 已下线，按 post_type 转到对应删除接口。
+ */
+export const deleteContent = async (payload = {}) => {
+  const id = payload.id ?? payload.post_id;
+  const isProduct = String(payload.post_type || "").toLowerCase() === "product";
+  const body = {
+    site_id: payload.site_id,
+    id,
+    force: payload.force === true,
+  };
+  return isProduct ? deleteProduct(body) : deleteNews(body);
+};
+
+/**
  * 6.12 获取新闻详情
- * GET /api/proxy/get_news
+ * GET /api/proxy/news
  */
 export const getNews = async (params) => {
   const queryParams = new URLSearchParams();
   queryParams.append("site_id", params.site_id);
   queryParams.append("id", params.id);
 
-  const url = config.baseUrl + "/api/proxy/get_news?" + queryParams.toString();
+  const url = config.baseUrl + "/api/proxy/news?" + queryParams.toString();
   return await fetchWithAuth(url, {
   });
 };
 
 /**
  * 6.13 获取新闻分类列表
- * GET /api/proxy/get_news_categories
+ * GET /api/proxy/news_categories
  */
 export const getNewsCategories = async (site_id) => {
-  return await fetchWithAuth(config.baseUrl + `/api/proxy/get_news_categories?site_id=${site_id}`, {
+  return await fetchWithAuth(config.baseUrl + `/api/proxy/news_categories?site_id=${site_id}`, {
   });
 };
 
@@ -175,29 +206,32 @@ export const contentCreate = async (payload) => {
 
 /**
  * 6.15 获取产品详情
- * GET /api/proxy/get_product
+ * GET /api/proxy/product
  */
 export const getProduct = async (params) => {
   const queryParams = new URLSearchParams();
   queryParams.append("site_id", params.site_id);
   queryParams.append("id", params.id);
 
-  const url = config.baseUrl + "/api/proxy/get_product?" + queryParams.toString();
+  const url = config.baseUrl + "/api/proxy/product?" + queryParams.toString();
   return await fetchWithAuth(url, {
   });
 };
 
 /**
  * 6.16 获取产品列表
- * GET /api/proxy/get_product_list
+ * GET /api/proxy/product_list
+ * 参数：site_id 必填；page、page_size、keyword、status 可选
  */
 export const getProductList = async (params) => {
   const queryParams = new URLSearchParams();
   if (params.site_id) queryParams.append("site_id", params.site_id);
   if (params.page) queryParams.append("page", params.page);
   if (params.page_size) queryParams.append("page_size", params.page_size);
+  if (params.keyword) queryParams.append("keyword", params.keyword);
+  if (params.status) queryParams.append("status", params.status);
 
-  const url = config.baseUrl + "/api/proxy/get_product_list?" + queryParams.toString();
+  const url = config.baseUrl + "/api/proxy/product_list?" + queryParams.toString();
   return await fetchWithAuth(url, {
   });
 };

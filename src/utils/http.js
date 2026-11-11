@@ -153,8 +153,8 @@ async function baseRequest(
  * @param {object} options - fetch options（不需要手动传 Authorization，内部自动加）
  * @returns {Promise<object>} 后端原始响应格式
  */
-export async function fetchWithAuth(url, options = {}) {
-  return baseRequest(url, options, { auth: true });
+export async function fetchWithAuth(url, options = {}, opts = {}) {
+  return baseRequest(url, options, { auth: true, silent: opts.silent });
 }
 
 /**
