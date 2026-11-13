@@ -12,7 +12,7 @@ const API_BASE_URL = import.meta.env.MODE === "development" ? "https://apitest.y
 /** 预设内容后端 3501 的独立地址，可用 VITE_PRESET_API_BASE_URL 覆盖 */
 const PRESET_API_BASE_URL =
   import.meta.env.VITE_PRESET_API_BASE_URL ||
-  (import.meta.env.MODE === "development" ? "http://localhost:3501" : "/fe");
+  (import.meta.env.MODE === "development" ? "http://192.168.10.113:3501" : "/fe");
 
 /**
  * HTTP 错误状态码对应的中文提示信息

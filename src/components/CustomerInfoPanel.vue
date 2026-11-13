@@ -1,312 +1,140 @@
 <template>
   <div class="profile-shell" v-loading="loading">
-    <section class="profile-hero">
-      <div class="profile-hero__copy">
-        <span class="profile-eyebrow">
-          <el-icon><Postcard /></el-icon>
-          CUSTOMER PROFILE
-        </span>
-        <h2>先交个底，再开工</h2>
-        <p>品牌、联系人、联系方式。一次说清，少问几轮。</p>
-        <div class="profile-hero__meta">
-          <span>{{ siteName }}</span>
-          <span v-if="readonly">管理员只读视图</span>
-          <span v-else>客户本人填写</span>
-        </div>
-      </div>
-
-      <div class="completion-card">
-        <div class="completion-card__top">
-          <span>资料完整度</span>
-          <strong>{{ completion }}%</strong>
-        </div>
-        <div class="completion-card__track">
-          <span :style="{ width: `${completion}%` }"></span>
-        </div>
-        <p>{{ filledCount }} / {{ TOTAL_FIELDS }} 项已填写</p>
-      </div>
-    </section>
-
     <el-alert
       v-if="!siteId"
       type="warning"
       show-icon
       :closable="false"
       title="还没有绑定站点"
-      description="请先选择一个站点，再填写客户资料。"
+      description="请先选择一个站点，再填写企业基本信息。"
     />
 
-    <div v-else class="profile-grid">
-      <div class="profile-main">
-        <el-form
-          ref="formRef"
-          :model="form"
-          :rules="rules"
-          :disabled="readonly"
-          label-position="top"
-          class="profile-form"
-        >
-          <section class="profile-card">
-            <header class="profile-card__head">
-              <span class="profile-index">01</span>
-              <div>
-                <h3>品牌与公司</h3>
-                <p>我们怎么称呼你，你做什么生意。</p>
-              </div>
-            </header>
+    <template v-else>
+      <el-alert
+        v-if="errorMsg"
+        type="error"
+        show-icon
+        :closable="false"
+        :title="errorMsg"
+      />
 
-            <div class="field-grid field-grid--brand">
-              <el-form-item
-                label="公司 / 品牌名称"
-                prop="company_name"
-                class="field-span-7"
-              >
-                <el-input
-                  v-model="form.company_name"
-                  maxlength="80"
-                  placeholder="例如：North Peak Outdoor"
-                  clearable
-                >
-                  <template #prefix
-                    ><el-icon><OfficeBuilding /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
+      <PanelCard flush class="intake-card">
+        <div class="sheet-head">
+          <h2>企 业 基 本 信 息 收 集 表 （ 建 站 服 务 ）</h2>
+          <p>易海创腾网站部202411</p>
+        </div>
 
-              <el-form-item
-                label="公司官网"
-                prop="website"
-                class="field-span-5"
-              >
-                <el-input
-                  v-model="form.website"
-                  maxlength="180"
-                  placeholder="https://example.com"
-                  clearable
+        <div class="table-wrap">
+          <table class="intake-table">
+            <colgroup>
+              <col style="width: 64px" />
+              <col style="width: 132px" />
+              <col style="width: 220px" />
+              <col />
+              <col style="width: 280px" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col" class="col-no">序号</th>
+                <th scope="col" class="col-section">板块</th>
+                <th scope="col" class="col-item">项目</th>
+                <th scope="col" class="col-value col-value--head">
+                  填写内容
+                  <small>（蓝色为示例）</small>
+                </th>
+                <th scope="col" class="col-usage">用途</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in ROWS" :key="row.key">
+                <td class="col-no">{{ row.no }}</td>
+                <td
+                  v-if="row.section"
+                  :rowspan="row.sectionSpan"
+                  class="col-section"
                 >
-                  <template #prefix
-                    ><el-icon><Link /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
+                  {{ row.section }}
+                </td>
+                <td
+                  v-if="row.item"
+                  :rowspan="row.itemSpan || 1"
+                  class="col-item"
+                >
+                  {{ row.item }}
+                </td>
+                <td class="col-value">
+                  <el-input
+                    v-if="row.control === 'password'"
+                    v-model="form[row.key]"
+                    type="password"
+                    show-password
+                    :disabled="readonly"
+                    :class="{ 'is-sample': isSample(row) }"
+                    :aria-label="row.label"
+                  />
+                  <el-input
+                    v-else-if="row.control === 'textarea'"
+                    v-model="form[row.key]"
+                    type="textarea"
+                    :autosize="{
+                      minRows: row.minRows || 1,
+                      maxRows: row.maxRows || 6,
+                    }"
+                    resize="none"
+                    :disabled="readonly"
+                    :class="{ 'is-sample': isSample(row) }"
+                    :aria-label="row.label"
+                  />
+                  <el-input
+                    v-else
+                    v-model="form[row.key]"
+                    :disabled="readonly"
+                    :class="{ 'is-sample': isSample(row) }"
+                    :aria-label="row.label"
+                  />
+                </td>
+                <td
+                  v-if="row.usage"
+                  :rowspan="row.usageSpan || 1"
+                  class="col-usage"
+                >
+                  {{ row.usage }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-              <el-form-item
-                label="所属行业"
-                prop="industry"
-                class="field-span-5"
-              >
-                <el-input
-                  v-model="form.industry"
-                  maxlength="60"
-                  placeholder="户外用品 / 机械制造…"
-                  clearable
-                >
-                  <template #prefix
-                    ><el-icon><Briefcase /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
-
-              <el-form-item
-                label="主要市场"
-                prop="target_markets"
-                class="field-span-7"
-              >
-                <el-input
-                  v-model="form.target_markets"
-                  maxlength="100"
-                  placeholder="例如：北美、德国、澳洲"
-                  clearable
-                >
-                  <template #prefix
-                    ><el-icon><TrendCharts /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
-
-              <el-form-item
-                label="公司地址"
-                prop="address"
-                class="field-span-12"
-              >
-                <el-input
-                  v-model="form.address"
-                  maxlength="200"
-                  placeholder="国家 / 城市 / 街道"
-                  clearable
-                >
-                  <template #prefix
-                    ><el-icon><Location /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
+        <template #footer>
+          <div class="sheet-footer">
+            <div class="sheet-footer__state">
+              <el-tag :type="statusTagType" size="small" effect="plain">
+                {{ saveStateLabel }}
+              </el-tag>
+              <span>{{ lastSavedLabel }}</span>
             </div>
-          </section>
 
-          <section class="profile-card">
-            <header class="profile-card__head">
-              <span class="profile-index">02</span>
-              <div>
-                <h3>联系人</h3>
-                <p>有急事时，我们找谁。</p>
-              </div>
-            </header>
-
-            <div class="field-grid field-grid--contact">
-              <el-form-item
-                label="联系人姓名"
-                prop="contact_name"
-                class="field-span-4"
+            <div v-if="!readonly" class="sheet-footer__actions">
+              <el-button
+                text
+                :disabled="!isDirty || saving"
+                @click="loadProfile"
               >
-                <el-input
-                  v-model="form.contact_name"
-                  maxlength="50"
-                  placeholder="怎么称呼你"
-                  clearable
-                >
-                  <template #prefix
-                    ><el-icon><User /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
-
-              <el-form-item label="联系电话" prop="phone" class="field-span-4">
-                <el-input
-                  v-model="form.phone"
-                  maxlength="40"
-                  placeholder="含国家区号"
-                  clearable
-                >
-                  <template #prefix
-                    ><el-icon><Iphone /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
-
-              <el-form-item label="联系邮箱" prop="email" class="field-span-4">
-                <el-input
-                  v-model="form.email"
-                  maxlength="120"
-                  placeholder="name@company.com"
-                  clearable
-                >
-                  <template #prefix
-                    ><el-icon><Message /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
-
-              <el-form-item
-                label="WhatsApp / 微信"
-                prop="whatsapp"
-                class="field-span-7"
+                撤销修改
+              </el-button>
+              <el-button
+                type="primary"
+                :loading="saving"
+                :disabled="!isDirty"
+                @click="saveProfile"
               >
-                <el-input
-                  v-model="form.whatsapp"
-                  maxlength="80"
-                  placeholder="方便时就留一个"
-                  clearable
-                >
-                  <template #prefix
-                    ><el-icon><ChatDotRound /></el-icon
-                  ></template>
-                </el-input>
-              </el-form-item>
+                保存资料
+              </el-button>
             </div>
-          </section>
-
-          <section class="profile-card profile-card--notes">
-            <header class="profile-card__head">
-              <span class="profile-index">03</span>
-              <div>
-                <h3>补充说明</h3>
-                <p>忌讳、偏好、上线时间，都可以写。</p>
-              </div>
-            </header>
-
-            <el-form-item
-              label="还有什么想让我们知道"
-              prop="notes"
-              class="profile-notes-field"
-            >
-              <el-input
-                v-model="form.notes"
-                type="textarea"
-                :rows="5"
-                maxlength="1000"
-                show-word-limit
-                placeholder="例如：品牌名不要翻译；主色调不要绿色；月底前必须上线。"
-              />
-            </el-form-item>
-          </section>
-
-          <el-alert
-            v-if="errorMsg"
-            :title="errorMsg"
-            type="error"
-            show-icon
-            :closable="false"
-          />
-        </el-form>
-      </div>
-
-      <aside class="profile-side">
-        <section class="status-card" :class="`status-card--${statusTone}`">
-          <div class="status-card__top">
-            <span class="status-dot"></span>
-            <span>{{ saveStateLabel }}</span>
           </div>
-          <p class="status-card__hint">{{ statusHint }}</p>
-          <small>{{ lastSavedLabel }}</small>
-
-          <div v-if="!readonly" class="status-card__actions">
-            <el-button
-              type="primary"
-              :loading="saving"
-              :disabled="loading || !siteId"
-              @click="saveProfile"
-            >
-              保存资料
-            </el-button>
-            <el-button text :disabled="!isDirty || saving" @click="loadProfile">
-              撤销修改
-            </el-button>
-          </div>
-        </section>
-
-        <section class="usage-card">
-          <h3>这些会用在哪</h3>
-          <ul>
-            <li>
-              <el-icon><OfficeBuilding /></el-icon>
-              <div>
-                <strong>品牌称呼</strong>
-                <span>避免网站写错公司名。</span>
-              </div>
-            </li>
-            <li>
-              <el-icon><Iphone /></el-icon>
-              <div>
-                <strong>联系方式</strong>
-                <span>上线前快速确认细节。</span>
-              </div>
-            </li>
-            <li>
-              <el-icon><Compass /></el-icon>
-              <div>
-                <strong>市场方向</strong>
-                <span>决定文案和视觉的重点。</span>
-              </div>
-            </li>
-          </ul>
-        </section>
-
-        <section class="privacy-note">
-          <el-icon><InfoFilled /></el-icon>
-          <p>这些资料只给本项目团队使用，不会公开在网站上。</p>
-        </section>
-      </aside>
-    </div>
+        </template>
+      </PanelCard>
+    </template>
   </div>
 </template>
 
@@ -314,22 +142,9 @@
 import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
-import {
-  OfficeBuilding,
-  User,
-  Iphone,
-  Message,
-  ChatDotRound,
-  Link,
-  Location,
-  Briefcase,
-  TrendCharts,
-  Compass,
-  Postcard,
-  InfoFilled,
-} from "@element-plus/icons-vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { loadCustomerProfile, saveCustomerProfile } from "@/apis/collection";
+import PanelCard from "@/components/common/PanelCard.vue";
 
 const props = defineProps({
   readonly: {
@@ -338,117 +153,322 @@ const props = defineProps({
   },
 });
 
-const EMPTY_PROFILE = {
-  company_name: "",
-  contact_name: "",
-  phone: "",
-  email: "",
-  whatsapp: "",
-  website: "",
-  industry: "",
-  target_markets: "",
-  address: "",
-  notes: "",
-};
+const ROWS = [
+  {
+    key: "contact",
+    no: 1,
+    section: "项目管理相关",
+    sectionSpan: 1,
+    item: "对接人姓名，常用邮箱或电话",
+    label: "对接人姓名，常用邮箱或电话",
+    usage: "项目过程中给您发送通知邮件使用",
+    sample: "章卓越 邮箱：semingslk@gmail.com  18471952070",
+  },
+  {
+    key: "company_name_cn",
+    no: 2,
+    section: "网站页面\n展示信息",
+    sectionSpan: 11,
+    item: "公司全称",
+    itemSpan: 2,
+    label: "公司全称（中文）",
+    usage: "展示在网站上的简称或品牌名（根据语种填写）",
+    sample: "中文：舟济安全",
+  },
+  {
+    key: "company_name_en",
+    no: 3,
+    label: "公司全称（英文）",
+    usage: "展示在网站上的简称或品牌名（根据语种填写）",
+    sample: "英文：Zhouji Safety",
+  },
+  {
+    key: "logo",
+    no: "",
+    item: "LOGO",
+    label: "LOGO",
+    usage: "展示在网站上及站点地图",
+    sample: "放在文件夹1",
+  },
+  {
+    key: "vi_manual",
+    no: "",
+    item: "VI手册",
+    label: "VI手册",
+    usage: "项目中参考，制定网站的视觉及主题色调",
+    sample: "无",
+  },
+  {
+    key: "email",
+    no: 4,
+    item: "Email",
+    label: "Email",
+    usage: "展示在网站上用来接收询盘的邮箱\n（建议用企业邮箱）",
+    sample: "zhoujitraffic@gmail.com",
+  },
+  {
+    key: "mobile",
+    no: 5,
+    item: "手机号",
+    label: "手机号",
+    usage: "展示在网站上的业务员联系电话*请按此格式书写",
+    sample: "8618870077676",
+  },
+  {
+    key: "landline",
+    no: 6,
+    item: "座机",
+    label: "座机",
+    usage: "展示在网站上的公共号码座机*请按此格式书写",
+    sample: "无",
+  },
+  {
+    key: "address",
+    no: 7,
+    item: "公司所在地址信息（英文或建站语种）",
+    label: "公司所在地址信息（英文或建站语种）",
+    usage: "展示在网站上的地址信息",
+    sample:
+      "Room 2729, Aerospace Tower 1088 Ziyang Avenue, Nanchang City, Jiangxi Pro, CN",
+  },
+  {
+    key: "map_embed",
+    no: 8,
+    item: "公司地址在谷歌地图上的定位链接",
+    label: "公司地址在谷歌地图上的定位链接",
+    usage: "如找不到定位，就放相近的地址\n*操作方法见下方（教程一）",
+    sample: `<iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1030.0921902898065!2d115.79742062136708!3d28.72007166997715!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e1!3m2!1szh-CN!2s!4v1788771228018!5m2!1szh-CN!2s" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`,
+    control: "textarea",
+    minRows: 3,
+    maxRows: 6,
+  },
+  {
+    key: "im_account",
+    no: 9,
+    item: "Whatsapp/Skype账号",
+    label: "Whatsapp/Skype账号",
+    usage: "放在网站上的国外常用通讯工具账号",
+    sample: "whatsapp:8618870077676",
+  },
+  {
+    key: "social_links",
+    no: 10,
+    item: "社媒主页链接",
+    label: "社媒主页链接",
+    usage: "放在网站上点击跳转的社媒链接",
+    sample: `Facebook：https://www.facebook.com/profile.php?id=61584412689732
+tiktok：https://www.tiktok.com/@zhoujitraffic.ops
+Instagram：https://www.instagram.com/sunnyyan2026?igsh=MTRxMm9nNzdubjEzNQ==
+vk：待定
+LinkedIn：https://www.linkedin.com/company/jiangxi-zhouji-traffic-facilities-co-ltd/posts/?feedView=all`,
+    control: "textarea",
+    minRows: 5,
+    maxRows: 9,
+  },
+  {
+    key: "industry",
+    no: 11,
+    section: "网站设置相关",
+    sectionSpan: 10,
+    item: "所属行业",
+    label: "所属行业",
+    usage: "根据行业类型搭建适合的网站",
+    sample:
+      "制造业、交通及交通运输行业、交通安全行业、个人安防行业、安全产品行业",
+    control: "textarea",
+    minRows: 1,
+    maxRows: 3,
+  },
+  {
+    key: "company_ppt",
+    no: "",
+    item: "企业介绍PPT",
+    label: "企业介绍PPT",
+    usage: "项目中参考企业信息",
+    sample: "如有，放在文件夹3",
+  },
+  {
+    key: "competitors",
+    no: 12,
+    item: "可参考的竞对网站（3个）",
+    label: "可参考的竞对网站（3个）",
+    usage: "供项目过程中进行参考",
+    sample: `1.https://www.atstraffic.ca/
+2.https://www.reflextape.com/
+3.https://jackwinsafety.com/`,
+    control: "textarea",
+    minRows: 3,
+    maxRows: 6,
+  },
+  {
+    key: "old_site",
+    no: 13,
+    item: "老网站URL相关",
+    itemSpan: 2,
+    label: "老网站URL",
+    usage: "填写老站域名",
+    sample: "https://www.zhoujitraffic.com/",
+  },
+  {
+    key: "keep_old_url",
+    no: 14,
+    label: "是否需要保留老站URL",
+    usage:
+      "如老站没流量或弃用，则填写不保留\n如需要保留，网站部会提供相应操作教程",
+    sample: "是否需要保留老站URL：不需要",
+  },
+  {
+    key: "new_domain",
+    no: 15,
+    item: "新网站使用的域名",
+    label: "新网站使用的域名",
+    usage: "该网站要使用的域名",
+    sample: "待定，建议：zhoujisafety.com，zhoujireflective.com",
+  },
+  {
+    key: "domain_login",
+    no: 16,
+    item: "域名后台登录方式",
+    label: "域名后台登录方式",
+    usage:
+      "在哪个平台注册的域名，就提供哪个平台的登录账号密码（如贵司自行操作解析，请填自行操作）",
+    sample: "无",
+  },
+  {
+    key: "visitor_sources",
+    no: 17,
+    item: "访客主要来源",
+    label: "访客主要来源",
+    usage: "（主要客户是哪个国家或地区的）\n决定网站服务器所在的位置",
+    sample: "欧美、中东、东南亚、非洲、大洋洲、（服务器放置在美国）",
+    control: "textarea",
+    minRows: 1,
+    maxRows: 3,
+  },
+  {
+    key: "smtp_email",
+    no: 18,
+    item: "SMTP邮箱配置\n提供一个QQ邮箱和授权码",
+    itemSpan: 2,
+    label: "SMTP邮箱配置",
+    usage:
+      "·因服务器直接转发易被拦截，所以需要QQ邮箱作为中转用来接收和代转发客户发给贵司的询盘。\n·一定要qq邮箱吗？是的\n*操作方法见下方（教程二）",
+    usageSpan: 2,
+    sample: "邮箱：772530504（颜总）",
+  },
+  {
+    key: "smtp_auth_code",
+    no: 19,
+    label: "授权码",
+    sample: "授权码：bwgveirshldbbcdc",
+    control: "password",
+  },
+];
 
-const PROFILE_FIELDS = Object.keys(EMPTY_PROFILE);
-const TOTAL_FIELDS = PROFILE_FIELDS.length;
+const FIELDS = ROWS.map((row) => row.key);
+const SAMPLE_VALUES = Object.fromEntries(
+  ROWS.map((row) => [row.key, row.sample]),
+);
+
+function createValues(source = {}) {
+  return FIELDS.reduce((acc, key) => {
+    const value = source?.[key];
+    acc[key] = value == null ? "" : String(value);
+    return acc;
+  }, {});
+}
+
+function normalizeLoaded(data = {}) {
+  const hasNewFields = FIELDS.some((key) =>
+    Object.prototype.hasOwnProperty.call(data, key),
+  );
+  if (hasNewFields) return createValues(data);
+
+  const values = createValues();
+  const legacyMap = {
+    company_name_cn: data.company_name,
+    email: data.email,
+    mobile: data.phone,
+    address: data.address,
+    industry: data.industry,
+    im_account: data.whatsapp,
+    old_site: data.website,
+    visitor_sources: data.target_markets,
+  };
+  Object.entries(legacyMap).forEach(([key, value]) => {
+    if (value != null && String(value).trim() !== "") {
+      values[key] = String(value);
+    }
+  });
+  return values;
+}
 
 const { websiteInfo } = storeToRefs(useGlobalStore());
 const siteId = computed(() => websiteInfo.value?.site_id);
-const siteName = computed(
-  () =>
-    websiteInfo.value?.site_name || websiteInfo.value?.site_id || "当前站点",
-);
 
-const formRef = ref(null);
-const form = reactive({ ...EMPTY_PROFILE });
+const form = reactive(createValues());
 const loading = ref(false);
 const saving = ref(false);
 const errorMsg = ref("");
 const savedSnapshot = ref("");
 const lastSavedAt = ref("");
 const hasSavedRecord = ref(false);
+const sampleLoaded = ref(false);
 
-const rules = {
-  company_name: [
-    { required: true, message: "请填写公司或品牌名称", trigger: "blur" },
-  ],
-  contact_name: [
-    { required: true, message: "请填写联系人姓名", trigger: "blur" },
-  ],
-  phone: [
-    { required: true, message: "请填写联系电话", trigger: "blur" },
-    {
-      pattern: /^[+()\d\s-]{6,40}$/,
-      message: "电话号码格式看起来不对",
-      trigger: "blur",
-    },
-  ],
-  email: [
-    { required: true, message: "请填写联系邮箱", trigger: "blur" },
-    { type: "email", message: "请输入有效的邮箱地址", trigger: "blur" },
-  ],
-  website: [
-    {
-      validator: (_rule, value, callback) => {
-        if (!value || /^https?:\/\/\S+$/i.test(value.trim())) return callback();
-        callback(new Error("官网地址请以 http:// 或 https:// 开头"));
-      },
-      trigger: "blur",
-    },
-  ],
-};
-
-function snapshotForm() {
-  return JSON.stringify(
-    PROFILE_FIELDS.reduce((acc, key) => {
-      acc[key] = String(form[key] ?? "").trim();
-      return acc;
-    }, {}),
-  );
+function snapshot() {
+  return JSON.stringify(createValues(form));
 }
 
-const isDirty = computed(() => snapshotForm() !== savedSnapshot.value);
-
-const filledCount = computed(
-  () => PROFILE_FIELDS.filter((key) => String(form[key] ?? "").trim()).length,
-);
-const completion = computed(() =>
-  Math.round((filledCount.value / TOTAL_FIELDS) * 100),
-);
-
-const statusTone = computed(() => {
-  if (loading.value) return "neutral";
-  if (saving.value) return "busy";
-  if (props.readonly) return "readonly";
-  if (isDirty.value) return "warning";
-  if (hasSavedRecord.value) return "success";
-  return "neutral";
-});
+const isDirty = computed(() => snapshot() !== savedSnapshot.value);
 
 const saveStateLabel = computed(() => {
   if (loading.value) return "正在读取";
   if (saving.value) return "正在保存";
-  if (props.readonly) return "只读查看";
+  if (props.readonly) return hasSavedRecord.value ? "只读查看" : "暂无资料";
   if (isDirty.value) return "有未保存修改";
-  if (hasSavedRecord.value) return "资料已同步";
-  return "等待填写";
+  if (hasSavedRecord.value) return "资料已保存";
+  return sampleLoaded.value ? "示例内容" : "等待填写";
 });
 
-const statusHint = computed(() => {
-  if (loading.value) return "稍等一下，资料马上出来。";
-  if (saving.value) return "别关页面，马上就好。";
-  if (props.readonly) return "这是客户提交的原始资料。";
-  if (isDirty.value) return "改完记得点保存。";
-  if (hasSavedRecord.value) return "服务端已有最新版本。";
-  return "先填必填项，其余慢慢补。";
+const statusTagType = computed(() => {
+  if (props.readonly) return "info";
+  if (isDirty.value) return "warning";
+  if (hasSavedRecord.value) return "success";
+  return "info";
 });
 
 const lastSavedLabel = computed(() => {
   if (lastSavedAt.value) return `最近保存：${lastSavedAt.value}`;
+  if (props.readonly && !hasSavedRecord.value) return "客户还没有提交";
   return "还没有保存记录";
 });
+
+function isSample(row) {
+  return (
+    !props.readonly &&
+    !hasSavedRecord.value &&
+    sampleLoaded.value &&
+    form[row.key] === SAMPLE_VALUES[row.key]
+  );
+}
+
+function assign(values) {
+  Object.assign(form, createValues(values));
+}
+
+function resetState() {
+  assign({});
+  savedSnapshot.value = snapshot();
+  lastSavedAt.value = "";
+  errorMsg.value = "";
+  hasSavedRecord.value = false;
+  sampleLoaded.value = false;
+}
+
+function applySample() {
+  assign(SAMPLE_VALUES);
+  sampleLoaded.value = true;
+}
 
 function formatSavedAt(value) {
   if (!value) {
@@ -457,20 +477,6 @@ function formatSavedAt(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString("zh-CN", { hour12: false });
-}
-
-function assignProfile(profile = {}) {
-  PROFILE_FIELDS.forEach((key) => {
-    form[key] = String(profile?.[key] ?? "");
-  });
-}
-
-function resetState() {
-  assignProfile(EMPTY_PROFILE);
-  savedSnapshot.value = snapshotForm();
-  lastSavedAt.value = "";
-  errorMsg.value = "";
-  hasSavedRecord.value = false;
 }
 
 async function loadProfile() {
@@ -484,43 +490,45 @@ async function loadProfile() {
   try {
     const res = await loadCustomerProfile(siteId.value);
     if (!res.ok) {
-      errorMsg.value = res.message || "客户资料读取失败";
+      errorMsg.value = res.message || "企业基本信息读取失败";
       return;
     }
-    assignProfile(res.data || EMPTY_PROFILE);
-    savedSnapshot.value = snapshotForm();
-    lastSavedAt.value = res.updatedAt ? formatSavedAt(res.updatedAt) : "";
-    hasSavedRecord.value = Boolean(res.data);
+
+    const data =
+      res.data && typeof res.data === "object" && Object.keys(res.data).length
+        ? res.data
+        : null;
+
+    if (data) {
+      assign(normalizeLoaded(data));
+      hasSavedRecord.value = true;
+      sampleLoaded.value = false;
+      lastSavedAt.value = res.updatedAt ? formatSavedAt(res.updatedAt) : "";
+    } else {
+      resetState();
+      if (!props.readonly) applySample();
+    }
+    savedSnapshot.value = snapshot();
   } catch (error) {
-    errorMsg.value = error?.message || "客户资料读取失败";
+    errorMsg.value = error?.message || "企业基本信息读取失败";
   } finally {
     loading.value = false;
   }
 }
 
 async function saveProfile() {
-  if (props.readonly || !siteId.value) return;
-
-  try {
-    await formRef.value?.validate();
-  } catch {
-    ElMessage.warning("还有必填项没填完");
-    return;
-  }
+  if (props.readonly || !siteId.value || saving.value) return;
 
   saving.value = true;
   errorMsg.value = "";
   try {
-    const payload = PROFILE_FIELDS.reduce((acc, key) => {
-      acc[key] = String(form[key] ?? "").trim();
-      return acc;
-    }, {});
-    const res = await saveCustomerProfile(siteId.value, payload);
+    const res = await saveCustomerProfile(siteId.value, createValues(form));
     if (res?.code === 0) {
-      savedSnapshot.value = snapshotForm();
+      savedSnapshot.value = snapshot();
       lastSavedAt.value = formatSavedAt();
       hasSavedRecord.value = true;
-      ElMessage.success("客户资料已保存");
+      sampleLoaded.value = false;
+      ElMessage.success("资料已保存");
     } else {
       ElMessage.error(res?.message || "保存失败");
     }
@@ -544,447 +552,211 @@ watch(
 <style scoped>
 .profile-shell {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: 20px;
-  min-height: 0;
-  padding: 2px;
-}
-
-.profile-hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(220px, 0.75fr);
-  gap: 28px;
-  align-items: end;
-  overflow: hidden;
-  padding: 28px 30px;
-  border: 1px solid rgba(43, 124, 238, 0.16);
-  border-radius: 20px;
-  background:
-    radial-gradient(
-      circle at 88% 12%,
-      rgba(43, 124, 238, 0.18),
-      transparent 34%
-    ),
-    linear-gradient(
-      118deg,
-      rgba(255, 255, 255, 0.96),
-      rgba(236, 244, 255, 0.88) 58%,
-      rgba(245, 249, 255, 0.95)
-    );
-  box-shadow: 0 16px 40px rgba(28, 62, 110, 0.08);
-}
-
-.profile-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.3;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.08'/%3E%3C/svg%3E");
-}
-
-.profile-hero__copy,
-.completion-card {
-  position: relative;
-  z-index: 1;
-}
-
-.profile-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 14px;
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-}
-
-.profile-hero h2 {
-  margin: 0;
-  color: #12253d;
-  font-size: clamp(28px, 3vw, 40px);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-}
-
-.profile-hero p {
-  max-width: 520px;
-  margin: 12px 0 0;
-  color: #4a5f78;
-  font-size: 15px;
-  line-height: 1.7;
-}
-
-.profile-hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-.profile-hero__meta span {
-  padding: 5px 10px;
-  border: 1px solid rgba(43, 124, 238, 0.16);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  color: #35536e;
-  font-size: 12px;
-}
-
-.completion-card {
-  padding: 18px 20px;
-  border: 1px solid rgba(18, 37, 61, 0.1);
-  border-radius: 16px;
-  background: rgba(16, 33, 52, 0.92);
-  color: #fff;
-  box-shadow: 0 14px 28px rgba(16, 33, 52, 0.18);
-}
-
-.completion-card__top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   gap: 12px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.62);
+  min-height: 0;
 }
 
-.completion-card__top strong {
-  color: #8fc7ff;
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1;
+.intake-card {
+  flex: 1;
+  min-height: 0;
 }
 
-.completion-card__track {
-  height: 7px;
-  margin: 14px 0 10px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.completion-card__track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #7cc0ff, #d7ecff);
-  transition: width 360ms cubic-bezier(0.22, 0.8, 0.2, 1);
-}
-
-.completion-card p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 12px;
-}
-
-.profile-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 290px;
-  gap: 20px;
-  align-items: start;
-}
-
-.profile-main,
-.profile-form {
-  min-width: 0;
-}
-
-.profile-form {
+.intake-card :deep(.panel-card__body) {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  overflow: hidden;
 }
 
-.profile-card {
-  padding: 22px 24px 10px;
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.98),
-    rgba(249, 251, 254, 0.98)
-  );
-  box-shadow: 0 10px 28px rgba(25, 58, 96, 0.05);
+.sheet-head {
+  flex: 0 0 auto;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  text-align: center;
 }
 
-.profile-card--notes {
-  padding-bottom: 22px;
-}
-
-.profile-card__head {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  margin-bottom: 20px;
-}
-
-.profile-index {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
-  border-radius: 11px;
-  background: #e8f2ff;
-  color: var(--color-primary);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.profile-card__head h3 {
-  margin: 1px 0 3px;
-  color: var(--color-text-primary);
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.profile-card__head p {
+.sheet-head h2 {
   margin: 0;
+  color: var(--color-text-primary);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+}
+
+.sheet-head p {
+  margin: 8px 0 0;
   color: var(--color-text-muted);
   font-size: 12px;
+  text-align: left;
 }
 
-.field-grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 0 16px;
+.table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--color-surface);
 }
 
-.field-span-4 {
-  grid-column: span 4;
-}
-.field-span-5 {
-  grid-column: span 5;
-}
-.field-span-7 {
-  grid-column: span 7;
-}
-.field-span-12 {
-  grid-column: span 12;
+.intake-table {
+  width: 100%;
+  min-width: 1080px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
 }
 
-.profile-form :deep(.el-form-item) {
-  margin-bottom: 18px;
+.intake-table th,
+.intake-table td {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  vertical-align: middle;
 }
 
-.profile-form :deep(.el-form-item__label) {
-  padding-bottom: 7px;
-  color: #42566d;
+.intake-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 1px 0 var(--color-border);
 }
 
-.profile-form :deep(.el-input__wrapper),
-.profile-form :deep(.el-textarea__inner) {
-  border-radius: 11px;
-  background: #fbfcfe;
-  box-shadow: 0 0 0 1px #dfe6ef inset;
+.intake-table td {
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+}
+
+.intake-table .col-no {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.intake-table .col-section {
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  text-align: center;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.intake-table .col-item {
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.intake-table .col-value {
+  padding: 6px 8px;
+}
+
+.intake-table .col-value--head {
+  text-align: left;
+}
+
+.intake-table .col-value--head small {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.intake-table .col-usage {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.intake-table :deep(.el-input__wrapper),
+.intake-table :deep(.el-textarea__inner) {
+  border-radius: 6px;
+  background: var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border) inset;
   transition:
-    box-shadow 180ms ease,
-    background 180ms ease;
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.profile-form :deep(.el-input__wrapper:hover),
-.profile-form :deep(.el-textarea__inner:hover) {
-  box-shadow: 0 0 0 1px #c6d3e3 inset;
+.intake-table :deep(.el-input__wrapper:hover),
+.intake-table :deep(.el-textarea__inner:hover) {
+  box-shadow: 0 0 0 1px var(--color-border-dark) inset;
 }
 
-.profile-form :deep(.el-input__wrapper.is-focus),
-.profile-form :deep(.el-textarea__inner:focus) {
-  background: #fff;
+.intake-table :deep(.el-input__wrapper.is-focus),
+.intake-table :deep(.el-textarea__inner:focus) {
+  background: var(--color-surface);
   box-shadow:
     0 0 0 1px var(--color-primary) inset,
     0 0 0 3px rgba(43, 124, 238, 0.09);
 }
 
-.profile-form :deep(.el-input__prefix) {
-  color: #91a4b8;
-}
-
-.profile-notes-field {
-  margin-bottom: 0 !important;
-}
-
-.profile-side {
-  position: sticky;
-  top: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.status-card,
-.usage-card,
-.privacy-note {
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 8px 24px rgba(25, 58, 96, 0.045);
-}
-
-.status-card {
-  padding: 18px;
-}
-
-.status-card__top {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: #35495f;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.status-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: #9aa8b8;
-  box-shadow: 0 0 0 4px rgba(154, 168, 184, 0.14);
-}
-
-.status-card--success .status-dot {
-  background: var(--color-success);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
-}
-
-.status-card--warning .status-dot {
-  background: var(--color-warning);
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
-}
-
-.status-card--busy .status-dot {
-  background: var(--color-primary);
-  box-shadow: 0 0 0 4px rgba(43, 124, 238, 0.14);
-}
-
-.status-card__hint {
-  margin: 12px 0 6px;
-  color: #51677e;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.status-card small {
-  color: var(--color-text-muted);
-  font-size: 11px;
-}
-
-.status-card__actions {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  margin-top: 18px;
-}
-
-.status-card__actions :deep(.el-button) {
-  width: 100%;
-  margin-left: 0;
-  border-radius: 10px;
-}
-
-.usage-card {
-  padding: 18px;
-}
-
-.usage-card h3 {
-  margin: 0 0 14px;
+.intake-table :deep(.el-input__inner),
+.intake-table :deep(.el-textarea__inner) {
   color: var(--color-text-primary);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
 }
 
-.usage-card ul {
-  display: flex;
-  flex-direction: column;
-  gap: 13px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.intake-table :deep(.el-textarea__inner) {
+  line-height: 1.65;
 }
 
-.usage-card li {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.usage-card li > .el-icon {
-  margin-top: 2px;
+.intake-table :deep(.is-sample .el-input__inner),
+.intake-table :deep(.is-sample .el-textarea__inner) {
   color: var(--color-primary);
 }
 
-.usage-card li div {
+.intake-table :deep(.el-input.is-disabled .el-input__wrapper),
+.intake-table :deep(.el-textarea.is-disabled .el-textarea__inner) {
+  background: var(--color-surface-hover);
+  box-shadow: 0 0 0 1px var(--color-border-light) inset;
+}
+
+.sheet-footer {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.usage-card strong {
-  color: #35495f;
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.usage-card span {
+.sheet-footer__state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   color: var(--color-text-muted);
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 12px;
 }
 
-.privacy-note {
+.sheet-footer__actions {
   display: flex;
+  align-items: center;
   gap: 8px;
-  align-items: flex-start;
-  padding: 14px 16px;
-  border-style: dashed;
-  background: #fbfcfe;
 }
 
-.privacy-note .el-icon {
-  margin-top: 2px;
-  color: #7f92a7;
-}
-
-.privacy-note p {
-  margin: 0;
-  color: #7a8b9d;
-  font-size: 11px;
-  line-height: 1.6;
-}
-
-@media (max-width: 1180px) {
-  .profile-grid {
-    grid-template-columns: minmax(0, 1fr);
+@media (max-width: 900px) {
+  .sheet-head {
+    padding: 16px;
   }
 
-  .profile-side {
-    position: static;
-  }
-}
-
-@media (max-width: 760px) {
-  .profile-hero {
-    grid-template-columns: 1fr;
-    align-items: start;
-    padding: 22px;
+  .sheet-head h2 {
+    font-size: 18px;
   }
 
-  .field-span-4,
-  .field-span-5,
-  .field-span-7,
-  .field-span-12 {
-    grid-column: span 12;
-  }
-
-  .profile-card {
-    padding: 20px 18px 8px;
+  .sheet-footer {
+    flex-wrap: wrap;
   }
 }
 </style>
