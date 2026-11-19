@@ -13,7 +13,6 @@ import {
   Files,
   Goods,
   Tickets,
-  Key,
 } from "@element-plus/icons-vue";
 
 export const iconMap = {
@@ -29,5 +28,4 @@ export const iconMap = {
   Files,
   Goods,
   Tickets,
-  Key,
 };

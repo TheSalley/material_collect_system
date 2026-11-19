@@ -503,7 +503,7 @@ onMounted(() => {
         >
           <el-table-column prop="id" label="ID" width="100">
             <template #default="scope">
-              <span class="font-mono text-xs text-gray-500">{{ scope.row.id }}</span>
+              <span class="font-mono text-xs text-text-muted">{{ scope.row.id }}</span>
             </template>
           </el-table-column>
 
@@ -511,7 +511,7 @@ onMounted(() => {
             <template #default="scope">
               <div class="flex items-center gap-2">
                 <el-icon class="text-primary text-base flex-shrink-0"><UserFilled /></el-icon>
-                <span class="font-medium text-gray-900 truncate">{{ scope.row.username || '-' }}</span>
+                <span class="font-medium text-text-primary truncate">{{ scope.row.username || '-' }}</span>
               </div>
             </template>
           </el-table-column>
@@ -543,7 +543,7 @@ onMounted(() => {
                   <span>{{ site.site_name || site.site_id }}</span>
                 </el-tag>
               </div>
-              <span v-else class="text-gray-400">-</span>
+              <span v-else class="text-text-muted">-</span>
             </template>
           </el-table-column>
 
@@ -562,8 +562,8 @@ onMounted(() => {
 
           <el-table-column prop="created_at" label="创建时间" width="180" show-overflow-tooltip>
             <template #default="scope">
-              <div class="flex items-center gap-1.5 text-gray-500 text-sm whitespace-nowrap">
-                <el-icon class="text-gray-400 flex-shrink-0"><Clock /></el-icon>
+              <div class="flex items-center gap-1.5 text-text-muted text-sm whitespace-nowrap">
+                <el-icon class="text-text-muted flex-shrink-0"><Clock /></el-icon>
                 <span class="truncate">{{ formatDate(scope.row.created_at) }}</span>
               </div>
             </template>
@@ -600,7 +600,7 @@ onMounted(() => {
       <template #header>
         <div class="flex items-center gap-3">
           <el-icon class="text-success text-xl"><Plus /></el-icon>
-          <span class="text-lg font-semibold text-gray-900">添加新用户</span>
+          <span class="text-lg font-semibold text-text-primary">添加新用户</span>
         </div>
       </template>
       <template #default>
@@ -636,7 +636,7 @@ onMounted(() => {
               @popup-scroll="(e) => onSitePopupScroll(e, 'user-add-site-popper')"
             >
               <template #footer>
-                <div class="flex items-center justify-center gap-1.5 text-xs text-gray-400 select-none py-0.5">
+                <div class="flex items-center justify-center gap-1.5 text-xs text-text-muted select-none py-0.5">
                   <template v-if="siteListLoading">
                     <el-icon class="is-loading"><Loading /></el-icon>加载中…
                   </template>
@@ -648,12 +648,12 @@ onMounted(() => {
               </template>
               <el-option v-for="site in siteList" :key="site.site_id" :label="`${site.site_name || site.site_id}${site.demo_site ? ' (' + site.demo_site + ')' : ''}`" :value="site.site_id" />
             </el-select>
-            <div class="text-xs text-gray-500 mt-1">新增用户必须选择一个站点。</div>
+            <div class="text-xs text-text-muted mt-1">新增用户必须选择一个站点。</div>
           </el-form-item>
         </el-form>
       </template>
       <template #footer>
-        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200">
+        <div class="flex justify-end gap-3 pt-5 border-t border-border">
           <el-button @click="addDrawer = false" size="large">取消</el-button>
           <el-button type="primary" @click="onAddSubmit" size="large" :icon="Check" :loading="addSaving">确定添加</el-button>
         </div>
@@ -665,7 +665,7 @@ onMounted(() => {
       <template #header>
         <div class="flex items-center gap-3">
           <el-icon class="text-primary text-xl"><Edit /></el-icon>
-          <span class="text-lg font-semibold text-gray-900">编辑用户信息</span>
+          <span class="text-lg font-semibold text-text-primary">编辑用户信息</span>
         </div>
       </template>
       <template #default>
@@ -703,7 +703,7 @@ onMounted(() => {
               @popup-scroll="(e) => onSitePopupScroll(e, 'user-edit-site-popper')"
             >
               <template #footer>
-                <div class="flex items-center justify-center gap-1.5 text-xs text-gray-400 select-none py-0.5">
+                <div class="flex items-center justify-center gap-1.5 text-xs text-text-muted select-none py-0.5">
                   <template v-if="siteListLoading">
                     <el-icon class="is-loading"><Loading /></el-icon>加载中…
                   </template>
@@ -715,12 +715,12 @@ onMounted(() => {
               </template>
               <el-option v-for="site in siteList" :key="site.site_id" :label="`${site.site_name || site.site_id}${site.demo_site ? ' (' + site.demo_site + ')' : ''}`" :value="site.site_id" />
             </el-select>
-            <div class="text-xs text-gray-500 mt-1">至少选择一个站点；与列表接口返回的站点一致，可多选。</div>
+            <div class="text-xs text-text-muted mt-1">至少选择一个站点；与列表接口返回的站点一致，可多选。</div>
           </el-form-item>
         </el-form>
       </template>
       <template #footer>
-        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200">
+        <div class="flex justify-end gap-3 pt-5 border-t border-border">
           <el-button @click="drawer = false" size="large">取消</el-button>
           <el-button type="primary" @click="onSubmit" size="large" :icon="Check" :loading="saving">保存</el-button>
         </div>
@@ -729,11 +729,11 @@ onMounted(() => {
 
     <!-- 删除确认：使用 Element Plus Dialog -->
     <el-dialog v-model="deleteDialogVisible" title="确认删除" width="440px" align-center append-to-body destroy-on-close :close-on-click-modal="false" @closed="onDeleteDialogClosed">
-      <div class="flex gap-3 text-sm text-gray-600 leading-relaxed">
+      <div class="flex gap-3 text-sm text-text-secondary leading-relaxed">
         <el-icon class="text-xl flex-shrink-0 text-warning mt-0.5"><WarningFilled /></el-icon>
         <div>
-          <p>确定要删除用户<strong class="text-gray-900 mx-1">{{ deleteTarget?.username || "—" }}</strong>吗？</p>
-          <p class="mt-2 text-gray-500">删除后数据将按服务端规则处理，请谨慎操作。</p>
+          <p>确定要删除用户<strong class="text-text-primary mx-1">{{ deleteTarget?.username || "—" }}</strong>吗？</p>
+          <p class="mt-2 text-text-muted">删除后数据将按服务端规则处理，请谨慎操作。</p>
         </div>
       </div>
       <template #footer>

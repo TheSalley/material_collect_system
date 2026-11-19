@@ -19,15 +19,15 @@
         当前设备暂不支持访问
       </p>
 
-      <h1 class="text-3xl font-bold text-gray-900">
+      <h1 class="text-3xl font-bold text-text-primary">
         请使用 PC 查看
       </h1>
 
-      <p class="mt-4 text-base leading-relaxed text-gray-600">
+      <p class="mt-4 text-base leading-relaxed text-text-secondary">
         当前系统在手机和平板上不提供完整体验。为了保证页面编辑、素材管理和后台操作正常，请使用电脑浏览器打开。
       </p>
 
-      <div class="mt-8 rounded-2xl bg-gray-50 px-5 py-4 text-sm leading-relaxed text-gray-500">
+      <div class="mt-8 rounded-2xl bg-surface-hover px-5 py-4 text-sm leading-relaxed text-text-muted">
         建议使用桌面端 Chrome、Edge 或其他现代浏览器访问。
       </div>
     </section>

@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* ============================================================
    设计 Token（Tailwind 4 @theme）
    全站统一颜色、间距、圆角、阴影、字号
@@ -21,7 +19,6 @@
 
   /* 背景色 */
   --color-background-light: #f6f7f8;
-  --color-background-dark: #101822;
 
   /* 表面色（卡片、面板、输入框背景） */
   --color-surface: #ffffff;

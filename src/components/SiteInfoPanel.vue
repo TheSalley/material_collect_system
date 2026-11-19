@@ -1,16 +1,16 @@
 <template>
   <!-- 主内容卡片：左截图 + 右表单 -->
-  <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm overflow-hidden min-h-0">
+  <div class="flex-1 flex flex-col bg-surface rounded-xl shadow-sm overflow-hidden min-h-0">
     <div class="flex-1 p-6 md:p-10 overflow-auto" v-loading="loading">
       <div class="space-y-6">
         <!-- 左截图 + 右表单 -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <!-- 左侧：站点截图 -->
           <div class="lg:col-span-5 flex flex-col">
-            <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-4 flex-1 flex flex-col min-h-[280px]">
+            <div class="bg-surface rounded-xl border border-border p-4 flex-1 flex flex-col min-h-[280px]">
               <div class="flex items-center gap-2 mb-3">
                 <el-icon class="text-blue-500"><Picture /></el-icon>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">站点截图</h3>
+                <h3 class="text-base font-semibold text-text-primary">站点截图</h3>
               </div>
               <div class="flex-1 rounded-lg overflow-hidden min-h-[220px]">
                 <img :src="siteTitleImg" alt="站点截图" class="w-full h-full object-contain" />
@@ -23,10 +23,10 @@
 
           <!-- 右侧：站点标题、Favicon 等输入 -->
           <div class="lg:col-span-7 flex flex-col gap-6">
-            <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
+            <div class="bg-surface rounded-xl border border-border p-6">
               <div class="flex items-center gap-2">
                 <el-icon class="text-blue-500"><InfoFilled /></el-icon>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">站点标题</h3>
+                <h3 class="text-base font-semibold text-text-primary">站点标题</h3>
               </div>
               <div class="mt-4 flex gap-2">
                 <el-input v-model="siteTitle" placeholder="请输入站点标题" clearable />
@@ -34,13 +34,13 @@
               </div>
             </div>
 
-            <div class="bg-white dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 p-6">
+            <div class="bg-surface rounded-xl border border-border p-6">
               <div class="flex items-center gap-2">
                 <el-icon class="text-blue-500"><Sunny /></el-icon>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-white">Favicon</h3>
+                <h3 class="text-base font-semibold text-text-primary">Favicon</h3>
               </div>
               <div class="mt-4 flex items-center gap-4">
-                <div class="w-14 h-14 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0">
+                <div class="w-14 h-14 rounded-lg border border-border bg-surface-hover flex items-center justify-center overflow-hidden shrink-0">
                   <img :src="siteIconUrl || siteFaviconImg" alt="favicon" class="w-full h-full object-contain" />
                 </div>
                 <el-upload
@@ -50,7 +50,7 @@
                 >
                   <el-button type="primary" :loading="savingIcon" :icon="Upload">更换图标</el-button>
                   <template #tip>
-                    <div class="el-upload__tip text-xs text-gray-500 mt-1">支持 jpg/png，不超过 1MB，建议尺寸 512x512 的正方形图片</div>
+                    <div class="el-upload__tip text-xs text-text-muted mt-1">支持 jpg/png，不超过 1MB，建议尺寸 512x512 的正方形图片</div>
                   </template>
                 </el-upload>
               </div>

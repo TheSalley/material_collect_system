@@ -12,13 +12,13 @@ const { user, userCardRef, menuOpen, toggleMenu, logout, goTo } = useUserAvator(
 
 <template>
   <div ref="userCardRef" class="user-card-wrap mt-4">
-    <div class="flex gap-3 p-3 border-t border-gray-200 dark:border-gray-700">
+    <div class="flex gap-3 p-3 border-t border-border">
       <div
         class="__avator bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10"
       ></div>
       <div class="flex flex-col gap-0.5 min-w-0 flex-1 justify-center">
         <p
-          class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-tight truncate"
+          class="text-text-muted text-sm font-normal leading-tight truncate"
         >
           {{ user?.username }}
         </p>
@@ -106,14 +106,6 @@ const { user, userCardRef, menuOpen, toggleMenu, logout, goTo } = useUserAvator(
   color: #1f6fe0;
   background: rgba(43, 124, 238, 0.08);
 }
-.dark .user-dots-btn {
-  color: #6b7485;
-}
-.dark .user-dots-btn:hover {
-  color: #6fb0f7;
-  background: rgba(43, 124, 238, 0.16);
-  border-color: rgba(43, 124, 238, 0.22);
-}
 
 /* 弹出菜单：渐变 + 噪点纹理打底（非纯平），从按钮上方展开 */
 .user-menu {
@@ -129,13 +121,6 @@ const { user, userCardRef, menuOpen, toggleMenu, logout, goTo } = useUserAvator(
   background-color: #ffffff;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"),
     linear-gradient(180deg, #ffffff 0%, #f4f7fb 100%);
-}
-.dark .user-menu {
-  border-color: rgba(100, 116, 139, 0.35);
-  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.55);
-  background-color: #16202d;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
-    linear-gradient(180deg, #1a2532 0%, #131c28 100%);
 }
 
 .user-menu-item {
@@ -164,20 +149,6 @@ const { user, userCardRef, menuOpen, toggleMenu, logout, goTo } = useUserAvator(
 .user-menu-item.danger:hover {
   color: #b91c1c;
   background: linear-gradient(90deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.03) 100%);
-}
-.dark .user-menu-item {
-  color: #c3cad6;
-}
-.dark .user-menu-item:hover {
-  color: #6fb0f7;
-  background: linear-gradient(90deg, rgba(43, 124, 238, 0.2) 0%, rgba(43, 124, 238, 0.06) 100%);
-}
-.dark .user-menu-item.danger {
-  color: #f87171;
-}
-.dark .user-menu-item.danger:hover {
-  color: #fca5a5;
-  background: linear-gradient(90deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.06) 100%);
 }
 
 .user-menu-divider {

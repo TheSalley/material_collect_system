@@ -1,5 +1,9 @@
 <template>
-  <PageContainer title="客户基础信息" :icon="Postcard">
+  <PageContainer
+    title="客户基础信息"
+    subtitle="填完提交，我们照这份资料建站"
+    :icon="Postcard"
+  >
     <CustomerInfoPanel />
   </PageContainer>
 </template>

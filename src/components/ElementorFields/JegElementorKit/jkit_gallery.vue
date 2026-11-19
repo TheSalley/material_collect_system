@@ -23,10 +23,10 @@
       <div
         v-for="(item, index) in filterItems"
         :key="item?._id || index"
-        class="mb-3 overflow-hidden rounded-lg border border-gray-200 last:mb-0"
+        class="mb-3 overflow-hidden rounded-lg border border-border last:mb-0"
       >
         <div
-          class="flex cursor-pointer items-center justify-between gap-3 bg-white p-3 transition-colors hover:bg-[var(--field-bg-hover)]"
+          class="flex cursor-pointer items-center justify-between gap-3 bg-surface p-3 transition-colors hover:bg-[var(--field-bg-hover)]"
           @click="toggleFilterCollapse(index)"
         >
           <div class="flex min-w-0 items-center gap-3">
@@ -100,10 +100,10 @@
       <div
         v-for="(item, index) in galleryItems"
         :key="item?._id || index"
-        class="mb-3 overflow-hidden rounded-lg border border-gray-200 last:mb-0"
+        class="mb-3 overflow-hidden rounded-lg border border-border last:mb-0"
       >
         <div
-          class="flex cursor-pointer items-center justify-between gap-3 bg-white p-3 transition-colors hover:bg-[var(--field-bg-hover)]"
+          class="flex cursor-pointer items-center justify-between gap-3 bg-surface p-3 transition-colors hover:bg-[var(--field-bg-hover)]"
           @click="toggleGalleryCollapse(index)"
         >
           <div class="flex min-w-0 items-center gap-3">

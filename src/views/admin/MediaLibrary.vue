@@ -114,7 +114,7 @@ onMounted(() => {
       <template #header>
         <div class="flex flex-wrap gap-3 items-end w-full">
           <div class="flex flex-col gap-1">
-            <span class="text-xs text-gray-500">Demo 名称</span>
+            <span class="text-xs text-text-muted">Demo 名称</span>
             <el-input
               v-model="queryDemo"
               size="large"
@@ -136,7 +136,7 @@ onMounted(() => {
         <el-icon class="is-loading text-4xl text-primary"><Loading /></el-icon>
       </div>
 
-      <div v-else-if="rows.length === 0 && searched" class="flex flex-col items-center justify-center h-64 gap-4 text-gray-400">
+      <div v-else-if="rows.length === 0 && searched" class="flex flex-col items-center justify-center h-64 gap-4 text-text-muted">
         <el-icon class="text-7xl"><Picture /></el-icon>
         <p class="text-base">暂无素材</p>
         <p class="text-sm">输入 Demo 名称后点击查询，或上传新素材</p>
@@ -154,12 +154,12 @@ onMounted(() => {
 
       <template #footer>
         <div class="flex items-center justify-between w-full flex-wrap gap-3">
-          <span v-if="total > 0" class="text-xs text-gray-400">
-            共 <strong class="text-gray-600">{{ total }}</strong> 条素材
-            <span class="ml-2 text-gray-400">当前第 {{ page }}/{{ totalPages }} 页</span>
+          <span v-if="total > 0" class="text-xs text-text-muted">
+            共 <strong class="text-text-secondary">{{ total }}</strong> 条素材
+            <span class="ml-2 text-text-muted">当前第 {{ page }}/{{ totalPages }} 页</span>
           </span>
-          <span v-else-if="rows.length > 0 || searched" class="text-xs text-gray-400">
-            共 <strong class="text-gray-600">{{ rows.length }}</strong> 条素材
+          <span v-else-if="rows.length > 0 || searched" class="text-xs text-text-muted">
+            共 <strong class="text-text-secondary">{{ rows.length }}</strong> 条素材
           </span>
           <el-pagination
             v-if="total > 0"

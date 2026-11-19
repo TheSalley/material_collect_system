@@ -29,10 +29,7 @@ import {
   uploadPresetMedia,
 } from "@/apis/presets";
 import {
-  INITIAL_CATEGORIES,
-  INITIAL_PRESET_GROUPS,
   fetchPresetData,
-  loadPresetData,
   mapPresetCategory,
   mapPresetGroup,
   toPresetPayload,
@@ -49,18 +46,13 @@ import {
  * ------------------------------------------------------------------------
  */
 
-/* ---------------- 初始演示数据（来自共享模块） ---------------- */
-const initialCategories = INITIAL_CATEGORIES;
-const initialGroups = INITIAL_PRESET_GROUPS;
-
 /* ---------------- 状态 ---------------- */
 const loadingList = ref(false);
 const searchKeyword = ref("");
 const categoryFilter = ref("all"); // all | 分类 key
-const loadedPreset = loadPresetData();
-const presetGroups = ref(loadedPreset.groups.length > 0 ? loadedPreset.groups : JSON.parse(JSON.stringify(initialGroups)));
-const presetCategories = ref(loadedPreset.categories.length > 0 ? loadedPreset.categories : JSON.parse(JSON.stringify(initialCategories)));
-const activeGroupId = ref(initialGroups[0]?.id ?? null);
+const presetGroups = ref([]);
+const presetCategories = ref([]);
+const activeGroupId = ref(null);
 
 // 抽屉：新增 / 编辑预设内容包
 const editorVisible = ref(false);
@@ -173,7 +165,7 @@ async function loadFromApi(showMessage = false) {
     if (showMessage) ElMessage.success("已从接口刷新预设内容");
   } catch (error) {
     if (showMessage) {
-      ElMessage.error(error?.message || "预设内容读取失败，已显示内置示例");
+      ElMessage.error(error?.message || "预设内容读取失败");
     }
   } finally {
     loadingList.value = false;
@@ -475,7 +467,6 @@ async function removeText(index) {
   await persistActiveGroup("文案已删除");
 }
 
-// 静态演示：占位图仍可正常预览
 function copyGroupId(g) {
   navigator.clipboard?.writeText(String(g.id)).then(() => {
     ElMessage.success(`已复制包 id：${g.id}`);

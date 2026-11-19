@@ -82,33 +82,6 @@ export const setPagePermission = async (payload) => {
 };
 
 /**
- * 获取客户侧功能菜单权限（全站共用一份）
- * GET /api/user/menu_permissions
- * 响应 data: { permissions: { [menuKey]: boolean }, updated_at?: string }
- */
-export const getMenuPermissions = async () => {
-  const url = config.baseUrl + "/api/user/menu_permissions";
-  // 接口未上线时不弹错误，由调用方按默认值处理
-  return await fetchWithAuth(url, { method: "GET" }, { silent: true });
-};
-
-/**
- * 保存客户侧功能菜单权限（全站共用一份）
- * POST /api/user/set_menu_permissions
- * Body: { permissions: { [menuKey]: boolean } }
- */
-export const setMenuPermissions = async (payload) => {
-  return await fetchWithAuth(
-    config.baseUrl + "/api/user/set_menu_permissions",
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-    { silent: true }
-  );
-};
-
-/**
  * 3.5 更新用户
  * POST /api/user/update
  * Body: { id, username, password?, role, site_ids: string[] }

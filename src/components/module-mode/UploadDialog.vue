@@ -75,15 +75,15 @@
                 </div>
                 <!-- 分页 -->
                 <div class="px-6 pb-2 flex-shrink-0 flex items-center justify-between">
-                  <span v-if="total > 0" class="text-xs text-gray-400 dark:text-gray-500">
+                  <span v-if="total > 0" class="text-xs text-text-muted">
                     共
-                    <strong class="text-gray-600 dark:text-gray-300">{{ total }}</strong>
+                    <strong class="text-text-secondary">{{ total }}</strong>
                     条素材
-                    <span class="ml-2 text-gray-400">当前第 {{ page }}/{{ totalPages }} 页</span>
+                    <span class="ml-2 text-text-muted">当前第 {{ page }}/{{ totalPages }} 页</span>
                   </span>
-                  <span v-else-if="rows.length > 0 || searched" class="text-xs text-gray-400 dark:text-gray-500">
+                  <span v-else-if="rows.length > 0 || searched" class="text-xs text-text-muted">
                     共
-                    <strong class="text-gray-600 dark:text-gray-300">{{ rows.length }}</strong>
+                    <strong class="text-text-secondary">{{ rows.length }}</strong>
                     条素材
                   </span>
                   <div v-else />

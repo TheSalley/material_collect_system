@@ -4,11 +4,11 @@
     <div v-if="showHeader" class="px-6 pt-6 flex-shrink-0">
       <div class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
-          <h1 class="flex items-center gap-3 text-3xl font-semibold text-gray-900 dark:text-white">
+          <h1 class="flex items-center gap-3 text-3xl font-semibold text-text-primary">
             <el-icon class="text-blue-500 text-4xl"><Document /></el-icon>
             新闻列表
           </h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">管理和查看所有新闻信息</p>
+          <p class="text-sm text-text-muted">管理和查看所有新闻信息</p>
         </div>
         <div class="flex items-center gap-2 pt-1">
           <el-button v-if="showAddButton" type="primary" :icon="Plus" @click="goToUpload">
@@ -21,7 +21,7 @@
     <!-- 主内容卡片 -->
     <div :class="cardClass">
       <!-- 工具栏 -->
-      <div class="flex justify-between items-center px-6 py-5 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+      <div class="flex justify-between items-center px-6 py-5 border-b border-border bg-surface-hover">
         <div class="flex-1">
           <el-input
             v-model="searchValue"
@@ -58,13 +58,13 @@
         >
           <el-table-column prop="id" label="ID" width="100" align="center">
             <template #default="scope">
-              <span class="font-mono text-xs text-gray-500 dark:text-gray-400">{{ scope.row.id }}</span>
+              <span class="font-mono text-xs text-text-muted">{{ scope.row.id }}</span>
             </template>
           </el-table-column>
 
           <el-table-column prop="title" label="新闻标题" min-width="260" show-overflow-tooltip>
             <template #default="scope">
-              <span class="font-medium text-gray-900 dark:text-white">{{ scope.row.title || '-' }}</span>
+              <span class="font-medium text-text-primary">{{ scope.row.title || '-' }}</span>
             </template>
           </el-table-column>
 
@@ -96,7 +96,7 @@
       </div>
 
       <!-- 分页 -->
-      <div class="flex justify-end px-6 py-5 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
+      <div class="flex justify-end px-6 py-5 border-t border-border bg-surface-hover">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -146,9 +146,9 @@ const showHeader = computed(() => !props.embedded);
 
 const cardClass = computed(() => {
   if (props.embedded) {
-    return "bg-white dark:bg-gray-700 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 overflow-hidden min-h-0 flex flex-col";
+    return "bg-surface rounded-xl shadow-sm border border-border overflow-hidden min-h-0 flex flex-col";
   }
-  return "flex-1 flex flex-col m-6 bg-white dark:bg-gray-700 rounded-xl shadow-sm overflow-hidden min-h-0";
+  return "flex-1 flex flex-col m-6 bg-surface rounded-xl shadow-sm overflow-hidden min-h-0";
 });
 
 async function fetchList() {

@@ -3,11 +3,11 @@
     <template #header>
       <div class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
-          <h1 class="flex items-center gap-3 text-[28px] font-bold text-gray-900">
+          <h1 class="flex items-center gap-3 text-[28px] font-bold text-text-primary">
             <el-icon class="text-primary text-3xl"><Document /></el-icon>
             {{ isViewMode ? "新闻查看" : "新闻上传" }}
           </h1>
-          <p class="text-sm text-gray-500">上传封面并创建新闻（post）</p>
+          <p class="text-sm text-text-muted">上传封面并创建新闻（post）</p>
         </div>
         <div class="flex items-center gap-2 pt-1">
           <el-button @click="reset">重置</el-button>
@@ -21,19 +21,19 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- 左侧：封面图预览 -->
         <div class="lg:col-span-5 flex flex-col">
-          <div class="bg-white rounded-xl border border-gray-200 p-4 flex-1 flex flex-col min-h-[400px]">
+          <div class="bg-surface rounded-xl border border-border p-4 flex-1 flex flex-col min-h-[400px]">
             <div class="flex items-center gap-2 mb-3">
               <el-icon class="text-primary"><Picture /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">封面预览</h3>
+              <h3 class="text-base font-semibold text-text-primary">封面预览</h3>
             </div>
-            <div class="flex-1 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center min-h-[360px]">
+            <div class="flex-1 rounded-lg overflow-hidden bg-surface-hover flex items-center justify-center min-h-[360px]">
               <img
                 v-if="uploaded.url"
                 :src="uploaded.url"
                 alt="封面预览"
                 class="w-full h-full object-contain max-h-[360px]"
               />
-              <div v-else class="flex flex-col items-center justify-center text-gray-400">
+              <div v-else class="flex flex-col items-center justify-center text-text-muted">
                 <el-icon class="text-6xl mb-2"><Picture /></el-icon>
                 <span class="text-sm">暂无封面图</span>
               </div>
@@ -43,20 +43,20 @@
 
         <!-- 右侧：编辑表单 -->
         <div class="lg:col-span-7 flex flex-col gap-6">
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Edit /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">新闻标题</h3>
+              <h3 class="text-base font-semibold text-text-primary">新闻标题</h3>
             </div>
             <div class="mt-4">
               <el-input v-model="form.title" placeholder="请输入新闻标题" clearable />
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Edit /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">新闻正文</h3>
+              <h3 class="text-base font-semibold text-text-primary">新闻正文</h3>
             </div>
             <div class="mt-4 news-editor-wrap">
               <QuillEditor
@@ -67,10 +67,10 @@
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Picture /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">上传封面</h3>
+              <h3 class="text-base font-semibold text-text-primary">上传封面</h3>
             </div>
             <div class="mt-4 flex items-center gap-3 flex-wrap">
               <el-upload action="#" :before-upload="beforeUpload" :show-file-list="false">
@@ -78,15 +78,15 @@
                   {{ uploaded.url ? "更换封面" : "上传封面" }}
                 </el-button>
               </el-upload>
-              <span v-if="uploaded.attachment_id" class="text-xs text-gray-500">attachment_id：{{ uploaded.attachment_id }}</span>
-              <span class="text-xs text-gray-500">支持 jpg/png，不超过 10MB，建议 16:9</span>
+              <span v-if="uploaded.attachment_id" class="text-xs text-text-muted">attachment_id：{{ uploaded.attachment_id }}</span>
+              <span class="text-xs text-text-muted">支持 jpg/png，不超过 10MB，建议 16:9</span>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Document /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">新闻分类</h3>
+              <h3 class="text-base font-semibold text-text-primary">新闻分类</h3>
             </div>
             <div class="mt-4">
               <el-select

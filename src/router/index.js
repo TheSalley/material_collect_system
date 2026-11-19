@@ -4,8 +4,7 @@ import { useGlobalStore } from "@/stores/global";
 import adminRoutes from "./adminRoutes";
 import customerRoutes from "./customerRoutes";
 import { isWhitelistRoute } from "./whitelist";
-import { canAccessCustomerRoute, normalizeRole } from "./permissions";
-import { getCustomerHomePath } from "@/config/customerMenu";
+import { canAccessRoute, normalizeRole } from "./permissions";
 
 /**
  * 登录页（白名单路由，无需登录即可访问）
@@ -46,18 +45,13 @@ const router = createRouter({
  */
 router.beforeEach((to, from, next) => {
   const globalStore = useGlobalStore();
-  const { user, access_token, customerMenuPermissions } = globalStore;
-  const siteId = globalStore.websiteInfo?.site_id || "";
+  const { user, access_token } = globalStore;
   const userRole = normalizeRole(user?.role);
   const isLoggedIn = !!access_token;
 
   // 1. 已登录用户访问登录页 → 重定向到对应首页
   if (to.path === "/login" && isLoggedIn) {
-    next(
-      userRole === "admin"
-        ? "/admin/dashboard"
-        : getCustomerHomePath(customerMenuPermissions, siteId)
-    );
+    next(userRole === "admin" ? "/admin/dashboard" : "/instruction");
     return;
   }
 
@@ -77,13 +71,9 @@ router.beforeEach((to, from, next) => {
   }
 
   // 4. 角色权限校验（meta.allowRoles 优先，其次 meta.role）
-  if (!canAccessCustomerRoute(to.meta, userRole, customerMenuPermissions)) {
+  if (!canAccessRoute(to.meta, userRole)) {
     ElMessage.warning("您没有权限访问该页面");
-    next(
-      userRole === "admin"
-        ? "/admin/dashboard"
-        : getCustomerHomePath(customerMenuPermissions, siteId)
-    );
+    next(userRole === "admin" ? "/admin/dashboard" : "/instruction");
     return;
   }
 

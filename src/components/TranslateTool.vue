@@ -1,11 +1,11 @@
 <template>
   <div
     v-if="visible"
-    class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-600"
+    class="flex items-center gap-3 bg-surface-hover rounded-lg px-4 py-2 border border-border"
   >
     <div class="flex items-center gap-2">
-      <el-icon class="text-gray-500 dark:text-gray-400"><Sort /></el-icon>
-      <span class="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">从:</span>
+      <el-icon class="text-text-muted"><Sort /></el-icon>
+      <span class="text-sm text-text-secondary whitespace-nowrap">从:</span>
       <el-select
         v-model="localSourceLanguage"
         placeholder="源语言"
@@ -20,9 +20,9 @@
         />
       </el-select>
     </div>
-    <el-icon class="text-gray-400 dark:text-gray-500"><ArrowRight /></el-icon>
+    <el-icon class="text-text-muted"><ArrowRight /></el-icon>
     <div class="flex items-center gap-2">
-      <span class="text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">到:</span>
+      <span class="text-sm text-text-secondary whitespace-nowrap">到:</span>
       <el-select
         v-model="localTargetLanguage"
         placeholder="目标语言"

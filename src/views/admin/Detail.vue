@@ -327,19 +327,19 @@ async function handleSave() {
         <div class="flex flex-col gap-2 min-w-0">
           <div class="flex items-center gap-3">
             <el-icon class="text-primary text-2xl"><UserFilled /></el-icon>
-            <h1 class="text-2xl font-semibold text-gray-900">客户详情</h1>
+            <h1 class="text-2xl font-semibold text-text-primary">客户详情</h1>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <a
               href="#"
               @click.prevent="router.push({ name: 'AdminList' })"
-              class="text-gray-500 hover:text-primary transition-colors flex items-center gap-1"
+              class="text-text-muted hover:text-primary transition-colors flex items-center gap-1"
             >
               <el-icon><House /></el-icon>
               站点管理
             </a>
-            <el-icon class="text-gray-400"><ArrowRight /></el-icon>
-            <span class="text-gray-700 font-medium truncate">{{ displayCustomerTitle }}</span>
+            <el-icon class="text-text-muted"><ArrowRight /></el-icon>
+            <span class="text-text-secondary font-medium truncate">{{ displayCustomerTitle }}</span>
           </div>
         </div>
         <div class="flex items-center gap-3 flex-shrink-0">
@@ -373,26 +373,26 @@ async function handleSave() {
           <template #header>
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><InfoFilled /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">客户信息</h3>
+              <h3 class="text-base font-semibold text-text-primary">客户信息</h3>
             </div>
           </template>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-gray-500 text-sm">
+              <div class="flex items-center gap-2 text-text-muted text-sm">
                 <el-icon><User /></el-icon>
                 <span>客户名称</span>
               </div>
-              <p class="text-gray-900 text-base font-medium">{{ displayCustomerName }}</p>
+              <p class="text-text-primary text-base font-medium">{{ displayCustomerName }}</p>
             </div>
             <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-gray-500 text-sm">
+              <div class="flex items-center gap-2 text-text-muted text-sm">
                 <el-icon><Key /></el-icon>
                 <span>客户ID</span>
               </div>
-              <p class="text-gray-900 text-base font-medium font-mono">{{ displayCustomerUserId }}</p>
+              <p class="text-text-primary text-base font-medium font-mono">{{ displayCustomerUserId }}</p>
             </div>
             <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-gray-500 text-sm">
+              <div class="flex items-center gap-2 text-text-muted text-sm">
                 <el-icon><CircleCheck /></el-icon>
                 <span>账户状态</span>
               </div>
@@ -413,18 +413,18 @@ async function handleSave() {
               </div>
             </div>
             <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-gray-500 text-sm">
+              <div class="flex items-center gap-2 text-text-muted text-sm">
                 <el-icon><Calendar /></el-icon>
                 <span>到期时间</span>
               </div>
-              <p class="text-gray-900 text-base font-medium">{{ displayExpireAt }}</p>
+              <p class="text-text-primary text-base font-medium">{{ displayExpireAt }}</p>
             </div>
           </div>
         </PanelCard>
 
         <!-- 页面 / 站点 / 内容 Tab 区域 -->
         <div class="flex flex-col">
-          <div class="border-b border-gray-200 mb-6">
+          <div class="border-b border-border mb-6">
             <nav class="flex flex-wrap gap-x-8 gap-y-2">
               <!-- 站点信息 Tab -->
               <button
@@ -432,10 +432,10 @@ async function handleSave() {
                 class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
                 :class="activeSubTab === 'site'
                   ? 'border-primary text-primary font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                  : 'border-transparent text-text-muted hover:text-primary hover:border-primary-light'"
                 @click="activeSubTab = 'site'"
               >
-                <el-icon :class="activeSubTab === 'site' ? 'text-primary' : 'text-gray-400'">
+                <el-icon :class="activeSubTab === 'site' ? 'text-primary' : 'text-text-muted'">
                   <InfoFilled />
                 </el-icon>
                 <span class="text-base">站点信息</span>
@@ -446,10 +446,10 @@ async function handleSave() {
                 class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
                 :class="activeSubTab === 'profile'
                   ? 'border-primary text-primary font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                  : 'border-transparent text-text-muted hover:text-primary hover:border-primary-light'"
                 @click="activeSubTab = 'profile'"
               >
-                <el-icon :class="activeSubTab === 'profile' ? 'text-primary' : 'text-gray-400'">
+                <el-icon :class="activeSubTab === 'profile' ? 'text-primary' : 'text-text-muted'">
                   <Postcard />
                 </el-icon>
                 <span class="text-base">客户资料</span>
@@ -460,10 +460,10 @@ async function handleSave() {
                 class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
                 :class="activeSubTab === 'banners'
                   ? 'border-primary text-primary font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                  : 'border-transparent text-text-muted hover:text-primary hover:border-primary-light'"
                 @click="activeSubTab = 'banners'"
               >
-                <el-icon :class="activeSubTab === 'banners' ? 'text-primary' : 'text-gray-400'">
+                <el-icon :class="activeSubTab === 'banners' ? 'text-primary' : 'text-text-muted'">
                   <PictureFilled />
                 </el-icon>
                 <span class="text-base">Banner</span>
@@ -474,10 +474,10 @@ async function handleSave() {
                 class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
                 :class="activeSubTab === 'pages'
                   ? 'border-primary text-primary font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                  : 'border-transparent text-text-muted hover:text-primary hover:border-primary-light'"
                 @click="activeSubTab = 'pages'"
               >
-                <el-icon :class="activeSubTab === 'pages' ? 'text-primary' : 'text-gray-400'">
+                <el-icon :class="activeSubTab === 'pages' ? 'text-primary' : 'text-text-muted'">
                   <Document />
                 </el-icon>
                 <span class="text-base">页面设置</span>
@@ -488,10 +488,10 @@ async function handleSave() {
                 class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
                 :class="activeSubTab === 'news'
                   ? 'border-primary text-primary font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                  : 'border-transparent text-text-muted hover:text-primary hover:border-primary-light'"
                 @click="activeSubTab = 'news'"
               >
-                <el-icon :class="activeSubTab === 'news' ? 'text-primary' : 'text-gray-400'">
+                <el-icon :class="activeSubTab === 'news' ? 'text-primary' : 'text-text-muted'">
                   <Document />
                 </el-icon>
                 <span class="text-base">新闻</span>
@@ -502,10 +502,10 @@ async function handleSave() {
                 class="flex items-center gap-2 px-1 pb-4 border-b-2 transition-colors"
                 :class="activeSubTab === 'product'
                   ? 'border-primary text-primary font-semibold'
-                  : 'border-transparent text-gray-500 hover:text-primary hover:border-primary-light'"
+                  : 'border-transparent text-text-muted hover:text-primary hover:border-primary-light'"
                 @click="activeSubTab = 'product'"
               >
-                <el-icon :class="activeSubTab === 'product' ? 'text-primary' : 'text-gray-400'">
+                <el-icon :class="activeSubTab === 'product' ? 'text-primary' : 'text-text-muted'">
                   <Box />
                 </el-icon>
                 <span class="text-base">产品</span>
@@ -536,7 +536,7 @@ async function handleSave() {
                 >
                   <el-table-column prop="ID" label="ID" width="180">
                     <template #default="scope">
-                      <span class="font-mono text-xs text-gray-500">{{ scope.row.ID }}</span>
+                      <span class="font-mono text-xs text-text-muted">{{ scope.row.ID }}</span>
                     </template>
                   </el-table-column>
 
@@ -544,7 +544,7 @@ async function handleSave() {
                     <template #default="scope">
                       <div class="flex items-center gap-2">
                         <el-icon class="text-primary"><Document /></el-icon>
-                        <span class="font-medium text-gray-900">{{ scope.row.post_name || '-' }}</span>
+                        <span class="font-medium text-text-primary">{{ scope.row.post_name || '-' }}</span>
                       </div>
                     </template>
                   </el-table-column>

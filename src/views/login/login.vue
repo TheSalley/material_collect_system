@@ -9,17 +9,17 @@
       class="relative z-10 w-full h-full flex items-center justify-center px-4"
     >
       <div
-        class="w-full max-w-md bg-gradient-to-b from-primary/10 to-white dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-2xl p-8 md:p-12"
+        class="w-full max-w-md bg-gradient-to-b from-primary/10 to-white backdrop-blur-lg rounded-2xl shadow-2xl p-8 md:p-12"
       >
         <!-- Logo -->
         <div class="text-center mb-8">
           <div class="flex justify-center mb-6">
             <img src="/logo.svg" alt="Logo" class="h-16 w-auto" />
           </div>
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 class="text-3xl font-bold text-text-primary mb-2">
             素材收集系统
           </h1>
-          <p class="text-gray-700 dark:text-gray-400 text-sm">
+          <p class="text-text-secondary text-sm">
             欢迎回来，请登录您的账户
           </p>
         </div>
@@ -40,7 +40,7 @@
               clearable
             >
               <template #prefix>
-                <el-icon class="text-gray-400"><User /></el-icon>
+                <el-icon class="text-text-muted"><User /></el-icon>
               </template>
             </el-input>
           </el-form-item>
@@ -56,7 +56,7 @@
               @keyup.enter="handleLogin"
             >
               <template #prefix>
-                <el-icon class="text-gray-400"><Lock /></el-icon>
+                <el-icon class="text-text-muted"><Lock /></el-icon>
               </template>
             </el-input>
           </el-form-item>
@@ -88,7 +88,7 @@
 
         <!-- 底部提示 -->
         <div class="mt-6 text-center">
-          <p class="text-xs text-gray-400 dark:text-gray-500">
+          <p class="text-xs text-text-muted">
             请使用您的账户凭据登录系统
           </p>
         </div>
@@ -96,7 +96,7 @@
     </div>
 
     <div
-      class="absolute bottom-6 left-0 right-0 z-10 text-center text-xs text-gray-200/70 dark:text-gray-300/70"
+      class="absolute bottom-6 left-0 right-0 z-10 text-center text-xs text-gray-200/70"
     >
       版本号：{{ APP_VERSION }}
     </div>
@@ -107,9 +107,9 @@
 import { ref, nextTick } from "vue";
 import { login } from "@/apis/index.js";
 import { refreshUserSitePageListWithPermissions } from "@/utils/userSitePages.js";
-import { loadCustomerMenuPermissions } from "@/apis/collection.js";
 import { useRouter, useRoute } from "vue-router";
 import { useGlobalStore } from "@/stores/global";
+import { normalizeRole } from "@/router/permissions.js";
 import { User, Lock, Right, Refresh } from "@element-plus/icons-vue";
 import "element-plus/theme-chalk/el-message.css";
 import "element-plus/theme-chalk/el-message-box.css";
@@ -163,14 +163,10 @@ const handleLogin = async () => {
           globalStore.setWebsiteInfo(null);
         }
 
-        const role = (res.data.user?.role ?? "user").toString().toLowerCase();
+        const role = normalizeRole(res.data.user?.role);
         // 用户身份：拉取页面列表 + 页面授权（与刷新时一致）
         if (role === "user" && globalStore.websiteInfo?.site_id) {
           await refreshUserSitePageListWithPermissions(globalStore);
-          const menuRes = await loadCustomerMenuPermissions();
-          globalStore.setCustomerMenuPermissions(
-            menuRes.ok ? menuRes.data : null
-          );
         }
 
         ElMessage.success("登录成功");

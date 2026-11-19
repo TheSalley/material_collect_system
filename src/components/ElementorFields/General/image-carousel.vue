@@ -10,7 +10,7 @@
       <div
         v-for="image in carouselItems"
         :key="image.key"
-        class="grid grid-cols-[92px_1fr_auto] items-center gap-3 rounded-lg border border-[var(--el-border-color-lighter)] bg-white p-2.5"
+        class="grid grid-cols-[92px_1fr_auto] items-center gap-3 rounded-lg border border-[var(--el-border-color-lighter)] bg-surface p-2.5"
       >
         <div
           class="relative flex h-16 w-[92px] items-center justify-center overflow-hidden rounded-md border border-[var(--el-border-color-lighter)] bg-[var(--el-fill-color-lighter)]"

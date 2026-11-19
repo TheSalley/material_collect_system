@@ -62,11 +62,11 @@ export function deletePresetCategory(key) {
   return jsonPost("/api/presets/categories/delete", { key });
 }
 
-/** POST /api/media/upload（预设后端） */
+/** POST /api/presets/upload（预设后端图片上传） */
 export function uploadPresetMedia(file) {
   const formData = new FormData();
   formData.append("file", file);
-  return fetchWithAuth(`${BASE_URL}/api/media/upload`, {
+  return fetchWithAuth(`${BASE_URL}/api/presets/upload`, {
     method: "POST",
     body: formData,
   });

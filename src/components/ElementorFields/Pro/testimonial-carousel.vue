@@ -12,10 +12,10 @@
     <div
       v-for="(item, index) in list"
       :key="item?._id || index"
-      class="border border-gray-200 rounded-lg mb-3 overflow-hidden"
+      class="border border-border rounded-lg mb-3 overflow-hidden"
     >
       <div
-        class="icon-list-item-row flex items-center justify-between p-3 cursor-pointer bg-white"
+        class="icon-list-item-row flex items-center justify-between p-3 cursor-pointer bg-surface"
         @click="toggleCollapse(index)"
       >
         <div class="flex items-center gap-3">

@@ -1,5 +1,3 @@
-import { canUseCustomerMenu } from "@/config/customerMenu.js";
-
 /**
  * 路由权限判断
  *
@@ -10,7 +8,14 @@ import { canUseCustomerMenu } from "@/config/customerMenu.js";
  * 侧边栏和直接输入地址都会被拦截；恢复时移除该字段即可。
  */
 export function normalizeRole(role) {
-  return (role || "user").toString().toLowerCase();
+  const value = (role ?? "").toString().trim().toLowerCase();
+  // 后端可能返回 admin / superadmin / 管理员 等写法。
+  // 除明确的管理员角色外一律按客户处理，避免客户被误判成「无权限」。
+  if (!value) return "user";
+  if (["admin", "superadmin", "super_admin", "administrator", "root"].includes(value)) {
+    return "admin";
+  }
+  return "user";
 }
 
 export function canAccessRoute(meta, role) {
@@ -28,13 +33,3 @@ export function canAccessRoute(meta, role) {
   return true;
 }
 
-/**
- * 客户侧功能页权限
- * meta.menuKey 指向「客户权限」面板里的开关；管理员始终放行。
- */
-export function canAccessCustomerRoute(meta, role, permissions) {
-  if (!canAccessRoute(meta, role)) return false;
-  const menuKey = meta?.menuKey;
-  if (!menuKey) return true;
-  return canUseCustomerMenu(menuKey, permissions, role);
-}

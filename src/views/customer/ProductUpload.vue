@@ -3,11 +3,11 @@
     <template #header>
       <div class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
-          <h1 class="flex items-center gap-3 text-[28px] font-bold text-gray-900">
+          <h1 class="flex items-center gap-3 text-[28px] font-bold text-text-primary">
             <el-icon class="text-primary text-3xl"><Box /></el-icon>
             {{ isViewMode ? "产品查看" : "产品上传" }}
           </h1>
-          <p class="text-sm text-gray-500">上传产品主图并填写基础信息</p>
+          <p class="text-sm text-text-muted">上传产品主图并填写基础信息</p>
         </div>
         <div class="flex items-center gap-2 pt-1">
           <el-button @click="reset">重置</el-button>
@@ -21,19 +21,19 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <!-- 左侧：产品主图预览 -->
         <div class="lg:col-span-5 flex flex-col">
-          <div class="bg-white rounded-xl border border-gray-200 p-4 flex-1 flex flex-col min-h-[400px]">
+          <div class="bg-surface rounded-xl border border-border p-4 flex-1 flex flex-col min-h-[400px]">
             <div class="flex items-center gap-2 mb-3">
               <el-icon class="text-primary"><Picture /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">产品主图预览</h3>
+              <h3 class="text-base font-semibold text-text-primary">产品主图预览</h3>
             </div>
-            <div class="flex-1 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center min-h-[360px]">
+            <div class="flex-1 rounded-lg overflow-hidden bg-surface-hover flex items-center justify-center min-h-[360px]">
               <img
                 v-if="uploaded.url"
                 :src="uploaded.url"
                 alt="产品主图预览"
                 class="w-full h-full object-contain max-h-[360px]"
               />
-              <div v-else class="flex flex-col items-center justify-center text-gray-400">
+              <div v-else class="flex flex-col items-center justify-center text-text-muted">
                 <el-icon class="text-6xl mb-2"><Picture /></el-icon>
                 <span class="text-sm">暂无主图</span>
               </div>
@@ -43,30 +43,30 @@
 
         <!-- 右侧：编辑表单 -->
         <div class="lg:col-span-7 flex flex-col gap-6">
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Edit /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">产品名称</h3>
+              <h3 class="text-base font-semibold text-text-primary">产品名称</h3>
             </div>
             <div class="mt-4">
               <el-input v-model="form.name" placeholder="请输入产品名称" clearable />
             </div>
           </div>
 
-          <div v-if="isViewMode && shortDescription" class="bg-white rounded-xl border border-gray-200 p-6">
+          <div v-if="isViewMode && shortDescription" class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Edit /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">简短描述</h3>
+              <h3 class="text-base font-semibold text-text-primary">简短描述</h3>
             </div>
-            <div class="mt-4 whitespace-pre-wrap text-sm text-gray-700">
+            <div class="mt-4 whitespace-pre-wrap text-sm text-text-secondary">
               {{ shortDescription }}
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Edit /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">产品描述</h3>
+              <h3 class="text-base font-semibold text-text-primary">产品描述</h3>
             </div>
             <div class="mt-4 product-editor-wrap">
               <QuillEditor
@@ -77,10 +77,10 @@
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Picture /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">上传主图</h3>
+              <h3 class="text-base font-semibold text-text-primary">上传主图</h3>
             </div>
             <div class="mt-4 flex items-center gap-3">
               <el-upload action="#" :before-upload="beforeUpload" :show-file-list="false">
@@ -88,21 +88,21 @@
                   {{ uploaded.url ? "更换主图" : "上传主图" }}
                 </el-button>
               </el-upload>
-              <span v-if="uploaded.attachment_id" class="text-xs text-gray-500">attachment_id：{{ uploaded.attachment_id }}</span>
-              <span class="text-xs text-gray-500">支持 jpg/png，不超过 10MB，建议 1:1</span>
+              <span v-if="uploaded.attachment_id" class="text-xs text-text-muted">attachment_id：{{ uploaded.attachment_id }}</span>
+              <span class="text-xs text-text-muted">支持 jpg/png，不超过 10MB，建议 1:1</span>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="bg-surface rounded-xl border border-border p-6">
             <div class="flex items-center gap-2">
               <el-icon class="text-primary"><Picture /></el-icon>
-              <h3 class="text-base font-semibold text-gray-900">产品图库（多图）</h3>
+              <h3 class="text-base font-semibold text-text-primary">产品图库（多图）</h3>
             </div>
             <div class="mt-4 flex flex-wrap gap-2">
               <div
                 v-for="(item, index) in galleryList"
                 :key="item.attachment_id + '-' + index"
-                class="relative w-16 h-16 rounded-lg border border-gray-200 overflow-hidden bg-gray-100 shrink-0"
+                class="relative w-16 h-16 rounded-lg border border-border overflow-hidden bg-surface-active shrink-0"
               >
                 <img :src="item.url" class="w-full h-full object-cover" alt="图库" />
                 <el-button
@@ -126,14 +126,14 @@
               <div
                 role="button"
                 tabindex="0"
-                class="w-16 h-16 rounded-lg border border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-0 text-gray-400 cursor-pointer hover:border-primary hover:text-primary shrink-0"
+                class="w-16 h-16 rounded-lg border border-dashed border-border-dark bg-surface-hover flex flex-col items-center justify-center gap-0 text-text-muted cursor-pointer hover:border-primary hover:text-primary shrink-0"
                 @click="galleryInputRef?.click()"
               >
                 <el-icon class="text-xl"><Plus /></el-icon>
                 <span class="text-xs">添加（可多选）</span>
               </div>
             </div>
-            <div class="mt-2 text-xs text-gray-500">图库作为 gallery_ids 提交，顺序即展示顺序</div>
+            <div class="mt-2 text-xs text-text-muted">图库作为 gallery_ids 提交，顺序即展示顺序</div>
           </div>
         </div>
       </div>

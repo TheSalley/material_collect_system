@@ -31,28 +31,22 @@ const adminRoutes = [
         meta: { title: "用户管理", role: "admin", order: 3, group: "内容管理", groupOrder: 2, icon: "User" },
       },
       {
-        path: "customerPermissions",
-        name: "AdminCustomerPermissions",
-        component: () => import("@/views/admin/CustomerPermissions.vue"),
-        meta: { title: "客户权限", role: "admin", order: 4, group: "内容管理", groupOrder: 2, icon: "Key" },
-      },
-      {
         path: "mediaLibrary",
         name: "AdminMediaLibrary",
         component: () => import("@/views/admin/MediaLibrary.vue"),
-        meta: { title: "媒体库", role: "admin", order: 5, group: "内容管理", groupOrder: 2, icon: "Picture" },
+        meta: { title: "媒体库", role: "admin", order: 4, group: "内容管理", groupOrder: 2, icon: "Picture" },
       },
       {
         path: "demoList",
         name: "AdminDemoList",
         component: () => import("@/views/admin/DemoList.vue"),
-        meta: { title: "Demo 截图尺寸", role: "admin", order: 6, group: "工具", groupOrder: 3, icon: "Monitor" },
+        meta: { title: "Demo 截图尺寸", role: "admin", order: 5, group: "工具", groupOrder: 3, icon: "Monitor" },
       },
       {
         path: "preset",
         name: "PresetContent",
         component: () => import("@/views/admin/PresetContent.vue"),
-        meta: { title: "预设内容", role: "admin", order: 7, group: "内容管理", groupOrder: 2, icon: "Collection" },
+        meta: { title: "预设内容", role: "admin", order: 6, group: "内容管理", groupOrder: 2, icon: "Collection" },
       },
       {
         path: "detail",

@@ -271,12 +271,12 @@ async function reBind(row) {
         <el-table :data="tableData" :stripe="true" :highlight-current-row="true" class="w-full" empty-text="暂无数据" style="width: 100%" v-loading="loading">
           <el-table-column prop="site_id" label="ID" width="280">
             <template #default="scope">
-              <span class="font-mono text-xs text-gray-500">{{ scope.row.site_id }}</span>
+              <span class="font-mono text-xs text-text-muted">{{ scope.row.site_id }}</span>
             </template>
           </el-table-column>
           <el-table-column prop="wp_auth_token" label="Token" width="280">
             <template #default="scope">
-              <span class="font-mono text-xs text-gray-500">{{ scope.row.wp_auth_token }}</span>
+              <span class="font-mono text-xs text-text-muted">{{ scope.row.wp_auth_token }}</span>
             </template>
           </el-table-column>
 
@@ -284,7 +284,7 @@ async function reBind(row) {
             <template #default="scope">
               <div class="flex items-center gap-2">
                 <el-icon class="text-primary text-base flex-shrink-0"><Link /></el-icon>
-                <span class="font-medium text-gray-900 truncate">{{ scope.row.site_name || "-" }}</span>
+                <span class="font-medium text-text-primary truncate">{{ scope.row.site_name || "-" }}</span>
               </div>
             </template>
           </el-table-column>
@@ -294,7 +294,7 @@ async function reBind(row) {
               <el-tag v-if="scope.row.demo_site" size="small" effect="plain">
                 {{ scope.row.demo_site }}
               </el-tag>
-              <span v-else class="text-gray-400">-</span>
+              <span v-else class="text-text-muted">-</span>
             </template>
           </el-table-column>
 
@@ -309,8 +309,8 @@ async function reBind(row) {
 
           <el-table-column prop="updated_at" label="创建时间" width="280">
             <template #default="scope">
-              <div class="flex items-center gap-1.5 text-gray-500 text-sm">
-                <el-icon class="text-gray-400"><Clock /></el-icon>
+              <div class="flex items-center gap-1.5 text-text-muted text-sm">
+                <el-icon class="text-text-muted"><Clock /></el-icon>
                 <span>{{ formatDate(scope.row.updated_at) }}</span>
               </div>
             </template>
@@ -349,7 +349,7 @@ async function reBind(row) {
       <template #header>
         <div class="flex items-center gap-3">
           <el-icon class="text-success text-xl"><Plus /></el-icon>
-          <span class="text-lg font-semibold text-gray-900">添加站点</span>
+          <span class="text-lg font-semibold text-text-primary">添加站点</span>
         </div>
       </template>
       <template #default>
@@ -366,7 +366,7 @@ async function reBind(row) {
         </el-form>
       </template>
       <template #footer>
-        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200">
+        <div class="flex justify-end gap-3 pt-5 border-t border-border">
           <el-button @click="addDrawer = false" size="large">取消</el-button>
           <el-button type="primary" @click="onAddSubmit" size="large" :icon="Check" :loading="addSaving">确定添加</el-button>
         </div>
@@ -377,7 +377,7 @@ async function reBind(row) {
       <template #header>
         <div class="flex items-center gap-3">
           <el-icon class="text-primary text-xl"><Setting /></el-icon>
-          <span class="text-lg font-semibold text-gray-900">编辑站点</span>
+          <span class="text-lg font-semibold text-text-primary">编辑站点</span>
         </div>
       </template>
       <template #default>
@@ -391,7 +391,7 @@ async function reBind(row) {
         </el-form>
       </template>
       <template #footer>
-        <div class="flex justify-end gap-3 pt-5 border-t border-gray-200">
+        <div class="flex justify-end gap-3 pt-5 border-t border-border">
           <el-button @click="editDrawer = false" size="large">取消</el-button>
           <el-button type="primary" @click="onEditSubmit" size="large" :icon="Check" :loading="editSaving">保存修改</el-button>
         </div>

@@ -3,11 +3,7 @@
 import { computed } from "vue";
 import { useGlobalStore } from "@/stores/global.js";
 import { useRouter, useRoute } from "vue-router";
-import {
-  canAccessCustomerRoute,
-  canAccessRoute,
-  normalizeRole,
-} from "@/router/permissions.js";
+import { canAccessRoute, normalizeRole } from "@/router/permissions.js";
 
 /**
  * 侧边栏菜单数据逻辑
@@ -22,8 +18,7 @@ export function useSidebarMenu() {
 
   // role 为 user 表示用户身份
   const isUserRole = computed(() => {
-    const r = (user?.role ?? "").toString().toLowerCase();
-    return r === "user";
+    return normalizeRole(user?.role) === "user";
   });
 
   // 根据角色过滤路由，得到侧边栏可访问的菜单路由
@@ -120,20 +115,6 @@ export function useSidebarMenu() {
           item.children = [];
         }
       });
-    }
-
-    // 用户身份：只展示已开放的菜单；产品/新闻/客户资料等暂无入口
-    if (isUser) {
-      const root = arr.find((r) => r.path === "/" || r.path === "");
-      if (root?.children?.length) {
-        root.children = root.children.filter((child) => {
-          return canAccessCustomerRoute(
-            child.meta,
-            role,
-            globalStore.customerMenuPermissions
-          );
-        });
-      }
     }
 
     // 按 meta.order 对子路由排序（升序，未设置 order 的保持原顺序排在后面）

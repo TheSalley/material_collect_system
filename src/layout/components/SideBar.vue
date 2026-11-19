@@ -1,6 +1,6 @@
 <template>
   <div
-    class="sidebar-shell flex flex-col border-r border-gray-200/70 dark:border-gray-700/60 p-4 w-64 h-screen overflow-hidden"
+    class="sidebar-shell flex flex-col border-r border-border p-4 w-64 h-screen overflow-hidden"
   >
     <a class="flex flex-col items-center gap-3 py-2" href="/">
       <img class="" src="/logo.webp" />
@@ -36,9 +36,6 @@ const { isUserRole, accessibleRoutes, activeMenu } = useSidebarMenu();
 .sidebar-shell {
   background: linear-gradient(180deg, #fbfcfe 0%, #f4f7fb 55%, #eef2f8 100%);
   transition: background 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.dark .sidebar-shell {
-  background: linear-gradient(180deg, #131b26 0%, #10161f 60%, #0d131b 100%);
 }
 
 .sidebar-footer {

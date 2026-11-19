@@ -3,11 +3,11 @@
     <template #header>
       <div class="flex items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
-          <h1 class="flex items-center gap-3 text-[28px] font-bold text-gray-900">
+          <h1 class="flex items-center gap-3 text-[28px] font-bold text-text-primary">
             <el-icon class="text-primary text-3xl"><Document /></el-icon>
             新闻列表
           </h1>
-          <p class="text-sm text-gray-500">管理和查看所有新闻信息</p>
+          <p class="text-sm text-text-muted">管理和查看所有新闻信息</p>
         </div>
         <div class="flex items-center gap-2 pt-1">
           <el-button type="primary" :icon="Plus" @click="goToUpload">
@@ -50,13 +50,13 @@
       >
         <el-table-column prop="id" label="ID" width="100" align="center">
           <template #default="scope">
-            <span class="font-mono text-xs text-gray-500">{{ scope.row.id }}</span>
+            <span class="font-mono text-xs text-text-muted">{{ scope.row.id }}</span>
           </template>
         </el-table-column>
 
         <el-table-column prop="title" label="新闻标题" min-width="260" show-overflow-tooltip>
           <template #default="scope">
-            <span class="font-medium text-gray-900">{{ scope.row.title || '-' }}</span>
+            <span class="font-medium text-text-primary">{{ scope.row.title || '-' }}</span>
           </template>
         </el-table-column>
 

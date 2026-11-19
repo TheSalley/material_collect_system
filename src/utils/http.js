@@ -12,11 +12,7 @@
 import { useGlobalStore } from "@/stores/global";
 import router from "@/router";
 import { ElMessage } from "element-plus";
-import {
-  API_BASE_URL,
-  API_TIMEOUT,
-  HTTP_ERROR_MESSAGES,
-} from "@/config";
+import { API_BASE_URL, API_TIMEOUT, HTTP_ERROR_MESSAGES } from "@/config";
 
 /**
  * API 配置
@@ -34,8 +30,18 @@ const ERROR_MESSAGES = HTTP_ERROR_MESSAGES;
 /**
  * 处理 401 未授权（会话过期，登出并跳登录）
  */
-function handleUnauthorized(silent) {
+function handleUnauthorized(silent, requestToken = "") {
   const globalStore = useGlobalStore();
+  // 过期响应保护：请求发出后 token 可能已经被重新登录替换，
+  // 这种迟到的 401 不应该把新会话清掉（否则并发/重登时会被踢回登录页）。
+  if (
+    requestToken &&
+    globalStore.access_token &&
+    requestToken !== globalStore.access_token
+  ) {
+    return;
+  }
+
   const wasLoggedIn = !!globalStore.access_token || !!globalStore.user;
   const currentRoute = router.currentRoute.value;
 
@@ -65,7 +71,7 @@ function handleUnauthorized(silent) {
 async function baseRequest(
   url,
   options = {},
-  { auth = true, silent = false } = {}
+  { auth = true, silent = false } = {},
 ) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), config.timeout);
@@ -75,16 +81,24 @@ async function baseRequest(
     const headers = { ...(options.headers || {}) };
 
     // 带认证的请求：自动加 token（覆盖外部传入的，确保用 store 里的最新 token）
+    // 记录本次请求用的 token，供 401 回调用它判断是否为过期响应。
+    let requestToken = "";
     if (auth) {
       const globalStore = useGlobalStore();
-      if (globalStore.access_token) {
-        headers.Authorization = `Bearer ${globalStore.access_token}`;
+      requestToken = globalStore.access_token || "";
+      if (requestToken) {
+        headers.Authorization = `Bearer ${requestToken}`;
       }
     }
 
     // 带 body 的请求自动加 Content-Type（如果外部没传，且不是 FormData）
     // FormData 不能手动设 Content-Type，浏览器会自动加 multipart/form-data; boundary=...
-    if (options.body && !headers["Content-Type"] && !headers["content-type"] && !(options.body instanceof FormData)) {
+    if (
+      options.body &&
+      !headers["Content-Type"] &&
+      !headers["content-type"] &&
+      !(options.body instanceof FormData)
+    ) {
       headers["Content-Type"] = "application/json";
     }
 
@@ -110,13 +124,17 @@ async function baseRequest(
         return data;
       }
 
-      handleUnauthorized(silent);
+      handleUnauthorized(silent, requestToken);
       return data;
     }
 
     // HTTP 错误状态码
     if (!res.ok) {
-      const msg = data?.msg || data?.message || ERROR_MESSAGES[res.status] || `请求失败 (${res.status})`;
+      const msg =
+        data?.msg ||
+        data?.message ||
+        ERROR_MESSAGES[res.status] ||
+        `请求失败 (${res.status})`;
       if (!silent) {
         ElMessage.error(msg);
       }
@@ -141,7 +159,10 @@ async function baseRequest(
     if (!silent) {
       ElMessage.error(ERROR_MESSAGES.network || "网络请求失败，请检查网络连接");
     }
-    return { code: -1, message: error.message || ERROR_MESSAGES.network || "网络请求失败" };
+    return {
+      code: -1,
+      message: error.message || ERROR_MESSAGES.network || "网络请求失败",
+    };
   }
 }
 
@@ -180,7 +201,10 @@ export async function requestWithoutAuth(url, options = {}) {
  * @returns {Promise<{success: boolean, data: any, message: string, code: number}>}
  */
 export async function request(url, options = {}, opts = {}) {
-  const data = await baseRequest(url, options, { auth: true, silent: opts.silent });
+  const data = await baseRequest(url, options, {
+    auth: true,
+    silent: opts.silent,
+  });
   if (data?.code === 0) {
     return {
       success: true,

@@ -4,7 +4,7 @@
       <iframe
         src="https://jcnyxjqjwkqe.feishu.cn/wiki/YjMiwyQTAi4RdwkGSpHcjUgjnbd"
         frameborder="0"
-        class="w-full h-full rounded-xl border border-gray-200 bg-white"
+        class="w-full h-full rounded-xl border border-border bg-surface"
       ></iframe>
     </div>
   </PageContainer>

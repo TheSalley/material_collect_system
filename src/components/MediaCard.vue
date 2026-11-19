@@ -352,9 +352,9 @@ async function handleDelete() {
 </script>
 
 <template>
-  <div class="media-card group relative rounded-2xl overflow-hidden bg-white dark:bg-gray-700 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-600">
+  <div class="media-card group relative rounded-2xl overflow-hidden bg-surface shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-border-light">
     <div
-      class="relative aspect-[4/3] bg-gray-100 dark:bg-gray-600 overflow-hidden"
+      class="relative aspect-[4/3] bg-surface-active overflow-hidden"
       :class="{ 'cursor-zoom-in': imageUrl }"
       @click="openPreview"
     >
@@ -367,7 +367,7 @@ async function handleDelete() {
       </template>
       <template v-else>
         <div class="w-full h-full flex items-center justify-center">
-          <el-icon class="text-5xl text-gray-300 dark:text-gray-500"><Document /></el-icon>
+          <el-icon class="text-5xl text-border-dark"><Document /></el-icon>
         </div>
       </template>
 

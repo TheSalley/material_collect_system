@@ -1,5 +1,4 @@
 import { getPageConfig, savePageConfig } from "./file";
-import { getMenuPermissions, setMenuPermissions } from "./user";
 
 /**
  * 客户资料与 Banner 收集复用 page_config 的通用 JSON 存储。
@@ -111,23 +110,3 @@ export async function saveBannerCollection(siteId, banners) {
   ]);
 }
 
-/**
- * 读取客户菜单权限配置（全站共用一份）。
- * 接口未上线时返回失败，由调用方使用默认值。
- */
-export async function loadCustomerMenuPermissions() {
-  const res = await getMenuPermissions();
-  if (res?.code !== 0) {
-    return { ok: false, message: res?.message || "权限读取失败" };
-  }
-  return {
-    ok: true,
-    data: res.data?.permissions ?? res.data ?? null,
-    updatedAt: res.data?.updated_at || "",
-  };
-}
-
-/** 保存客户菜单权限配置（全站共用一份） */
-export async function saveCustomerMenuPermissions(permissions) {
-  return await setMenuPermissions({ permissions });
-}

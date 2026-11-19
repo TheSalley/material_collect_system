@@ -1,12 +1,12 @@
 <template>
   <div class="profile-shell" v-loading="loading">
     <el-alert
-      v-if="!siteId"
+      v-if="!userId"
       type="warning"
       show-icon
       :closable="false"
-      title="还没有绑定站点"
-      description="请先选择一个站点，再填写企业基本信息。"
+      title="请先登录"
+      description="登录后可填写企业基本信息。"
     />
 
     <template v-else>
@@ -18,122 +18,111 @@
         :title="errorMsg"
       />
 
-      <PanelCard flush class="intake-card">
-        <div class="sheet-head">
-          <h2>企 业 基 本 信 息 收 集 表 （ 建 站 服 务 ）</h2>
-          <p>易海创腾网站部202411</p>
-        </div>
+      <div class="sheet">
+        <header class="sheet__bar">
+          <span class="sheet__eyebrow">企业基本信息收集</span>
+          <div class="sheet__actions">
+            <el-button :icon="Download" plain size="small" @click="exportExcel">
+              导出 Excel
+            </el-button>
+            <el-button
+              v-if="!readonly"
+              type="primary"
+              size="small"
+              :loading="saving"
+              :disabled="!isDirty"
+              @click="saveProfile"
+            >
+              保存资料
+            </el-button>
+          </div>
+        </header>
 
-        <div class="table-wrap">
-          <table class="intake-table">
-            <colgroup>
-              <col style="width: 64px" />
-              <col style="width: 132px" />
-              <col style="width: 220px" />
-              <col />
-              <col style="width: 280px" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th scope="col" class="col-no">序号</th>
-                <th scope="col" class="col-section">板块</th>
-                <th scope="col" class="col-item">项目</th>
-                <th scope="col" class="col-value col-value--head">
-                  填写内容
-                  <small>（蓝色为示例）</small>
-                </th>
-                <th scope="col" class="col-usage">用途</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in ROWS" :key="row.key">
-                <td class="col-no">{{ row.no }}</td>
-                <td
-                  v-if="row.section"
-                  :rowspan="row.sectionSpan"
-                  class="col-section"
+        <div class="sheet__scroll">
+          <div class="form">
+            <section
+              v-for="section in SECTIONS"
+              :key="section.id"
+              class="group"
+            >
+              <h3 class="group__title">
+                {{ section.title }}
+                <em>{{ section.desc }}</em>
+              </h3>
+
+              <div class="group__grid">
+                <div
+                  v-for="field in section.fields"
+                  :key="field.key"
+                  class="field"
+                  :class="{ 'field--wide': field.control === 'textarea' }"
                 >
-                  {{ row.section }}
-                </td>
-                <td
-                  v-if="row.item"
-                  :rowspan="row.itemSpan || 1"
-                  class="col-item"
-                >
-                  {{ row.item }}
-                </td>
-                <td class="col-value">
+                  <label class="field__label" :for="fieldId(field)">
+                    {{ field.label }}
+                  </label>
+
                   <el-input
-                    v-if="row.control === 'password'"
-                    v-model="form[row.key]"
+                    :id="fieldId(field)"
+                    v-if="field.control === 'password'"
+                    v-model="form[field.key]"
                     type="password"
                     show-password
+                    :placeholder="field.sample || field.placeholder || '请填写'"
                     :disabled="readonly"
-                    :class="{ 'is-sample': isSample(row) }"
-                    :aria-label="row.label"
                   />
                   <el-input
-                    v-else-if="row.control === 'textarea'"
-                    v-model="form[row.key]"
+                    v-else-if="field.control === 'textarea'"
+                    v-model="form[field.key]"
                     type="textarea"
                     :autosize="{
-                      minRows: row.minRows || 1,
-                      maxRows: row.maxRows || 6,
+                      minRows: field.minRows || 2,
+                      maxRows: field.maxRows || 5,
                     }"
                     resize="none"
+                    :placeholder="field.sample || field.placeholder || '请填写'"
                     :disabled="readonly"
-                    :class="{ 'is-sample': isSample(row) }"
-                    :aria-label="row.label"
                   />
                   <el-input
                     v-else
-                    v-model="form[row.key]"
+                    v-model="form[field.key]"
+                    :placeholder="field.sample || field.placeholder || '请填写'"
                     :disabled="readonly"
-                    :class="{ 'is-sample': isSample(row) }"
-                    :aria-label="row.label"
                   />
-                </td>
-                <td
-                  v-if="row.usage"
-                  :rowspan="row.usageSpan || 1"
-                  class="col-usage"
+
+                  <p v-if="field.hint" class="field__hint">{{ field.hint }}</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="group">
+              <h3 class="group__title">
+                填写教程
+                <em>点开大图照着做</em>
+              </h3>
+
+              <div class="tutorial-grid">
+                <figure
+                  v-for="(image, index) in TUTORIAL_IMAGES"
+                  :key="image.src"
+                  class="tutorial"
                 >
-                  {{ row.usage }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <template #footer>
-          <div class="sheet-footer">
-            <div class="sheet-footer__state">
-              <el-tag :type="statusTagType" size="small" effect="plain">
-                {{ saveStateLabel }}
-              </el-tag>
-              <span>{{ lastSavedLabel }}</span>
-            </div>
-
-            <div v-if="!readonly" class="sheet-footer__actions">
-              <el-button
-                text
-                :disabled="!isDirty || saving"
-                @click="loadProfile"
-              >
-                撤销修改
-              </el-button>
-              <el-button
-                type="primary"
-                :loading="saving"
-                :disabled="!isDirty"
-                @click="saveProfile"
-              >
-                保存资料
-              </el-button>
-            </div>
+                  <el-image
+                    :src="image.src"
+                    :alt="image.alt"
+                    :preview-src-list="TUTORIAL_SOURCES"
+                    :initial-index="index"
+                    fit="contain"
+                    preview-teleported
+                    hide-on-click-modal
+                    class="tutorial__image"
+                  />
+                  <figcaption>{{ image.title }}</figcaption>
+                </figure>
+              </div>
+            </section>
           </div>
-        </template>
-      </PanelCard>
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -142,9 +131,20 @@
 import { computed, reactive, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
+import { Download } from "@element-plus/icons-vue";
 import { useGlobalStore } from "@/stores/global.js";
-import { loadCustomerProfile, saveCustomerProfile } from "@/apis/collection";
-import PanelCard from "@/components/common/PanelCard.vue";
+import {
+  loadCustomerProfile,
+  saveCustomerProfile,
+} from "@/apis/customerProfile.js";
+import { downloadRichXlsx } from "@/utils/xlsxExport.js";
+import {
+  buildCustomerInfoRows,
+  CUSTOMER_INFO_COLUMNS,
+} from "@/utils/customerInfoExport.js";
+import mapShareImage from "@/assets/images/tutorials/google-map-share.png";
+import qqMailSecurityImage from "@/assets/images/tutorials/qq-mail-security.png";
+import qqMailAuthCodeImage from "@/assets/images/tutorials/qq-mail-auth-code.png";
 
 const props = defineProps({
   readonly: {
@@ -153,234 +153,219 @@ const props = defineProps({
   },
 });
 
-const ROWS = [
+const TUTORIAL_IMAGES = [
   {
-    key: "contact",
-    no: 1,
-    section: "项目管理相关",
-    sectionSpan: 1,
-    item: "对接人姓名，常用邮箱或电话",
-    label: "对接人姓名，常用邮箱或电话",
-    usage: "项目过程中给您发送通知邮件使用",
-    sample: "章卓越 邮箱：semingslk@gmail.com  18471952070",
+    src: mapShareImage,
+    alt: "谷歌地图定位：搜索地点后点击分享，复制链接",
+    title: "① 搜索地点 → ② 分享 → ③ 复制链接",
   },
   {
-    key: "company_name_cn",
-    no: 2,
-    section: "网站页面\n展示信息",
-    sectionSpan: 11,
-    item: "公司全称",
-    itemSpan: 2,
-    label: "公司全称（中文）",
-    usage: "展示在网站上的简称或品牌名（根据语种填写）",
-    sample: "中文：舟济安全",
+    src: qqMailSecurityImage,
+    alt: "QQ邮箱：右上角菜单进入账号与安全",
+    title: "QQ 邮箱右上角菜单 → 账号与安全",
   },
   {
-    key: "company_name_en",
-    no: 3,
-    label: "公司全称（英文）",
-    usage: "展示在网站上的简称或品牌名（根据语种填写）",
-    sample: "英文：Zhouji Safety",
-  },
-  {
-    key: "logo",
-    no: "",
-    item: "LOGO",
-    label: "LOGO",
-    usage: "展示在网站上及站点地图",
-    sample: "放在文件夹1",
-  },
-  {
-    key: "vi_manual",
-    no: "",
-    item: "VI手册",
-    label: "VI手册",
-    usage: "项目中参考，制定网站的视觉及主题色调",
-    sample: "无",
-  },
-  {
-    key: "email",
-    no: 4,
-    item: "Email",
-    label: "Email",
-    usage: "展示在网站上用来接收询盘的邮箱\n（建议用企业邮箱）",
-    sample: "zhoujitraffic@gmail.com",
-  },
-  {
-    key: "mobile",
-    no: 5,
-    item: "手机号",
-    label: "手机号",
-    usage: "展示在网站上的业务员联系电话*请按此格式书写",
-    sample: "8618870077676",
-  },
-  {
-    key: "landline",
-    no: 6,
-    item: "座机",
-    label: "座机",
-    usage: "展示在网站上的公共号码座机*请按此格式书写",
-    sample: "无",
-  },
-  {
-    key: "address",
-    no: 7,
-    item: "公司所在地址信息（英文或建站语种）",
-    label: "公司所在地址信息（英文或建站语种）",
-    usage: "展示在网站上的地址信息",
-    sample:
-      "Room 2729, Aerospace Tower 1088 Ziyang Avenue, Nanchang City, Jiangxi Pro, CN",
-  },
-  {
-    key: "map_embed",
-    no: 8,
-    item: "公司地址在谷歌地图上的定位链接",
-    label: "公司地址在谷歌地图上的定位链接",
-    usage: "如找不到定位，就放相近的地址\n*操作方法见下方（教程一）",
-    sample: `<iframe src="https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d1030.0921902898065!2d115.79742062136708!3d28.72007166997715!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e1!3m2!1szh-CN!2s!4v1788771228018!5m2!1szh-CN!2s" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>`,
-    control: "textarea",
-    minRows: 3,
-    maxRows: 6,
-  },
-  {
-    key: "im_account",
-    no: 9,
-    item: "Whatsapp/Skype账号",
-    label: "Whatsapp/Skype账号",
-    usage: "放在网站上的国外常用通讯工具账号",
-    sample: "whatsapp:8618870077676",
-  },
-  {
-    key: "social_links",
-    no: 10,
-    item: "社媒主页链接",
-    label: "社媒主页链接",
-    usage: "放在网站上点击跳转的社媒链接",
-    sample: `Facebook：https://www.facebook.com/profile.php?id=61584412689732
-tiktok：https://www.tiktok.com/@zhoujitraffic.ops
-Instagram：https://www.instagram.com/sunnyyan2026?igsh=MTRxMm9nNzdubjEzNQ==
-vk：待定
-LinkedIn：https://www.linkedin.com/company/jiangxi-zhouji-traffic-facilities-co-ltd/posts/?feedView=all`,
-    control: "textarea",
-    minRows: 5,
-    maxRows: 9,
-  },
-  {
-    key: "industry",
-    no: 11,
-    section: "网站设置相关",
-    sectionSpan: 10,
-    item: "所属行业",
-    label: "所属行业",
-    usage: "根据行业类型搭建适合的网站",
-    sample:
-      "制造业、交通及交通运输行业、交通安全行业、个人安防行业、安全产品行业",
-    control: "textarea",
-    minRows: 1,
-    maxRows: 3,
-  },
-  {
-    key: "company_ppt",
-    no: "",
-    item: "企业介绍PPT",
-    label: "企业介绍PPT",
-    usage: "项目中参考企业信息",
-    sample: "如有，放在文件夹3",
-  },
-  {
-    key: "competitors",
-    no: 12,
-    item: "可参考的竞对网站（3个）",
-    label: "可参考的竞对网站（3个）",
-    usage: "供项目过程中进行参考",
-    sample: `1.https://www.atstraffic.ca/
-2.https://www.reflextape.com/
-3.https://jackwinsafety.com/`,
-    control: "textarea",
-    minRows: 3,
-    maxRows: 6,
-  },
-  {
-    key: "old_site",
-    no: 13,
-    item: "老网站URL相关",
-    itemSpan: 2,
-    label: "老网站URL",
-    usage: "填写老站域名",
-    sample: "https://www.zhoujitraffic.com/",
-  },
-  {
-    key: "keep_old_url",
-    no: 14,
-    label: "是否需要保留老站URL",
-    usage:
-      "如老站没流量或弃用，则填写不保留\n如需要保留，网站部会提供相应操作教程",
-    sample: "是否需要保留老站URL：不需要",
-  },
-  {
-    key: "new_domain",
-    no: 15,
-    item: "新网站使用的域名",
-    label: "新网站使用的域名",
-    usage: "该网站要使用的域名",
-    sample: "待定，建议：zhoujisafety.com，zhoujireflective.com",
-  },
-  {
-    key: "domain_login",
-    no: 16,
-    item: "域名后台登录方式",
-    label: "域名后台登录方式",
-    usage:
-      "在哪个平台注册的域名，就提供哪个平台的登录账号密码（如贵司自行操作解析，请填自行操作）",
-    sample: "无",
-  },
-  {
-    key: "visitor_sources",
-    no: 17,
-    item: "访客主要来源",
-    label: "访客主要来源",
-    usage: "（主要客户是哪个国家或地区的）\n决定网站服务器所在的位置",
-    sample: "欧美、中东、东南亚、非洲、大洋洲、（服务器放置在美国）",
-    control: "textarea",
-    minRows: 1,
-    maxRows: 3,
-  },
-  {
-    key: "smtp_email",
-    no: 18,
-    item: "SMTP邮箱配置\n提供一个QQ邮箱和授权码",
-    itemSpan: 2,
-    label: "SMTP邮箱配置",
-    usage:
-      "·因服务器直接转发易被拦截，所以需要QQ邮箱作为中转用来接收和代转发客户发给贵司的询盘。\n·一定要qq邮箱吗？是的\n*操作方法见下方（教程二）",
-    usageSpan: 2,
-    sample: "邮箱：772530504（颜总）",
-  },
-  {
-    key: "smtp_auth_code",
-    no: 19,
-    label: "授权码",
-    sample: "授权码：bwgveirshldbbcdc",
-    control: "password",
+    src: qqMailAuthCodeImage,
+    alt: "QQ邮箱：安全设置里生成授权码",
+    title: "安全设置 → 生成授权码",
   },
 ];
 
-const FIELDS = ROWS.map((row) => row.key);
-const SAMPLE_VALUES = Object.fromEntries(
-  ROWS.map((row) => [row.key, row.sample]),
+const TUTORIAL_SOURCES = TUTORIAL_IMAGES.map((image) => image.src);
+
+const SECTIONS = [
+  {
+    id: "contact",
+    title: "项目管理相关",
+    desc: "建站过程中和我们对接用",
+    fields: [
+      {
+        key: "contact",
+        label: "对接人姓名、常用邮箱和电话",
+        sample: "张三 / web@ehaitech.com / +86 12345678912",
+        placeholder: "姓名 / 邮箱 / 电话",
+        hint: "项目过程中给您发送通知邮件使用",
+      },
+    ],
+  },
+  {
+    id: "content",
+    title: "网站页面展示信息",
+    desc: "访客打开网站看到的内容",
+    fields: [
+      {
+        key: "company_name_cn",
+        label: "公司全称（中文）",
+        sample: "中文：易海创腾信息科技有限公司",
+        hint: "展示在网站上的简称或品牌名（根据语种填写）",
+      },
+      {
+        key: "company_name_en",
+        label: "公司全称（英文）",
+        sample: "英文：Yeehai Global",
+        hint: "展示在网站上的简称或品牌名（根据语种填写）",
+      },
+      {
+        key: "logo",
+        label: "LOGO",
+        sample: "放在文件夹1",
+        placeholder: "放文件夹1，或写文件名",
+        hint: "展示在网站上及站点地图",
+      },
+      {
+        key: "vi_manual",
+        label: "VI 手册",
+        sample: "如有，放在文件夹2。若无，请忽略",
+        placeholder: "放文件夹2",
+        hint: "项目中参考，制定网站的视觉及主题色调",
+      },
+      {
+        key: "email",
+        label: "Email",
+        sample: "web@ehaitech.com",
+        hint: "展示在网站上用来接收询盘的邮箱（建议用企业邮箱）",
+      },
+      {
+        key: "mobile",
+        label: "手机号",
+        sample: "+86 12345678912",
+        hint: "展示在网站上的业务员联系电话，请按此格式书写",
+      },
+      {
+        key: "landline",
+        label: "座机",
+        sample: "+86 20 12345678",
+        hint: "展示在网站上的公共号码座机，请按此格式书写；没有写无",
+      },
+      {
+        key: "address",
+        label: "公司所在地址信息",
+        sample:
+          "Room 12, Floor 3A, Minggao City, No. 123 Yingbin Avenue, Huadu District, Guangzhou",
+        hint: "展示在网站上的地址信息（英文或建站语种）",
+      },
+      {
+        key: "map_embed",
+        label: "公司地址在谷歌地图上的定位链接",
+        sample: "https://maps.app.goo.gl/cTsPyCWYk2muJGXF9",
+        placeholder: "https://maps.app.goo.gl/...",
+        hint: "如找不到定位，就放相近的地址。操作方法见下方（教程一）",
+        control: "textarea",
+        minRows: 2,
+        maxRows: 4,
+      },
+      {
+        key: "im_account",
+        label: "Whatsapp / Skype 账号",
+        sample: "无",
+        hint: "放在网站上的国外常用通讯工具账号",
+      },
+      {
+        key: "social_links",
+        label: "社媒主页链接",
+        sample:
+          "Facebook：\nYoutube：https://youtu.be/xxxx\nInstagram：\nTwitter：\nLinkedIn：",
+        hint: "放在网站上点击跳转的社媒链接，没有的留空",
+        control: "textarea",
+        minRows: 4,
+        maxRows: 8,
+      },
+    ],
+  },
+  {
+    id: "launch",
+    title: "网站设置相关",
+    desc: "行业、域名、服务器和询盘配置",
+    fields: [
+      {
+        key: "industry",
+        label: "所属行业",
+        sample: "咨询",
+        hint: "根据行业类型搭建适合的网站",
+      },
+      {
+        key: "company_ppt",
+        label: "企业介绍 PPT",
+        sample: "如有，放在文件夹3",
+        placeholder: "放文件夹3",
+        hint: "项目中参考企业信息；没有写无",
+      },
+      {
+        key: "competitors",
+        label: "可参考的竞对网站（3 个）",
+        sample: "www.xxx.com\nwww.xxx.com\nwww.xxx.com",
+        hint: "供项目过程中进行参考",
+        control: "textarea",
+        minRows: 3,
+        maxRows: 6,
+      },
+      {
+        key: "old_site",
+        label: "是否有老站",
+        sample: "是否有老站：有 / 没有 www.xxx.com",
+        hint: "填写老站域名；没有老站写没有",
+      },
+      {
+        key: "keep_old_url",
+        label: "是否需要保留老站 URL",
+        sample: "是否需要保留老站URL：不需要",
+        hint: "如老站没流量或弃用，则填写不保留；如需要保留，网站部会提供相应操作教程",
+      },
+      {
+        key: "new_domain",
+        label: "新网站使用的域名",
+        sample: "web.ehaitech.com",
+        hint: "该网站要使用的域名；没定写待定",
+      },
+      {
+        key: "visitor_sources",
+        label: "访客主要来源",
+        sample: "北美",
+        hint: "主要客户是哪个国家或地区，决定网站服务器所在的位置",
+      },
+      {
+        key: "domain_login",
+        label: "域名后台登录方式",
+        sample: "阿里云\n账号：xxx\n密码：xxx",
+        hint: "在哪个平台注册的域名，就提供哪个平台的登录账号密码（如贵司自行操作解析，请填「自行操作」）",
+        control: "textarea",
+        minRows: 3,
+        maxRows: 6,
+      },
+      {
+        key: "smtp_email",
+        label: "SMTP 中转邮箱（QQ 邮箱）",
+        sample: "邮箱：",
+        placeholder: "QQ邮箱地址",
+        hint: "服务器直接转发易被拦截，需要 QQ 邮箱作为中转，接收并代转发客户发给您的询盘。一定要 QQ 邮箱，操作方法见下方（教程二）",
+      },
+      {
+        key: "smtp_auth_code",
+        label: "授权码",
+        sample: "授权码：",
+        placeholder: "16 位授权码",
+        hint: "QQ 邮箱的授权码，不是 QQ 登录密码",
+        control: "password",
+      },
+    ],
+  },
+];
+
+const FIELDS = SECTIONS.flatMap((section) =>
+  section.fields.map((field) => ({ ...field, section: section.title })),
 );
 
 function createValues(source = {}) {
-  return FIELDS.reduce((acc, key) => {
-    const value = source?.[key];
-    acc[key] = value == null ? "" : String(value);
+  return FIELDS.reduce((acc, field) => {
+    const value = source?.[field.key];
+    acc[field.key] = value == null ? "" : String(value);
     return acc;
   }, {});
 }
 
 function normalizeLoaded(data = {}) {
-  const hasNewFields = FIELDS.some((key) =>
-    Object.prototype.hasOwnProperty.call(data, key),
+  const hasNewFields = FIELDS.some((field) =>
+    Object.prototype.hasOwnProperty.call(data, field.key),
   );
   if (hasNewFields) return createValues(data);
 
@@ -403,54 +388,29 @@ function normalizeLoaded(data = {}) {
   return values;
 }
 
-const { websiteInfo } = storeToRefs(useGlobalStore());
-const siteId = computed(() => websiteInfo.value?.site_id);
+function fieldId(field) {
+  return `customer-field-${field.key}`;
+}
+
+const globalStore = useGlobalStore();
+const { user } = storeToRefs(globalStore);
+
+/**
+ * 客户基础信息归属「用户 id」（一人一条），非站点。
+ */
+const userId = computed(() => user.value?.id ?? null);
 
 const form = reactive(createValues());
 const loading = ref(false);
 const saving = ref(false);
 const errorMsg = ref("");
 const savedSnapshot = ref("");
-const lastSavedAt = ref("");
-const hasSavedRecord = ref(false);
-const sampleLoaded = ref(false);
 
 function snapshot() {
   return JSON.stringify(createValues(form));
 }
 
 const isDirty = computed(() => snapshot() !== savedSnapshot.value);
-
-const saveStateLabel = computed(() => {
-  if (loading.value) return "正在读取";
-  if (saving.value) return "正在保存";
-  if (props.readonly) return hasSavedRecord.value ? "只读查看" : "暂无资料";
-  if (isDirty.value) return "有未保存修改";
-  if (hasSavedRecord.value) return "资料已保存";
-  return sampleLoaded.value ? "示例内容" : "等待填写";
-});
-
-const statusTagType = computed(() => {
-  if (props.readonly) return "info";
-  if (isDirty.value) return "warning";
-  if (hasSavedRecord.value) return "success";
-  return "info";
-});
-
-const lastSavedLabel = computed(() => {
-  if (lastSavedAt.value) return `最近保存：${lastSavedAt.value}`;
-  if (props.readonly && !hasSavedRecord.value) return "客户还没有提交";
-  return "还没有保存记录";
-});
-
-function isSample(row) {
-  return (
-    !props.readonly &&
-    !hasSavedRecord.value &&
-    sampleLoaded.value &&
-    form[row.key] === SAMPLE_VALUES[row.key]
-  );
-}
 
 function assign(values) {
   Object.assign(form, createValues(values));
@@ -459,28 +419,45 @@ function assign(values) {
 function resetState() {
   assign({});
   savedSnapshot.value = snapshot();
-  lastSavedAt.value = "";
   errorMsg.value = "";
-  hasSavedRecord.value = false;
-  sampleLoaded.value = false;
 }
 
-function applySample() {
-  assign(SAMPLE_VALUES);
-  sampleLoaded.value = true;
+function estimateHeight(field) {
+  const text = String(form[field.key] || field.sample || "");
+  const lines = text.split("\n").length;
+  const wrapped = Math.ceil(text.length / 40);
+  return Math.min(Math.max(lines, wrapped, 1) * 18 + 10, 140);
 }
 
-function formatSavedAt(value) {
-  if (!value) {
-    return new Date().toLocaleString("zh-CN", { hour12: false });
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleString("zh-CN", { hour12: false });
+function exportExcel() {
+  const rows = buildCustomerInfoRows({
+    sections: SECTIONS,
+    form,
+    estimateHeight,
+  });
+
+  const userLabel = user.value?.username || "";
+  const stamp = new Date()
+    .toLocaleDateString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    })
+    .replace(/\//g, "");
+
+  downloadRichXlsx({
+    fileName: `企业基本信息${userLabel ? "_" + userLabel : ""}_${stamp}`,
+    sheetName: "企业基本信息",
+    columns: CUSTOMER_INFO_COLUMNS,
+    rows,
+    frame: { edge: "medium", color: "FF9AA6B2" },
+  });
+
+  ElMessage.success("已导出 Excel");
 }
 
 async function loadProfile() {
-  if (!siteId.value) {
+  if (!userId.value) {
     resetState();
     return;
   }
@@ -488,49 +465,32 @@ async function loadProfile() {
   loading.value = true;
   errorMsg.value = "";
   try {
-    const res = await loadCustomerProfile(siteId.value);
-    if (!res.ok) {
-      errorMsg.value = res.message || "企业基本信息读取失败";
-      return;
-    }
-
-    const data =
-      res.data && typeof res.data === "object" && Object.keys(res.data).length
-        ? res.data
-        : null;
-
-    if (data) {
-      assign(normalizeLoaded(data));
-      hasSavedRecord.value = true;
-      sampleLoaded.value = false;
-      lastSavedAt.value = res.updatedAt ? formatSavedAt(res.updatedAt) : "";
+    const res = await loadCustomerProfile();
+    if (res.ok && res.data) {
+      assign(normalizeLoaded(res.data));
     } else {
       resetState();
-      if (!props.readonly) applySample();
+      if (!res.ok) errorMsg.value = res.message || "客户资料读取失败";
     }
     savedSnapshot.value = snapshot();
-  } catch (error) {
-    errorMsg.value = error?.message || "企业基本信息读取失败";
   } finally {
     loading.value = false;
   }
 }
 
 async function saveProfile() {
-  if (props.readonly || !siteId.value || saving.value) return;
+  if (props.readonly || !userId.value || saving.value) return;
 
   saving.value = true;
   errorMsg.value = "";
   try {
-    const res = await saveCustomerProfile(siteId.value, createValues(form));
-    if (res?.code === 0) {
+    const res = await saveCustomerProfile(createValues(form));
+    if (res.ok) {
+      // 保存成功后以本地表单为准刷新快照，避免用被脱敏的响应覆盖用户刚填的授权码
       savedSnapshot.value = snapshot();
-      lastSavedAt.value = formatSavedAt();
-      hasSavedRecord.value = true;
-      sampleLoaded.value = false;
-      ElMessage.success("资料已保存");
+      ElMessage.success(res.message || "保存成功");
     } else {
-      ElMessage.error(res?.message || "保存失败");
+      ElMessage.error(res.message || "保存失败");
     }
   } catch (error) {
     ElMessage.error(error?.message || "保存失败");
@@ -540,7 +500,7 @@ async function saveProfile() {
 }
 
 watch(
-  siteId,
+  userId,
   (newId, oldId) => {
     if (newId !== oldId) resetState();
     loadProfile();
@@ -558,205 +518,229 @@ watch(
   min-height: 0;
 }
 
-.intake-card {
-  flex: 1;
-  min-height: 0;
-}
-
-.intake-card :deep(.panel-card__body) {
+/* ---- 外壳 ---- */
+.sheet {
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
   overflow: hidden;
 }
 
-.sheet-head {
+.sheet__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   flex: 0 0 auto;
-  padding: 20px 24px 14px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 18px;
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-  text-align: center;
 }
 
-.sheet-head h2 {
-  margin: 0;
+.sheet__eyebrow {
   color: var(--color-text-primary);
-  font-size: 22px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  line-height: 1.45;
 }
 
-.sheet-head p {
-  margin: 8px 0 0;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  text-align: left;
+.sheet__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.table-wrap {
+.sheet__scroll {
   flex: 1;
   min-height: 0;
   overflow: auto;
   background: var(--color-surface);
 }
 
-.intake-table {
-  width: 100%;
-  min-width: 1080px;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 13px;
+/* ---- 表单容器 ---- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1180px;
+  padding: 18px 20px 26px;
+  margin: 0 auto;
 }
 
-.intake-table th,
-.intake-table td {
-  padding: 8px 10px;
+/* ---- 分区 ---- */
+.group {
   border: 1px solid var(--color-border);
-  vertical-align: middle;
-}
-
-.intake-table th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--color-surface-hover);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  box-shadow: 0 1px 0 var(--color-border);
-}
-
-.intake-table td {
-  color: var(--color-text-primary);
+  border-radius: 10px;
   background: var(--color-surface);
+  overflow: hidden;
 }
 
-.intake-table .col-no {
+.group__title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.group__title::before {
+  content: "";
+  width: 3px;
+  height: 13px;
+  border-radius: 2px;
+  background: var(--color-primary);
+  transform: translateY(1px);
+}
+
+.group__title em {
   color: var(--color-text-muted);
   font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.intake-table .col-section {
-  background: var(--color-surface-hover);
-  color: var(--color-text-secondary);
-  font-weight: 600;
-  text-align: center;
-  white-space: pre-line;
-  word-break: break-word;
-}
-
-.intake-table .col-item {
-  font-weight: 500;
-  line-height: 1.6;
-  white-space: pre-line;
-  word-break: break-word;
-}
-
-.intake-table .col-value {
-  padding: 6px 8px;
-}
-
-.intake-table .col-value--head {
-  text-align: left;
-}
-
-.intake-table .col-value--head small {
-  display: block;
-  margin-top: 2px;
-  color: var(--color-primary);
-  font-size: 10px;
+  font-style: normal;
   font-weight: 400;
 }
 
-.intake-table .col-usage {
-  color: var(--color-text-muted);
+/* ---- 字段网格（紧凑三列） ---- */
+.group__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 20px;
+  padding: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.field__label {
+  color: var(--color-text-secondary);
   font-size: 12px;
-  line-height: 1.65;
-  white-space: pre-line;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.field__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.5;
   word-break: break-word;
 }
 
-.intake-table :deep(.el-input__wrapper),
-.intake-table :deep(.el-textarea__inner) {
-  border-radius: 6px;
+/* ---- 输入框（收窄） ---- */
+.group :deep(.el-input__wrapper),
+.group :deep(.el-textarea__inner) {
+  border-radius: 7px;
   background: var(--color-surface);
   box-shadow: 0 0 0 1px var(--color-border) inset;
-  transition:
-    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
-    background 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: box-shadow 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.intake-table :deep(.el-input__wrapper:hover),
-.intake-table :deep(.el-textarea__inner:hover) {
+.group :deep(.el-input__wrapper) {
+  min-height: 32px;
+  padding: 1px 10px;
+}
+
+.group :deep(.el-input__wrapper:hover),
+.group :deep(.el-textarea__inner:hover) {
   box-shadow: 0 0 0 1px var(--color-border-dark) inset;
 }
 
-.intake-table :deep(.el-input__wrapper.is-focus),
-.intake-table :deep(.el-textarea__inner:focus) {
-  background: var(--color-surface);
-  box-shadow:
-    0 0 0 1px var(--color-primary) inset,
-    0 0 0 3px rgba(43, 124, 238, 0.09);
+.group :deep(.el-input__wrapper.is-focus),
+.group :deep(.el-textarea__inner:focus) {
+  box-shadow: 0 0 0 1px var(--color-primary) inset;
 }
 
-.intake-table :deep(.el-input__inner),
-.intake-table :deep(.el-textarea__inner) {
+.group :deep(.el-input__inner),
+.group :deep(.el-textarea__inner) {
   color: var(--color-text-primary);
   font-size: 13px;
 }
 
-.intake-table :deep(.el-textarea__inner) {
-  line-height: 1.65;
+.group :deep(.el-textarea__inner) {
+  padding: 6px 10px;
+  line-height: 1.55;
 }
 
-.intake-table :deep(.is-sample .el-input__inner),
-.intake-table :deep(.is-sample .el-textarea__inner) {
-  color: var(--color-primary);
+.group :deep(.el-input__inner::placeholder),
+.group :deep(.el-textarea__inner::placeholder) {
+  color: #b3c0d1;
 }
 
-.intake-table :deep(.el-input.is-disabled .el-input__wrapper),
-.intake-table :deep(.el-textarea.is-disabled .el-textarea__inner) {
+.group :deep(.el-input.is-disabled .el-input__wrapper),
+.group :deep(.el-textarea.is-disabled .el-textarea__inner) {
   background: var(--color-surface-hover);
   box-shadow: 0 0 0 1px var(--color-border-light) inset;
 }
 
-.sheet-footer {
-  display: flex;
+/* ---- 教程 ---- */
+.tutorial-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  padding: 18px;
+}
+
+.tutorial {
+  margin: 0;
+}
+
+.tutorial__image {
   width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  height: 150px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-hover);
+  cursor: zoom-in;
+  transition: border-color 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.sheet-footer__state {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.tutorial__image:hover {
+  border-color: var(--color-primary);
+}
+
+.tutorial__image :deep(img) {
+  padding: 3px;
+}
+
+.tutorial figcaption {
+  margin-top: 6px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
-.sheet-footer__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+/* ---- 响应式 ---- */
+@media (max-width: 960px) {
+  .group__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-@media (max-width: 900px) {
-  .sheet-head {
-    padding: 16px;
+@media (max-width: 640px) {
+  .group__grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .sheet-head h2 {
-    font-size: 18px;
-  }
-
-  .sheet-footer {
-    flex-wrap: wrap;
+  .form {
+    padding: 14px 12px 20px;
   }
 }
 </style>

@@ -3,7 +3,7 @@
     <SideBar class="flex-shrink-0" />
     <div class="flex-1 px-4 pt-4 h-full overflow-hidden flex flex-col">
       <AppMain />
-      <div class="app-footer mt-auto w-full text-center text-xs text-gray-500 dark:text-gray-400 py-2">
+      <div class="app-footer mt-auto w-full text-center text-xs text-text-muted py-2">
         版本号：{{ APP_VERSION }}
       </div>
     </div>

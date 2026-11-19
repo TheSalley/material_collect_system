@@ -126,9 +126,6 @@ function groupChildren(menuRoute) {
   text-transform: uppercase;
   user-select: none;
 }
-.dark .menu-group-title {
-  color: #64748b;
-}
 
 .group-menu {
   border-right: unset;
@@ -150,17 +147,11 @@ function groupChildren(menuRoute) {
     background-color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.dark .group-menu :deep(.el-menu-item) {
-  color: #c3cad6;
-}
 .group-menu :deep(.el-menu-item .el-icon) {
   font-size: 17px;
   margin-right: 10px;
   color: #7c8798;
   transition: color 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.dark .group-menu :deep(.el-menu-item .el-icon) {
-  color: #6b7485;
 }
 
 .group-menu :deep(.el-menu-item:hover) {
@@ -193,10 +184,6 @@ function groupChildren(menuRoute) {
 .group-menu :deep(.el-menu-item.is-active .el-icon) {
   color: #2b7cee;
 }
-.dark .group-menu :deep(.el-menu-item.is-active) {
-  color: #6fb0f7;
-  background: linear-gradient(90deg, rgba(43, 124, 238, 0.24) 0%, rgba(43, 124, 238, 0.06) 100%);
-}
 
 /* 子菜单标题：与普通项视觉同源，但更强调可展开 */
 .group-menu :deep(.el-sub-menu__title) {
@@ -211,16 +198,10 @@ function groupChildren(menuRoute) {
   transition: color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.dark .group-menu :deep(.el-sub-menu__title) {
-  color: #c3cad6;
-}
 .group-menu :deep(.el-sub-menu__title .el-icon) {
   font-size: 17px;
   margin-right: 10px;
   color: #7c8798;
-}
-.dark .group-menu :deep(.el-sub-menu__title .el-icon) {
-  color: #6b7485;
 }
 .group-menu :deep(.el-sub-menu__title:hover) {
   color: #1f6fe0;
@@ -261,9 +242,6 @@ function groupChildren(menuRoute) {
   color: #1a5fc4;
   font-weight: 600;
   background: rgba(43, 124, 238, 0.08);
-}
-.dark .group-menu :deep(.el-sub-menu .el-menu-item::before) {
-  background: #2a3442;
 }
 
 .sub-item-text {

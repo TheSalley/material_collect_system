@@ -372,19 +372,19 @@ watch(
         <div class="flex flex-col gap-2 min-w-0">
           <div class="flex items-center gap-3">
             <el-icon class="text-primary text-2xl"><Document /></el-icon>
-            <h1 class="text-2xl font-semibold text-gray-900">页面编辑</h1>
+            <h1 class="text-2xl font-semibold text-text-primary">页面编辑</h1>
           </div>
           <div class="flex items-center gap-2 text-sm">
             <a
               href="#"
               @click.prevent="router.push({ name: 'CustomerHome' })"
-              class="text-gray-500 hover:text-primary transition-colors flex items-center gap-1"
+              class="text-text-muted hover:text-primary transition-colors flex items-center gap-1"
             >
               <el-icon><House /></el-icon>
               网站信息
             </a>
-            <el-icon class="text-gray-400"><ArrowRight /></el-icon>
-            <span class="text-gray-700 font-medium truncate">{{ websiteInfo.nickname || '页面编辑' }}</span>
+            <el-icon class="text-text-muted"><ArrowRight /></el-icon>
+            <span class="text-text-secondary font-medium truncate">{{ websiteInfo.nickname || '页面编辑' }}</span>
           </div>
         </div>
 
@@ -396,8 +396,8 @@ watch(
             class="flex items-center gap-3 bg-surface-hover rounded-lg px-4 py-2 border border-border"
           >
             <div class="flex items-center gap-2">
-              <el-icon class="text-gray-500"><Sort /></el-icon>
-              <span class="text-sm text-gray-600 whitespace-nowrap">从:</span>
+              <el-icon class="text-text-muted"><Sort /></el-icon>
+              <span class="text-sm text-text-secondary whitespace-nowrap">从:</span>
               <el-select
                 v-model="translateConfig.sourceLanguage"
                 placeholder="源语言"
@@ -413,9 +413,9 @@ watch(
                 <el-option label="阿拉伯语" value="ar" />
               </el-select>
             </div>
-            <el-icon class="text-gray-400"><ArrowRight /></el-icon>
+            <el-icon class="text-text-muted"><ArrowRight /></el-icon>
             <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600 whitespace-nowrap">到:</span>
+              <span class="text-sm text-text-secondary whitespace-nowrap">到:</span>
               <el-select
                 v-model="translateConfig.targetLanguage"
                 placeholder="目标语言"
@@ -483,10 +483,10 @@ watch(
     <!-- 空状态 -->
     <div v-else class="flex-1 flex items-center justify-center">
       <div class="text-center">
-        <el-icon class="text-6xl text-gray-300 mb-4">
+        <el-icon class="text-6xl text-border-dark mb-4">
           <Document />
         </el-icon>
-        <p class="text-gray-500">请选择要编辑的页面</p>
+        <p class="text-text-muted">请选择要编辑的页面</p>
       </div>
     </div>
   </PageContainer>
