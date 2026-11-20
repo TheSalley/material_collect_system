@@ -12,14 +12,14 @@ import ProductListPanel from "@/components/ProductListPanel.vue";
 <style scoped>
 /* 表格样式优化 */
 :deep(.el-table__header) {
-  background: #f9fafb;
+  background: var(--color-surface-hover);
 }
 
 :deep(.el-table__header th) {
-  background: #f9fafb;
-  color: #374151;
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
   font-weight: 600;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border);
 }
 
 :deep(.el-table__row) {
@@ -27,11 +27,11 @@ import ProductListPanel from "@/components/ProductListPanel.vue";
 }
 
 :deep(.el-table__row:hover) {
-  background: #f0f9ff;
+  background: var(--color-primary-light);
 }
 
 :deep(.el-table__row:hover td) {
-  background: #f0f9ff;
+  background: var(--color-primary-light);
 }
 
 :deep(.el-table__body-wrapper) {

@@ -1014,9 +1014,9 @@ watch(
   cursor: pointer;
   text-align: left;
   transition:
-    border-color 180ms ease,
-    background 180ms ease,
-    transform 180ms ease;
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .banner-add:hover {

@@ -270,3 +270,58 @@ export function removeSizeRecordByKey(sizeList = [], moduleId, imageUrl = "") {
       })
     : [];
 }
+
+/**
+ * 从页面数据中收集「图片字段」清单，用于按图片 URL 匹配尺寸。
+ *
+ * editor-section 里的每个图片组件（ImageWp）读取的是它所在节点 fields 里的图片 url，
+ * 而尺寸配置 key = buildSizeConfigKey(顶层板块id, 图片url)。本函数遍历：
+ *   顶层板块(originData 数组元素) → 递归子树 → 在 editableMap 命中节点 → 扫 fields
+ * 收集每个图片字段的 { sectionId, nodeId, imageUrl }。
+ *
+ * @param {Array} originData - 顶层板块数组（normalizeElementorRoots 的结果）
+ * @param {Map} editableMap - extractEditableData 生成的节点映射
+ * @returns {Array<{sectionId:string, nodeId:string, imageUrl:string}>}
+ */
+export function collectImageFields(originData = [], editableMap = null) {
+  const result = [];
+  if (!Array.isArray(originData) || !editableMap) return result;
+
+  const isImageLikeValue = (v) => v && typeof v === "object" && typeof v.url === "string";
+
+  function pushUrlsFromFields(sectionId, nodeId, fields) {
+    if (!fields || typeof fields !== "object") return;
+    for (const key of Object.keys(fields)) {
+      const value = fields[key];
+      if (isImageLikeValue(value)) {
+        const url = normalizeComparableUrl(value.url);
+        if (url) result.push({ sectionId, nodeId, imageUrl: url });
+      } else if (Array.isArray(value)) {
+        for (const item of value) {
+          if (isImageLikeValue(item)) {
+            const url = normalizeComparableUrl(item.url);
+            if (url) result.push({ sectionId, nodeId, imageUrl: url });
+          }
+        }
+      }
+    }
+  }
+
+  function walk(node, sectionId) {
+    if (!node || !node.id) return;
+    const editable = editableMap.get(node.id);
+    if (editable?.fields) {
+      pushUrlsFromFields(sectionId, String(node.id), editable.fields);
+    }
+    if (Array.isArray(node.elements)) {
+      for (const child of node.elements) walk(child, sectionId);
+    }
+  }
+
+  for (const part of originData) {
+    if (!part?.id) continue;
+    walk(part, String(part.id));
+  }
+
+  return result;
+}

@@ -1,20 +1,9 @@
 <template>
-  <PageContainer>
-    <template #header>
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex flex-col gap-2">
-          <h1 class="flex items-center gap-3 text-[28px] font-bold text-text-primary">
-            <el-icon class="text-primary text-3xl"><Document /></el-icon>
-            新闻列表
-          </h1>
-          <p class="text-sm text-text-muted">管理和查看所有新闻信息</p>
-        </div>
-        <div class="flex items-center gap-2 pt-1">
-          <el-button type="primary" :icon="Plus" @click="goToUpload">
-            添加新闻
-          </el-button>
-        </div>
-      </div>
+  <PageContainer title="新闻列表" subtitle="管理和查看所有新闻信息" :icon="Document">
+    <template #actions>
+      <el-button type="primary" :icon="Plus" @click="goToUpload">
+        添加新闻
+      </el-button>
     </template>
 
     <PanelCard flush>
@@ -260,14 +249,14 @@ onMounted(() => {
 <style scoped>
 /* 表格样式优化 */
 :deep(.el-table__header) {
-  background: #f9fafb;
+  background: var(--color-surface-hover);
 }
 
 :deep(.el-table__header th) {
-  background: #f9fafb;
-  color: #374151;
+  background: var(--color-surface-hover);
+  color: var(--color-text-secondary);
   font-weight: 600;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 2px solid var(--color-border);
 }
 
 :deep(.el-table__row) {
@@ -275,11 +264,11 @@ onMounted(() => {
 }
 
 :deep(.el-table__row:hover) {
-  background: #f0f9ff;
+  background: var(--color-primary-light);
 }
 
 :deep(.el-table__row:hover td) {
-  background: #f0f9ff;
+  background: var(--color-primary-light);
 }
 
 :deep(.el-table__body-wrapper) {

@@ -27,7 +27,7 @@
           </span>
           <span
             v-if="thumbDims[image.key]"
-            class="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55 px-0.5 py-px text-center text-[9px] leading-tight text-white"
+            class="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55 px-0.5 py-px text-center text-[length:var(--text-micro)] leading-tight text-white"
           >
             {{ thumbDims[image.key] }}
           </span>

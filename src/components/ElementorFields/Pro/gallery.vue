@@ -34,7 +34,7 @@
 
         <span
           v-if="thumbDims[image.key]"
-          class="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55 px-1 py-0.5 text-center text-[10px] leading-tight text-white"
+          class="pointer-events-none absolute inset-x-0 bottom-0 bg-black/55 px-1 py-0.5 text-center text-[length:var(--text-micro)] leading-tight text-white"
         >
           {{ thumbDims[image.key] }}
         </span>

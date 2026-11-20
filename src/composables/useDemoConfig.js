@@ -18,7 +18,7 @@
  * @param {Function} options.getModuleImage - 获取模块截图的函数（来自 useModuleParts）
  * @param {ComputedRef} options.visibleParts - 可见板块列表 computed
  */
-import { ref, provide } from "vue";
+import { ref, provide, watch } from "vue";
 import { ElMessage, ElLoading, ElMessageBox } from "element-plus";
 import {
   getDemoConfig,
@@ -78,6 +78,8 @@ export function useDemoConfig({
   provide("bindDemoSize", toggleDemoSizeByNodeId);
   provide("bindDemoSizeLoadingKey", bindingDemoSizeKey);
   provide("isDemoSizeBound", isDemoSizeBound);
+  // 输入框实时改尺寸后静默落库
+  provide("saveSectionSizesSilent", saveSectionSizesSilent);
 
   // ── 基础函数 ─────────────────────────────────────────────────────────────────
 
@@ -348,26 +350,38 @@ export function useDemoConfig({
   // ── 页面配置加载/保存 ─────────────────────────────────────────────────────────
 
   function applyPageConfigState(materials = [], sizes = []) {
-    sectionSizes.value = {};
-    if (Array.isArray(sizes)) {
-      for (const s of sizes) {
-        if (s && s.module_id) {
-          const key = String(s.module_id);
-          const imageUrl = resolveSizeImageUrl(s, key);
-          const sizeKey = buildSizeConfigKey(key, imageUrl);
-          let w = s.width != null ? Number(s.width) : null;
-          let h = s.height != null ? Number(s.height) : null;
-          if (w != null && Number.isNaN(w)) w = null;
-          if (h != null && Number.isNaN(h)) h = null;
-          if (w !== null || h !== null) {
-            sectionSizes.value[sizeKey] = {
-              width: w,
-              height: h,
-              image_url: imageUrl,
-            };
+    // 加载/替换尺寸期间挂起自动保存，避免清空瞬间用空数组覆盖后端
+    autoSaveSuspended = true;
+    try {
+      sectionSizes.value = {};
+      if (Array.isArray(sizes)) {
+        for (const s of sizes) {
+          if (s && s.module_id) {
+            const key = String(s.module_id);
+            // 优先用保存时记录的 image_url（图片字段 url），保证重建的 key 与
+            // ImageWp 输入框的 sizeConfigKey（板块id::图片url）一致，刷新后仍能读到；
+            // 没有 image_url 时才回退到板块截图 url。
+            const imageUrl =
+              normalizeComparableUrl(s.image_url) || resolveSizeImageUrl(s, key);
+            const sizeKey = buildSizeConfigKey(key, imageUrl);
+            let w = s.width != null ? Number(s.width) : null;
+            let h = s.height != null ? Number(s.height) : null;
+            if (w != null && Number.isNaN(w)) w = null;
+            if (h != null && Number.isNaN(h)) h = null;
+            if (w !== null || h !== null) {
+              sectionSizes.value[sizeKey] = {
+                width: w,
+                height: h,
+                image_url: imageUrl,
+              };
+            }
           }
         }
       }
+    } finally {
+      Promise.resolve().then(() => {
+        autoSaveSuspended = false;
+      });
     }
 
     const nextImages = {};
@@ -389,8 +403,10 @@ export function useDemoConfig({
   async function refreshPageConfigState(pageIdVal = pageId.value) {
     const site_id = websiteInfo.value?.site_id;
     if (!site_id || !pageIdVal) {
-      moduleImages.value = {};
-      sectionSizes.value = {};
+      suspendAutoSave(() => {
+        moduleImages.value = {};
+        sectionSizes.value = {};
+      });
       return { ok: false };
     }
 
@@ -405,8 +421,10 @@ export function useDemoConfig({
       // noop
     }
 
-    moduleImages.value = {};
-    sectionSizes.value = {};
+    suspendAutoSave(() => {
+      moduleImages.value = {};
+      sectionSizes.value = {};
+    });
     return { ok: false };
   }
 
@@ -535,6 +553,51 @@ export function useDemoConfig({
       loadingInstance.close();
     }
   }
+
+  /** 静默保存尺寸：给「截图目标尺寸」输入框实时落库用，不弹 loading，失败才提示 */
+  let silentSaveTimer = null;
+  function saveSectionSizesSilent(delay = 500) {
+    if (silentSaveTimer) clearTimeout(silentSaveTimer);
+    silentSaveTimer = setTimeout(async () => {
+      silentSaveTimer = null;
+      const site_id = websiteInfo.value?.site_id;
+      if (!site_id || !pageId.value) return;
+      try {
+        const res = await savePageSizes(site_id, String(pageId.value), buildPageSizesPayload());
+        if (res?.code !== 0) {
+          ElMessage.error(res?.message || "尺寸保存失败");
+        }
+      } catch (e) {
+        ElMessage.error("尺寸保存失败：" + (e?.message || ""));
+      }
+    }, delay);
+  }
+
+  /**
+   * 尺寸变化自动落库：
+   * 监听整个 sectionSizes 的深层变化（输入框改值、同步写入等），防抖后保存。
+   * 加载/替换数据时通过 suspendAutoSave() 抑制，避免误触发。
+   */
+  let autoSaveSuspended = false;
+  function suspendAutoSave(fn) {
+    autoSaveSuspended = true;
+    try {
+      return fn();
+    } finally {
+      // 等下一轮再解除，避开同一 tick 内的赋值
+      Promise.resolve().then(() => {
+        autoSaveSuspended = false;
+      });
+    }
+  }
+  watch(
+    sectionSizes,
+    () => {
+      if (autoSaveSuspended) return;
+      saveSectionSizesSilent(600);
+    },
+    { deep: true }
+  );
 
   // ── Demo 截图绑定/解绑 ────────────────────────────────────────────────────────
 
@@ -830,6 +893,146 @@ export function useDemoConfig({
     return { ok: true };
   }
 
+  // ── 从 JSON 同步截图目标尺寸 ──────────────────────────────────────────────────
+
+  /**
+   * 把外部 JSON（如上游脚本采集的尺寸数据）按 moduleId 匹配写入 sectionSizes。
+   * JSON 每条形如：{ moduleId: "c49fc9b", src: "https://...jpg", size: "560x490", ... }
+   * - size 形如 "宽x高"（如 "560x490"），解析为 width/height
+   * - 只匹配当前页面 visibleParts 中存在的 moduleId，避免错配
+   * - 写入纯 moduleId key，imageWp 的 legacy 回退能读到（不依赖 imageUrl 后缀）
+   * 返回 { matched, total, unmatched: [moduleId...] }
+   */
+  async function applySizesFromJson(jsonRecords = [], options = {}) {
+    const { autoSave = true, imageFields = [] } = options;
+    const list = Array.isArray(jsonRecords) ? jsonRecords : [];
+
+    // 板块元信息（序号/标题），按顶层板块 id
+    const partIndexById = new Map();
+    const partTitleById = new Map();
+    visibleParts.value.forEach((part, idx) => {
+      const id = String(part?.id || "");
+      if (!id) return;
+      partIndexById.set(id, idx);
+      partTitleById.set(id, String(part?.settings?._title || "").trim());
+    });
+
+    // 图片字段清单：{ sectionId, nodeId, imageUrl }
+    const fields = Array.isArray(imageFields) ? imageFields.filter((f) => f?.imageUrl) : [];
+
+    let matched = 0;
+    const unmatched = [];
+    const matchedList = [];
+
+    const parseDim = (str) => {
+      const m = String(str || "").match(/(\d+)\s*[x×]\s*(\d+)/i);
+      if (!m) return null;
+      return { width: Number(m[1]), height: Number(m[2]) };
+    };
+
+    for (const record of list) {
+      const moduleId = String(record?.moduleId || record?.module_id || "").trim();
+      const jsonSrc = normalizeComparableUrl(record?.src || record?.image_url || record?.url);
+
+      // 解析尺寸：优先 "size"（WxH），其次 naturalSize/size15/size2，再其次 width/height 字段
+      let width = null;
+      let height = null;
+      const dim =
+        parseDim(record?.size) ||
+        parseDim(record?.naturalSize) ||
+        parseDim(record?.size15) ||
+        parseDim(record?.size2);
+      if (dim) {
+        width = dim.width;
+        height = dim.height;
+      } else if (record?.width != null && record?.height != null) {
+        width = Number(record.width);
+        height = Number(record.height);
+      }
+      const hasWidth = Number.isFinite(width) && width > 0;
+      const hasHeight = Number.isFinite(height) && height > 0;
+      if (!hasWidth && !hasHeight) continue;
+
+      // 匹配图片字段：
+      //  1) 优先按图片 URL（JSON.src）匹配 editor-section 里图片组件的图片地址
+      //  2) 兜底按 moduleId 匹配图片节点 id 或所属板块 id
+      let targetField = null;
+      if (jsonSrc) {
+        targetField =
+          fields.find((f) => normalizeComparableUrl(f.imageUrl) === jsonSrc) ||
+          fields.find((f) => isSameImageSource(f.imageUrl, jsonSrc)) ||
+          null;
+      }
+      if (!targetField && moduleId) {
+        const candidates = fields.filter(
+          (f) => String(f.nodeId) === moduleId || String(f.sectionId) === moduleId
+        );
+        // 同一板块多个图片字段时，若 JSON 有 src 再筛一次，否则取第一个
+        targetField = jsonSrc
+          ? candidates.find((f) => isSameImageSource(f.imageUrl, jsonSrc)) || candidates[0] || null
+          : candidates[0] || null;
+      }
+
+      if (!targetField) {
+        unmatched.push(moduleId || jsonSrc || "(空)");
+        continue;
+      }
+
+      // 配置 key / image_url 都用「图片字段的图片 url」，与 ImageWp 输入框读取的 key 完全一致
+      const fieldUrl = normalizeComparableUrl(targetField.imageUrl);
+      const sectionId = String(targetField.sectionId || "").trim();
+      const configKey = buildSizeConfigKey(sectionId, fieldUrl);
+
+      const sizeValue = {
+        width: hasWidth ? Math.round(width) : null,
+        height: hasHeight ? Math.round(height) : null,
+        image_url: fieldUrl,
+      };
+      sectionSizes.value[configKey] = { ...sizeValue };
+      matched += 1;
+
+      // 匹配明细（板块序号/标题按 sectionId 取）
+      const partIndex = partIndexById.get(sectionId);
+      matchedList.push({
+        moduleId: moduleId || String(targetField.nodeId || ""),
+        sectionId,
+        partNo: Number.isInteger(partIndex) ? partIndex + 1 : null,
+        title: partTitleById.get(sectionId) || "",
+        width: sizeValue.width,
+        height: sizeValue.height,
+        hasShot: true,
+        previewUrl: fieldUrl ? getFileFullUrl(fieldUrl) : "",
+        status: String(record?.status || "").trim(),
+      });
+    }
+
+    // 同步后自动保存到后端
+    let saveOk = null;
+    let saveMessage = "";
+    if (autoSave && matched > 0) {
+      const site_id = websiteInfo.value?.site_id;
+      if (!site_id || !pageId.value) {
+        saveOk = false;
+        saveMessage = "缺少站点或页面信息，未能保存";
+      } else {
+        try {
+          const res = await savePageSizes(
+            site_id,
+            String(pageId.value),
+            buildPageSizesPayload()
+          );
+          saveOk = res?.code === 0;
+          saveMessage = res?.message || (saveOk ? "尺寸已保存" : "尺寸保存失败");
+        } catch (e) {
+          saveOk = false;
+          saveMessage = e?.message || "尺寸保存失败";
+        }
+      }
+    }
+
+    return { matched, total: list.length, unmatched, matchedList, saveOk, saveMessage };
+  }
+
   // ── 返回 ──────────────────────────────────────────────────────────────────────
 
   return {
@@ -878,5 +1081,7 @@ export function useDemoConfig({
     // 应用 Demo 配置
     applyDemoScreenshots,
     applyDemoSizes,
+    // 从 JSON 同步截图目标尺寸
+    applySizesFromJson,
   };
 }

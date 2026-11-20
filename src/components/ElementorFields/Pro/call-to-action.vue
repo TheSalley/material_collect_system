@@ -131,6 +131,6 @@ function handleBgImageUpdate(nextImage) {
 }
 
 .cta-section + .cta-section {
-  border-top: 1px dashed #e4e7ed;
+  border-top: 1px dashed var(--color-border);
 }
 </style>

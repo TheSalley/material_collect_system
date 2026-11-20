@@ -221,7 +221,7 @@ function updateSlideshowImage(index, value) {
   gap: 0.5rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -234,7 +234,7 @@ function updateSlideshowImage(index, value) {
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   padding: 10px;
-  background: #fff;
+  background: var(--color-surface);
 }
 
 .bg-block__header {
@@ -248,7 +248,7 @@ function updateSlideshowImage(index, value) {
 .bg-block__title {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #606266;
+  color: var(--color-text-secondary);
   margin-bottom: 0.5rem;
 }
 
@@ -276,7 +276,7 @@ function updateSlideshowImage(index, value) {
 .slideshow-item__title {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #606266;
+  color: var(--color-text-secondary);
 }
 
 .mb-0 {

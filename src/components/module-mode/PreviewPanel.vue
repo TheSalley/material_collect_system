@@ -6,11 +6,16 @@
           v-for="(part, index) in visibleParts"
           :key="part.id"
           class="section-block section-preview-block"
+          role="button"
+          tabindex="0"
+          :aria-label="`板块 ${index + 1}，点击查看/编辑`"
           :class="{
             'is-active-part': activePartIndex === index,
             'is-hidden-part': isPartHidden(part),
           }"
           @click="$emit('preview-click', index)"
+          @keydown.enter.prevent="$emit('preview-click', index)"
+          @keydown.space.prevent="$emit('preview-click', index)"
         >
           <div class="preview-block-header">
             <div class="collapse-title">
@@ -72,9 +77,9 @@
                   加标题
                 </template>
               </button>
-              <el-tag v-if="isDemoScreenshotBound(part.id, index)" size="small" type="success" effect="plain">
+              <!-- <el-tag v-if="isDemoScreenshotBound(part.id, index)" size="small" type="success" effect="plain">
                 已绑定 Demo
-              </el-tag>
+              </el-tag> -->
             </div>
             <div v-if="isAdmin" class="preview-block-header__actions">
               <div class="preview-block-header__primary-actions">
@@ -95,7 +100,7 @@
                   移除截图
                 </el-button>
               </div>
-              <el-button
+              <!-- <el-button
                 size="small"
                 :type="isDemoScreenshotBound(part.id, index) ? 'success' : 'primary'"
                 :plain="!isDemoScreenshotBound(part.id, index)"
@@ -104,7 +109,7 @@
                 @click.stop="$emit('toggle-demo-screenshot', part.id, index)"
               >
                 {{ isDemoScreenshotBound(part.id, index) ? "取消绑定 Demo" : "绑定 Demo" }}
-              </el-button>
+              </el-button> -->
             </div>
           </div>
           <div class="preview-block-body">
@@ -223,6 +228,14 @@ function cancelTitle() {
   overflow: hidden;
 }
 
+/* 窄屏堆叠：预览不再固定 55%，改为自适应高度 */
+@media (max-width: 1024px) {
+  .preview-section {
+    flex: 0 0 auto;
+    max-height: 50vh;
+  }
+}
+
 .editor-scroll {
   flex: 1;
   min-height: 0;
@@ -237,15 +250,21 @@ function cancelTitle() {
 }
 
 .section-block {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .section-block:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.section-block:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .section-preview-block {
@@ -256,12 +275,12 @@ function cancelTitle() {
 
 .section-block.section-preview-block.is-active-part {
   transform: none;
-  border-left: 4px solid #409eff;
-  box-shadow: 0 4px 18px rgba(64, 158, 255, 0.16);
-  background: linear-gradient(90deg, rgba(236, 245, 255, 0.75) 0%, #fff 42%);
+  border-left: 4px solid var(--color-primary);
+  box-shadow: 0 4px 18px rgba(43, 124, 238, 0.16);
+  background: linear-gradient(90deg, rgba(43, 124, 238, 0.08) 0%, var(--color-surface) 42%);
   transition:
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .collapse-title {
@@ -269,12 +288,12 @@ function cancelTitle() {
   align-items: center;
   gap: 0.75rem;
   font-weight: 500;
-  color: #303133;
+  color: var(--color-text-primary);
   padding: 0.25rem 0;
 }
 
 .collapse-icon {
-  color: #409eff;
+  color: var(--color-primary);
   font-size: 1.25rem;
 }
 
@@ -296,13 +315,13 @@ function cancelTitle() {
   border: 1px solid transparent;
   font-size: 0.875rem;
   font-weight: 400;
-  color: #5b6472;
+  color: var(--color-text-secondary);
   background: transparent;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background-color 0.2s;
 }
 .title-edit-btn:hover {
-  color: #2b7cee;
+  color: var(--color-primary);
   border-color: rgba(43, 124, 238, 0.35);
   background: rgba(43, 124, 238, 0.06);
 }
@@ -326,8 +345,8 @@ function cancelTitle() {
   gap: 0.75rem;
   flex-wrap: wrap;
   padding: 0.75rem 1rem;
-  background: #fff;
-  border-bottom: 1px solid #ebeef5;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 .preview-block-header__actions {
@@ -346,7 +365,7 @@ function cancelTitle() {
 
 .preview-block-body {
   padding: 1rem;
-  background: #fafbfc;
+  background: var(--color-surface-hover);
   min-height: 140px;
   display: flex;
   align-items: center;

@@ -41,6 +41,8 @@
 ### 2.2 token 落地不彻底：硬编码颜色满地跑 —— ✅ 已批量替换
 
 > 状态：已完成。全库 `text-gray-900/700/600/500/400`、`bg-white`、`bg-gray-50/100`、`border-gray-100/200/300` 共 239 处替换为语义 token（`text-text-primary/secondary/muted`、`bg-surface/surface-hover/surface-active`、`border-border/border-light/border-dark`）。刻意保留的仅 `UnsupportedDeviceNotice.vue` 的 `bg-white/90`（玻璃拟态需半透明），以及 `MediaCard` 图片遮罩上的 `bg-black/*` + `text-white`（叠在图片上看不清就不能动）。
+>
+> **第二轮补充（2026 追加，已完成）**：上一轮只清了 Tailwind 工具类，漏了 **scoped CSS 里的十六进制色**。又清了一批：`module-mode/`（EditorPanel、PreviewPanel、PresetPickerDialog、UploadDialog、SortPartsDialog）+ ElementorFields（section-background-image、flip-box、call-to-action）里 100+ 处 `#409eff`/`#303133`/`#909399`/`#ebeef5`/`#e4e7ed`/`#fafbfc`/`white` 等 Element Plus 原生色板和手写灰，统一换成 `var(--color-*)` / `var(--el-color-primary-light-5)` 等 token。
 
 `style.css` 定义了 `--color-text-primary`、`--color-surface`、`--color-border` 等，但页面里大量直接用 Tailwind 原始色：
 
@@ -130,6 +132,20 @@
 | `transition: all 0.2s/0.3s ease` 多处在用 `ease` | "线性动画 ease-in-out 禁止" | 全站统一换成 `cubic-bezier(0.22,1,0.36,1)`（侧边栏已这么做，其他没跟上） |
 
 这些不是 bug，但**离你定的设计人设还有距离**——现在的成品更像"精致版主流后台"，而不是"反主流"。
+
+---
+
+## 四·补 — 第三轮已完成的交互 / 响应式 / 无障碍整改
+
+| 事项 | 状态 | 说明 |
+|---|---|---|
+| module-mode 响应式断点 | ✅ | `ModuleMode` 主容器 + `PreviewPanel`(55%固定栏) + `EditorPanel` 增加 `@media (max-width:1024px)` 上下堆叠，窄屏/平板不再被压成死缝 |
+| 可见键盘焦点 | ✅ | `ImageUploader` 去掉裸 `outline:none`，改 `:focus-visible` 可见描边+外环；`PreviewPanel` 板块卡补 `:focus-visible` |
+| 可点击 div 键盘可达 | ✅ | `PreviewPanel` 板块卡、`MediaCard` 预览区、`UploadDialog` 素材项、19 个 ElementorFields 折叠行 → 全部补 `role="button"` `tabindex` `@keydown.enter/space`，可键盘聚焦操作 |
+| 缓动统一 | ✅ | 全库 `transition: * ease` 统一改为 `cubic-bezier(0.22,1,0.36,1)`（StatCard/PanelCard/DemoList/PresetContent/EditorPanel/PreviewPanel/BannerCollection/PresetPickerDialog 等） |
+| scoped CSS 残余硬编码 | ✅ | 补清 `NewsList`/`ProductList` 表格样式、module-mode 的 `#f5f7fa` 等漏网色 |
+
+> 仍**刻意保留**的十六进制色：侧边栏 / UserAvator / BannerCollectionPanel / FieldWidgetType 的一整套深蓝灰品牌色阶（`#7c8798`/`#1f6fe0`/`#1a5fc4`…），这是手调品牌色板、密度高且相互关联，硬套语义 token 反而更乱；以及 Dashboard 柱状图渐变高光、图片遮罩 `#000`、警告琥珀 `#b45309` 等语义特化色。
 
 ---
 

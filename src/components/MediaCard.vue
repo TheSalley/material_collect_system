@@ -356,7 +356,12 @@ async function handleDelete() {
     <div
       class="relative aspect-[4/3] bg-surface-active overflow-hidden"
       :class="{ 'cursor-zoom-in': imageUrl }"
+      role="button"
+      :tabindex="imageUrl ? 0 : -1"
+      :aria-label="imageUrl ? '预览大图' : ''"
       @click="openPreview"
+      @keydown.enter.prevent="openPreview"
+      @keydown.space.prevent="openPreview"
     >
       <template v-if="imageUrl">
         <el-image
@@ -395,21 +400,21 @@ async function handleDelete() {
       <div class="absolute top-2 right-2 flex items-center gap-1">
         <div
           v-if="imageUrl"
-          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[10px] font-medium backdrop-blur-sm"
+          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[length:var(--text-micro)] font-medium backdrop-blur-sm"
         >
           {{ imageExt }}
         </div>
 
         <div
           v-if="imageSizeLabel"
-          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[10px] font-medium backdrop-blur-sm"
+          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[length:var(--text-micro)] font-medium backdrop-blur-sm"
         >
           {{ imageSizeLabel }}
         </div>
 
         <div
           v-if="imageFileSizeLabel"
-          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[10px] font-medium backdrop-blur-sm"
+          class="px-2 py-0.5 rounded-md bg-black/50 text-white text-[length:var(--text-micro)] font-medium backdrop-blur-sm"
         >
           {{ imageFileSizeLabel }}
         </div>
@@ -418,13 +423,13 @@ async function handleDelete() {
 
     <div class="p-3">
       <div class="flex flex-wrap gap-1">
-        <el-tag v-if="getField(item, 'demo')" size="small" type="info" effect="plain" class="!text-[10px]">
+        <el-tag v-if="getField(item, 'demo')" size="small" type="info" effect="plain" class="!text-[length:var(--text-micro)]">
           {{ getField(item, 'demo') }}
         </el-tag>
-        <el-tag v-if="getField(item, 'page')" size="small" type="warning" effect="plain" class="!text-[10px]">
+        <el-tag v-if="getField(item, 'page')" size="small" type="warning" effect="plain" class="!text-[length:var(--text-micro)]">
           {{ getField(item, 'page') }}
         </el-tag>
-        <el-tag v-if="getField(item, 'created_at')" size="small" type="info" effect="plain" class="!text-[10px]">
+        <el-tag v-if="getField(item, 'created_at')" size="small" type="info" effect="plain" class="!text-[length:var(--text-micro)]">
           {{ formatDate(getField(item, 'created_at')) }}
         </el-tag>
       </div>

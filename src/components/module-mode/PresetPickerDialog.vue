@@ -231,11 +231,11 @@ function handleClosed() {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 .preset-picker__hint {
   font-size: 11px;
-  color: #909399;
+  color: var(--color-text-muted);
 }
 .preset-picker__cats {
   flex-shrink: 0;
@@ -255,47 +255,47 @@ function handleClosed() {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid #ebeef5;
-  background: #fff;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .preset-pack:hover {
-  border-color: #409eff;
+  border-color: var(--color-primary);
 }
 .preset-pack.is-active {
-  border-color: #409eff;
-  background: #ecf5ff;
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 .preset-pack__name {
   font-size: 13px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 .preset-pack__desc {
   font-size: 11px;
-  color: #909399;
+  color: var(--color-text-muted);
 }
 .preset-pack__meta {
   font-size: 11px;
-  color: #409eff;
+  color: var(--color-primary);
 }
 .preset-picker__placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 200px;
-  border: 1px dashed #e4e7ed;
+  border: 1px dashed var(--color-border);
   border-radius: 10px;
-  color: #909399;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 .preset-field {
-  border: 1px solid #ebeef5;
+  border: 1px solid var(--color-border-light);
   border-radius: 10px;
   padding: 10px 12px;
-  background: #fafbfc;
+  background: var(--color-surface-hover);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -309,7 +309,7 @@ function handleClosed() {
 .preset-field__label {
   font-size: 13px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 .preset-field__badge {
   font-size: 11px;
@@ -317,19 +317,19 @@ function handleClosed() {
   border-radius: 999px;
 }
 .preset-field__badge.is-image {
-  background: #ecf5ff;
-  color: #409eff;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 .preset-field__badge.is-text {
-  background: #fdf6ec;
-  color: #e6a23c;
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
 }
 .preset-field__cur-thumb {
   width: 44px;
   height: 30px;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 .preset-field__cur-thumb :deep(.el-image) {
@@ -338,7 +338,7 @@ function handleClosed() {
 }
 .preset-field__cur-text {
   font-size: 11px;
-  color: #909399;
+  color: var(--color-text-muted);
   max-width: 320px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -357,8 +357,8 @@ function handleClosed() {
   overflow: hidden;
   padding: 0;
   cursor: pointer;
-  background: #fff;
-  transition: border-color 0.2s ease;
+  background: var(--color-surface);
+  transition: border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .preset-img-opt :deep(.el-image) {
   width: 100%;
@@ -366,15 +366,15 @@ function handleClosed() {
   display: block;
 }
 .preset-img-opt:hover {
-  border-color: #a0cfff;
+  border-color: var(--el-color-primary-light-5);
 }
 .preset-img-opt.is-active {
-  border-color: #409eff;
+  border-color: var(--color-primary);
 }
 .preset-img-opt__name {
   display: block;
   font-size: 10px;
-  color: #606266;
+  color: var(--color-text-secondary);
   padding: 2px 4px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -393,34 +393,34 @@ function handleClosed() {
   padding: 8px 10px;
   border-radius: 8px;
   border: 2px solid transparent;
-  background: #fff;
+  background: var(--color-surface);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .preset-text-opt:hover {
-  border-color: #a0cfff;
+  border-color: var(--el-color-primary-light-5);
 }
 .preset-text-opt.is-active {
-  border-color: #409eff;
-  background: #ecf5ff;
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 .preset-text-opt__title {
   font-size: 12px;
   font-weight: 600;
-  color: #303133;
+  color: var(--color-text-primary);
 }
 .preset-text-opt__content {
   font-size: 12px;
-  color: #606266;
+  color: var(--color-text-secondary);
 }
 .preset-field__empty {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--el-color-primary-light-5);
 }
 .preset-field__picked {
   font-size: 12px;
-  color: #67c23a;
+  color: var(--color-success);
 }
 .preset-picker__footer {
   display: flex;
@@ -431,6 +431,6 @@ function handleClosed() {
 .preset-picker__count {
   margin-right: auto;
   font-size: 12px;
-  color: #909399;
+  color: var(--color-text-muted);
 }
 </style>

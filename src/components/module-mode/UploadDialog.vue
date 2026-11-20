@@ -52,7 +52,12 @@
                     :key="item.id"
                     class="media-item"
                     :class="{ 'is-selected': selectedMediaId === item.id }"
+                    role="button"
+                    tabindex="0"
+                    :aria-pressed="selectedMediaId === item.id"
                     @click="selectedMediaId = item.id"
+                    @keydown.enter.prevent="selectedMediaId = item.id"
+                    @keydown.space.prevent="selectedMediaId = item.id"
                   >
                     <el-image :src="getFileFullUrl?.(item.file_url || item.url)" fit="cover" class="media-thumb">
                       <template #error>
@@ -208,24 +213,24 @@ defineEmits(["before-upload", "media-search", "confirm-select", "page-change"]);
 
 .media-item {
   position: relative;
-  border: 2px solid #e4e7ed;
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
-  background: #fafbfc;
+  background: var(--color-surface-hover);
 }
 
 .media-item:hover {
-  border-color: #409eff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(43, 124, 238, 0.15);
 }
 
 .media-item.is-selected {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(43, 124, 238, 0.2);
 }
 
 .media-thumb {
@@ -240,21 +245,21 @@ defineEmits(["before-upload", "media-search", "confirm-select", "page-change"]);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #c0c4cc;
+  color: var(--el-color-primary-light-5);
   font-size: 24px;
-  background: #f1f2f4;
+  background: var(--color-surface-active);
 }
 
 .media-item-name {
   font-size: 0.7rem;
-  color: #606266;
+  color: var(--color-text-secondary);
   padding: 4px 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
-  background: #fff;
-  border-top: 1px solid #e4e7ed;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
 }
 
 .media-item-check {
@@ -263,12 +268,12 @@ defineEmits(["before-upload", "media-search", "confirm-select", "page-change"]);
   right: 4px;
   width: 20px;
   height: 20px;
-  background: #409eff;
+  background: var(--color-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #fff;
   font-size: 12px;
 }
 
@@ -277,11 +282,11 @@ defineEmits(["before-upload", "media-search", "confirm-select", "page-change"]);
   align-items: center;
   justify-content: space-between;
   padding-top: 8px;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--color-border-light);
 }
 
 .media-selected-tip {
   font-size: 0.875rem;
-  color: #909399;
+  color: var(--color-text-muted);
 }
 </style>

@@ -19,7 +19,11 @@
     >
       <div
         class="flex cursor-pointer items-center justify-between gap-3 bg-surface p-3 transition-colors hover:bg-[var(--field-bg-hover)]"
+        role="button"
+        tabindex="0"
         @click="toggleCollapse(index)"
+        @keydown.enter.prevent="toggleCollapse(index)"
+        @keydown.space.prevent="toggleCollapse(index)"
       >
         <div class="flex min-w-0 items-center gap-3">
           <span

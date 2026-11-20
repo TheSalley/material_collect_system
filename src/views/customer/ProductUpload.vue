@@ -1,19 +1,12 @@
 <template>
-  <PageContainer>
-    <template #header>
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex flex-col gap-2">
-          <h1 class="flex items-center gap-3 text-[28px] font-bold text-text-primary">
-            <el-icon class="text-primary text-3xl"><Box /></el-icon>
-            {{ isViewMode ? "产品查看" : "产品上传" }}
-          </h1>
-          <p class="text-sm text-text-muted">上传产品主图并填写基础信息</p>
-        </div>
-        <div class="flex items-center gap-2 pt-1">
-          <el-button @click="reset">重置</el-button>
-          <el-button type="primary" @click="submit" :disabled="!canSubmit" :loading="submitting">提交</el-button>
-        </div>
-      </div>
+  <PageContainer
+    :title="isViewMode ? '产品查看' : '产品上传'"
+    subtitle="上传产品主图并填写基础信息"
+    :icon="Box"
+  >
+    <template #actions>
+      <el-button @click="reset">重置</el-button>
+      <el-button type="primary" @click="submit" :disabled="!canSubmit" :loading="submitting">提交</el-button>
     </template>
 
     <div class="space-y-6">

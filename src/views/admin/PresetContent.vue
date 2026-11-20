@@ -809,7 +809,7 @@ onMounted(() => loadFromApi(false));
   border: 1px solid var(--color-border-light);
   background: var(--color-surface);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .preset-list__item:hover,
 .preset-list__item.is-active {
@@ -865,7 +865,7 @@ onMounted(() => loadFromApi(false));
   color: var(--color-text-secondary);
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .preset-cats__item:hover {
   border-color: var(--color-primary);
@@ -1052,7 +1052,7 @@ onMounted(() => loadFromApi(false));
   padding: 8px 10px;
   background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .preset-images__item:hover .preset-images__mask {
   opacity: 1;

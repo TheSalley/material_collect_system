@@ -3,8 +3,9 @@
 // 侧边栏菜单区：按角色渲染可访问菜单（分组 + 子菜单 + 页面列表）
 import { useGlobalStore } from "@/stores/global.js";
 import { iconMap } from "@/utils/sidebarIcons";
+import { canAccessRoute, normalizeRole } from "@/router/permissions.js";
 
-const { websiteInfo, sitePageList } = useGlobalStore();
+const { websiteInfo, sitePageList, user } = useGlobalStore();
 
 defineProps({
   routes: { type: Array, required: true },
@@ -28,10 +29,13 @@ function groupChildren(menuRoute) {
   if (!menuRoute.children?.length) {
     return [{ label: null, order: 0, items: [menuRoute] }];
   }
+  const role = normalizeRole(user?.role);
   const groups = new Map();
   const noGroup = { label: null, order: 0, items: [] };
   for (const child of menuRoute.children) {
     if (child.meta?.hidden) continue;
+    // 按角色过滤：meta.allowRoles 优先，其次 meta.role（拦截无权限的子菜单）
+    if (!canAccessRoute(child.meta, role)) continue;
     const label = child.meta?.group;
     if (label == null) {
       noGroup.items.push(child);

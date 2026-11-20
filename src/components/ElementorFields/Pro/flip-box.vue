@@ -128,11 +128,11 @@ function updateField(key, value) {
 }
 
 .flip-section + .flip-section {
-  border-top: 1px dashed #e4e7ed;
+  border-top: 1px dashed var(--color-border);
 }
 
 .flip-section-title {
-  color: #909399;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
   font-weight: 600;
 }

@@ -200,10 +200,12 @@ defineExpose({ clearFiles, focus, uploadRef });
 .image-uploader {
   outline: none;
   border-radius: 12px;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.image-uploader:focus {
+.image-uploader:focus-visible {
+  outline: 2px solid var(--color-primary, #2b7cee);
+  outline-offset: 2px;
   box-shadow: 0 0 0 2px var(--color-primary, #2b7cee);
 }
 </style>

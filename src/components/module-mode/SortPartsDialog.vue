@@ -122,7 +122,7 @@ function resetState() {
 .sort-dialog-tip {
   margin: 0 0 12px;
   font-size: 12px;
-  color: #8a94a3;
+  color: var(--color-text-muted);
 }
 
 .sort-dialog-list {
@@ -138,9 +138,9 @@ function resetState() {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #ffffff;
+  background: var(--color-surface);
   transition: box-shadow 0.2s, opacity 0.2s, border-color 0.2s;
 }
 .sort-dialog-item:hover {
@@ -150,7 +150,7 @@ function resetState() {
   opacity: 0.55;
 }
 .sort-dialog-item.is-drag-over {
-  box-shadow: inset 0 3px 0 #2b7cee;
+  box-shadow: inset 0 3px 0 var(--color-primary);
 }
 
 .sort-dialog-handle {
@@ -158,12 +158,12 @@ function resetState() {
   align-items: center;
   padding: 2px;
   border-radius: 4px;
-  color: #a8b3c5;
+  color: var(--color-text-muted);
   cursor: grab;
   touch-action: none;
 }
 .sort-dialog-handle:hover {
-  color: #2b7cee;
+  color: var(--color-primary);
   background: rgba(43, 124, 238, 0.08);
 }
 .sort-dialog-handle:active {
@@ -174,7 +174,7 @@ function resetState() {
   flex: 0 0 auto;
   font-size: 13px;
   font-weight: 600;
-  color: #33415c;
+  color: var(--color-text-primary);
 }
 .sort-dialog-title {
   flex: 1 1 auto;
@@ -183,7 +183,7 @@ function resetState() {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13px;
-  color: #5b6472;
+  color: var(--color-text-secondary);
 }
 .sort-dialog-hidden-tag {
   flex: 0 0 auto;

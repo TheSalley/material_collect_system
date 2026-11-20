@@ -16,7 +16,11 @@
     >
       <div
         class="icon-list-item-row flex items-center justify-between p-3 cursor-pointer bg-surface"
+        role="button"
+        tabindex="0"
         @click="toggleCollapse(index)"
+        @keydown.enter.prevent="toggleCollapse(index)"
+        @keydown.space.prevent="toggleCollapse(index)"
       >
         <div class="flex items-center gap-3">
           <span class="icon-list-index px-2 py-0.5 rounded text-xs">{{

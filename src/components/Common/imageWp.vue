@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div v-if="!isBlacklisted">
     <div v-if="imageUrl" class="w-full mb-3" :style="{ maxWidth: width + 'px' }">
       <img :src="imageUrl" alt="预览图" />
@@ -24,7 +24,7 @@
         <span v-else-if="isAdmin && showSizeConfig && sizeConfigKey">
           建议尺寸：未设置
         </span>
-        <el-button
+        <!-- <el-button
           v-if="isAdmin && sizeConfigKey && typeof bindDemoSize === 'function'"
           size="small"
           :type="isCurrentSizeBound ? 'success' : 'primary'"
@@ -34,7 +34,7 @@
           @click="bindDemoSize(sectionConfigId, imageUrl)"
         >
           {{ isCurrentSizeBound ? "取消绑定 Demo" : "绑定 Demo" }}
-        </el-button>
+        </el-button> -->
       </p>
       <p class="__hint-line">{{ uploadTip }}</p>
       <p class="__hint-line __webp-hint">能裁切，png/jpg 会自动转成 WEBP 再上传。</p>
@@ -45,7 +45,7 @@
       >
         <span class="__target-size-hint__label">截图目标尺寸：</span>
         <el-input-number
-          v-model="getOrCreateSizeConfig(sizeConfigKey).width"
+          v-model="targetWidth"
           :min="1"
           :max="4096"
           controls-position="right"
@@ -54,7 +54,7 @@
         />
         <span class="__target-size-hint__x">x</span>
         <el-input-number
-          v-model="getOrCreateSizeConfig(sizeConfigKey).height"
+          v-model="targetHeight"
           :min="1"
           :max="4096"
           controls-position="right"
@@ -225,15 +225,51 @@ const configuredDims = computed(() => {
   return null;
 });
 
-function getOrCreateSizeConfig(id) {
-  if (!sectionSizes.value || !id) return { width: null, height: null };
-  if (!sectionSizes.value[id]) {
-    const { sectionId } = parseSizeConfigKey(id);
-    const legacyConfig = sectionId ? sectionSizes.value[sectionId] || sectionSizes.value[sectionConfigId.value] : null;
-    sectionSizes.value[id] = legacyConfig ? { ...legacyConfig } : { width: null, height: null };
+/**
+ * 「截图目标尺寸」输入框的双向绑定代理：
+ * - getter：优先读 configuredDims（精确 key → legacy → fallback，任何来源的同步值都能读到时实时生效）
+ * - setter：写回 sectionSizes 的精确 key，并保留同名 image_url
+ * 相比直接 v-model 一个"函数返回对象的属性"，computed 能保证外部改 sectionSizes 时输入框实时刷新。
+ */
+function ensureSizeConfigObject() {
+  const key = sizeConfigKey.value;
+  if (!key || !sectionSizes.value) return null;
+  if (!sectionSizes.value[key]) {
+    const { sectionId } = parseSizeConfigKey(key);
+    const legacy =
+      (sectionId && sectionSizes.value[sectionId]) || sectionSizes.value[sectionConfigId.value] || null;
+    sectionSizes.value[key] = legacy
+      ? { ...legacy }
+      : { width: null, height: null, image_url: String(imageUrl.value || "").trim() };
   }
-  return sectionSizes.value[id];
+  return sectionSizes.value[key];
 }
+
+const targetWidth = computed({
+  get() {
+    const dims = configuredDims.value;
+    return dims?.width != null && Number.isFinite(Number(dims.width)) ? Number(dims.width) : undefined;
+  },
+  set(val) {
+    const cfg = ensureSizeConfigObject();
+    if (!cfg) return;
+    cfg.width = val == null || val === "" ? null : Number(val);
+    if (!cfg.image_url) cfg.image_url = String(imageUrl.value || "").trim();
+  },
+});
+
+const targetHeight = computed({
+  get() {
+    const dims = configuredDims.value;
+    return dims?.height != null && Number.isFinite(Number(dims.height)) ? Number(dims.height) : undefined;
+  },
+  set(val) {
+    const cfg = ensureSizeConfigObject();
+    if (!cfg) return;
+    cfg.height = val == null || val === "" ? null : Number(val);
+    if (!cfg.image_url) cfg.image_url = String(imageUrl.value || "").trim();
+  },
+});
 
 const imageUrl = computed(() => props.modelValue?.url);
 

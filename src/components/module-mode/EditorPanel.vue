@@ -18,7 +18,6 @@
                 板块 {{ index + 1
                 }}<template v-if="part?.settings?._title"> — {{ part.settings._title }}</template>
               </span>
-              <el-tag size="small" type="info">{{ part.elType || "section" }}</el-tag>
               <button
                 type="button"
                 class="hidden-toggle-btn"
@@ -105,6 +104,13 @@ provide("fieldPresetAdmin", props.isAdmin);
   overflow-x: hidden;
 }
 
+/* 窄屏堆叠：给编辑区一个最小可读高度 */
+@media (max-width: 1024px) {
+  .editor-section {
+    min-height: 60vh;
+  }
+}
+
 .empty-state-wrap {
   display: flex;
   align-items: center;
@@ -116,12 +122,12 @@ provide("fieldPresetAdmin", props.isAdmin);
   align-items: center;
   gap: 0.75rem;
   font-weight: 500;
-  color: #303133;
+  color: var(--color-text-primary);
   padding: 0.25rem 0;
 }
 
 .collapse-icon {
-  color: #409eff;
+  color: var(--color-primary);
   font-size: 1.25rem;
 }
 
@@ -135,16 +141,16 @@ provide("fieldPresetAdmin", props.isAdmin);
   gap: 4px;
   padding: 2px 10px;
   border-radius: 999px;
-  border: 1px solid #d3dae4;
+  border: 1px solid var(--color-border-dark);
   font-size: 0.75rem;
   font-weight: 500;
-  color: #5b6472;
-  background: #ffffff;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s, background-color 0.2s;
 }
 .hidden-toggle-btn:hover {
-  color: #2b7cee;
+  color: var(--color-primary);
   border-color: rgba(43, 124, 238, 0.4);
   background: rgba(43, 124, 238, 0.05);
 }
@@ -162,11 +168,11 @@ provide("fieldPresetAdmin", props.isAdmin);
 
 .collapse-content {
   padding: 1rem;
-  background: #fafbfc;
+  background: var(--color-surface-hover);
 }
 
 .empty-state {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 4rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -185,33 +191,33 @@ provide("fieldPresetAdmin", props.isAdmin);
 :deep(.module-parts-collapse > .module-section-card.el-collapse-item) {
   border-radius: 12px;
   overflow: hidden;
-  background: #fff;
+  background: var(--color-surface);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :deep(.module-parts-collapse > .module-section-card.is-active-part) {
-  box-shadow: 0 4px 20px rgba(64, 158, 255, 0.18);
+  box-shadow: 0 4px 20px rgba(43, 124, 238, 0.18);
 }
 
 :deep(.module-parts-collapse .el-collapse-item__header) {
   padding: 0.75rem 1rem;
-  background: white;
+  background: var(--color-surface);
   border: none;
   font-weight: 500;
   height: auto;
   line-height: 1.5;
-  transition: background 0.2s ease;
+  transition: background 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 :deep(.module-parts-collapse > .module-section-card.is-active-part .el-collapse-item__header) {
-  background: linear-gradient(90deg, rgba(236, 245, 255, 0.95) 0%, #fff 50%);
-  box-shadow: inset 4px 0 0 #409eff;
+  background: linear-gradient(90deg, rgba(43, 124, 238, 0.08) 0%, var(--color-surface) 50%);
+  box-shadow: inset 4px 0 0 var(--color-primary);
 }
 
 :deep(.module-parts-collapse .el-collapse-item__wrap) {
   border: none;
-  background: #fafbfc;
+  background: var(--color-surface-hover);
 }
 
 :deep(.module-parts-collapse .el-collapse-item__content) {

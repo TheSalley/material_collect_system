@@ -1,19 +1,12 @@
 <template>
-  <PageContainer>
-    <template #header>
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex flex-col gap-2">
-          <h1 class="flex items-center gap-3 text-[28px] font-bold text-text-primary">
-            <el-icon class="text-primary text-3xl"><Document /></el-icon>
-            {{ isViewMode ? "新闻查看" : "新闻上传" }}
-          </h1>
-          <p class="text-sm text-text-muted">上传封面并创建新闻（post）</p>
-        </div>
-        <div class="flex items-center gap-2 pt-1">
-          <el-button @click="reset">重置</el-button>
-          <el-button type="primary" @click="submit" :disabled="!canSubmit" :loading="submitting">创建新闻</el-button>
-        </div>
-      </div>
+  <PageContainer
+    :title="isViewMode ? '新闻查看' : '新闻上传'"
+    subtitle="上传封面并创建新闻（post）"
+    :icon="Document"
+  >
+    <template #actions>
+      <el-button @click="reset">重置</el-button>
+      <el-button type="primary" @click="submit" :disabled="!canSubmit" :loading="submitting">创建新闻</el-button>
     </template>
 
     <div class="space-y-6">

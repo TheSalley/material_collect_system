@@ -51,6 +51,20 @@
   --spacing-page: 24px;
   --spacing-card: 20px;
   --spacing-field: 12px;
+
+  /* 字体族：HarmonyOS Sans 管拉丁/数字，HarmonyOS Sans SC 管中文（unicode-range 分层） */
+  --font-sans: "HarmonyOS Sans", "HarmonyOS Sans SC", -apple-system,
+    BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  /* 字号阶梯（取代页面里的 text-[28px] 等魔法值） */
+  --text-page-title: 24px;
+  --text-panel-title: 16px;
+  --text-body: 13px;
+  --text-caption: 12px;
+  --text-code: 12px;
+  /* 图片遮罩/角标等超小字号 */
+  --text-micro: 10px;
 }
 
 /* ============================================================
@@ -113,8 +127,69 @@
 }
 
 /* ============================================================
-   全局基础样式
+   字体：HarmonyOS Sans 分两层，用 unicode-range 各管各的
+   · 拉丁/数字 → HarmonyOS Sans（西文版 .ttf，共 ~430KB，快）
+   · 中文/全角标点 → HarmonyOS Sans SC（子集化 .woff2，各 ~0.9MB）
+   中文子集：GB2312 全集 + 项目用字（6763 中文字，覆盖日常场景）
    ============================================================ */
+/* —— 西文：基本拉丁 + 数字 + 常用标点 —— */
+@font-face {
+  font-family: "HarmonyOS Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/HarmonyOS_Sans_Regular.ttf") format("truetype");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2010-2027,
+    U+2030-205E, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./assets/fonts/HarmonyOS_Sans_Medium.ttf") format("truetype");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2010-2027,
+    U+2030-205E, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+@font-face {
+  font-family: "HarmonyOS Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/HarmonyOS_Sans_Bold.ttf") format("truetype");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2010-2027,
+    U+2030-205E, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215;
+}
+
+/* —— 中文：CJK 统一表意文字 + 中文标点（走子集化 woff2） —— */
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/HarmonyOS_Sans_SC_Regular.woff2") format("woff2");
+  unicode-range: U+2E80-2EFF, U+3000-303F, U+3400-4DBF, U+4E00-9FFF,
+    U+F900-FAFF, U+FF00-FFEF;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./assets/fonts/HarmonyOS_Sans_SC_Medium.woff2") format("woff2");
+  unicode-range: U+2E80-2EFF, U+3000-303F, U+3400-4DBF, U+4E00-9FFF,
+    U+F900-FAFF, U+FF00-FFEF;
+}
+@font-face {
+  font-family: "HarmonyOS Sans SC";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/HarmonyOS_Sans_SC_Bold.woff2") format("woff2");
+  unicode-range: U+2E80-2EFF, U+3000-303F, U+3400-4DBF, U+4E00-9FFF,
+    U+F900-FAFF, U+FF00-FFEF;
+}
+
 @layer base {
   * {
     margin: 0;
@@ -129,12 +204,23 @@
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: var(--font-sans);
+    /* 数字统一等宽，表格里的 ID / 尺寸 / 统计值自动对齐 */
+    font-variant-numeric: tabular-nums;
+    font-size: var(--text-body);
+    line-height: 1.5;
     background: var(--color-background-light);
     color: var(--color-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* 表格 / 数据展示统一等宽数字 */
+  table,
+  .el-table,
+  .el-pagination {
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -156,7 +242,8 @@
   background: var(--color-surface);
   margin-bottom: 0.75rem;
   border: 1px solid var(--color-border);
-  transition: all 0.3s ease;
+  transition: border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   gap: 0.5rem;
 }
 
@@ -196,7 +283,7 @@
 /* Element Plus 输入框优化 */
 .__field-item .el-input__wrapper {
   box-shadow: 0 0 0 1px var(--field-border-color) inset;
-  transition: all 0.3s ease;
+  transition: box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .__field-item .el-input__wrapper:hover {
@@ -209,7 +296,7 @@
 
 .__field-item .el-textarea__inner {
   border-radius: var(--radius-button);
-  transition: all 0.3s ease;
+  transition: border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .__field-item .el-textarea__inner:hover {

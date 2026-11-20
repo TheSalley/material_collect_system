@@ -22,13 +22,13 @@ const customerRoutes = [
         path: "customerInfo",
         name: "CustomerInfo",
         component: () => import("@/views/customer/CustomerInfo.vue"),
-        meta: { title: "客户基础信息", role: "user", order: 2, group: "客户资料", groupOrder: 2, icon: "User" },
+        meta: { title: "客户基础信息", role: "user", order: 2, group: "客户资料", groupOrder: 2, icon: "User", allowRoles: ["admin"] },
       },
       {
         path: "bannerCollection",
         name: "BannerCollection",
         component: () => import("@/views/customer/BannerCollection.vue"),
-        meta: { title: "Banner 收集", role: "user", order: 3, group: "客户资料", groupOrder: 2, icon: "Picture" },
+        meta: { title: "Banner 收集", role: "user", order: 3, group: "客户资料", groupOrder: 2, icon: "Picture", allowRoles: ["admin"] },
       },
       {
         path: "siteInfo",
@@ -46,13 +46,13 @@ const customerRoutes = [
         path: "productList",
         name: "ProductList",
         component: () => import("@/views/customer/ProductList.vue"),
-        meta: { title: "产品列表", role: "user", order: 6, group: "站点内容", groupOrder: 3, icon: "Goods" },
+        meta: { title: "产品列表", role: "user", order: 6, group: "站点内容", groupOrder: 3, icon: "Goods", allowRoles: ["admin"] },
       },
       {
         path: "newsList",
         name: "NewsList",
         component: () => import("@/views/customer/NewsList.vue"),
-        meta: { title: "新闻列表", role: "user", order: 7, group: "站点内容", groupOrder: 3, icon: "Tickets" },
+        meta: { title: "新闻列表", role: "user", order: 7, group: "站点内容", groupOrder: 3, icon: "Tickets", allowRoles: ["admin"] },
       },
       {
         path: "productUpload",

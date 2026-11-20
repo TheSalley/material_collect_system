@@ -71,7 +71,7 @@ import UploadDialog from "@/components/module-mode/UploadDialog.vue";
 import SortPartsDialog from "@/components/module-mode/SortPartsDialog.vue";
 import { extractEditableData, updateField, mapToObject } from "@/utils/dataExtractor.js";
 import { normalizeElementorRoots, pickFieldModule } from "@/utils/elementorFieldUi.js";
-import { HIDDEN_PART_TITLE } from "@/utils/moduleModeUtils.js";
+import { HIDDEN_PART_TITLE, collectImageFields } from "@/utils/moduleModeUtils.js";
 import { buildUrlMatchTokens, hasSafeContainsMatch, hasTokenIntersection } from "@/utils/imageBlacklist.js";
 
 
@@ -290,6 +290,7 @@ const {
   bindAllDemoSizes,
   applyDemoScreenshots,
   applyDemoSizes,
+  applySizesFromJson,
 } = useDemoConfig({
   websiteInfo,
   pageId: computed(() => props.pageId),
@@ -622,6 +623,12 @@ defineExpose({
   applyBulkFieldUpdates,
   applyDemoScreenshots,
   applyDemoSizes,
+  // 包装：自动从当前页面数据收集「图片字段清单」再匹配（editor-section 里的图片组件）
+  applySizesFromJson: (records, opts = {}) => {
+    const originData = state.originData || state.pageData;
+    const imageFields = collectImageFields(normalizeElementorRoots(originData), state.editableMap);
+    return applySizesFromJson(records, { ...opts, imageFields });
+  },
   saveSectionSizes,
   bindDemoScreenshot,
   bindAllDemoScreenshots,
@@ -637,9 +644,18 @@ defineExpose({
 .page-mode-container {
   display: flex;
   gap: 2rem;
-  background: #f5f7fa;
+  background: var(--color-background-light);
   flex: 1;
   min-height: 0;
   overflow: hidden;
+}
+
+/* 窄屏（平板竖屏/小笔记本）：上下堆叠，避免左右分栏被压成死缝 */
+@media (max-width: 1024px) {
+  .page-mode-container {
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+  }
 }
 </style>
