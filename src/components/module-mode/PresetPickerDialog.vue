@@ -23,7 +23,7 @@
             {{ cat.name }}
           </el-radio-button>
         </el-radio-group>
-        <div class="preset-picker__packs-list">
+        <div class="preset-picker__packs-list pretty-scroll">
           <button
             v-for="group in filteredGroups"
             :key="group.id"
@@ -43,7 +43,7 @@
       </div>
 
       <!-- 右栏：字段选择 -->
-      <div class="preset-picker__fields">
+      <div class="preset-picker__fields pretty-scroll">
         <div class="preset-picker__head">
           <h4>2. 给每个素材挑替换</h4>
           <span class="preset-picker__hint">点图片或文案选中，没点的保持不变</span>

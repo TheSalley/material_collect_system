@@ -57,7 +57,7 @@ function groupChildren(menuRoute) {
 </script>
 
 <template>
-  <div class="flex flex-col sidebar-menu-scroll">
+  <div class="flex flex-col sidebar-menu-scroll pretty-scroll">
     <template v-for="menuRoute in routes" :key="menuRoute.path">
       <div
         v-for="group in groupChildren(menuRoute)"

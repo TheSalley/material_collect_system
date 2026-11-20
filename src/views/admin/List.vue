@@ -267,7 +267,7 @@ async function reBind(row) {
         </div>
       </template>
 
-      <div class="flex-1 overflow-auto min-h-0">
+      <div class="flex-1 overflow-auto min-h-0 pretty-scroll">
         <el-table :data="tableData" :stripe="true" :highlight-current-row="true" class="w-full" empty-text="暂无数据" style="width: 100%" v-loading="loading">
           <el-table-column prop="site_id" label="ID" width="280">
             <template #default="scope">

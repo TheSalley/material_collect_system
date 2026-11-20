@@ -49,6 +49,12 @@ const adminRoutes = [
         meta: { title: "预设内容", role: "admin", order: 6, group: "内容管理", groupOrder: 2, icon: "Collection" },
       },
       {
+        path: "rolePermissions",
+        name: "RolePermissions",
+        component: () => import("@/views/admin/RolePermissions.vue"),
+        meta: { title: "角色权限", role: "admin", order: 7, group: "内容管理", groupOrder: 2, icon: "Setting" },
+      },
+      {
         path: "detail",
         name: "AdminDetail",
         component: () => import("@/views/admin/Detail.vue"),

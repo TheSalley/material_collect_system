@@ -540,7 +540,7 @@ onMounted(() => loadFromApi(false));
             管理行业分类
           </el-button>
 
-          <div v-if="filteredGroups.length > 0" class="preset-list" v-loading="loadingList">
+          <div v-if="filteredGroups.length > 0" class="preset-list pretty-scroll" v-loading="loadingList">
             <template v-for="group in groupedList" :key="group.category ? group.category.key : 'uncat'">
               <div class="preset-list__group">
                 <span class="preset-list__group-name">{{ group.category ? group.category.name : "未分类" }}</span>
@@ -589,7 +589,7 @@ onMounted(() => loadFromApi(false));
           </div>
         </template>
 
-        <div v-if="activeGroup" class="preset-editor">
+        <div v-if="activeGroup" class="preset-editor pretty-scroll">
           <!-- 图片素材 -->
           <section class="preset-section">
             <div class="preset-section__head">

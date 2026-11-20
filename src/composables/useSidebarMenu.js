@@ -16,6 +16,20 @@ export function useSidebarMenu() {
   const router = useRouter();
   const route = useRoute();
 
+  // 子路由 path -> 后端菜单权限 key（与 backend MENU_KEYS 对齐）
+  function pathToMenuKey(childPath) {
+    const p = String(childPath || "").replace(/\/+$/, "");
+    if (p.startsWith("pages")) return "pages";
+    return p;
+  }
+
+  // 当前用户可访问的菜单 key 集合（默认拒绝：后端返回什么就是什么）
+  const allowedMenuKeys = computed(() => {
+    const role = normalizeRole(user?.role);
+    if (role === "admin") return null; // admin 全放行
+    return new Set(Array.isArray(globalStore.menus) ? globalStore.menus : []);
+  });
+
   // role 为 user 表示用户身份
   const isUserRole = computed(() => {
     return normalizeRole(user?.role) === "user";
@@ -127,6 +141,21 @@ export function useSidebarMenu() {
         });
       }
     });
+
+    // 用户端：按后端返回的菜单权限过滤子路由（默认拒绝，admin 不限制）
+    if (isUser) {
+      const allowed = allowedMenuKeys.value;
+      arr = arr.map((item) => {
+        if (item.path !== "/" && item.path !== "") return item;
+        if (!Array.isArray(item.children)) return item;
+        const filteredChildren = item.children.filter((child) => {
+          // 隐藏子路由（如 pages 的详情）不参与菜单判定，保留
+          if (child.meta?.hidden) return true;
+          return allowed.has(pathToMenuKey(child.path));
+        });
+        return { ...item, children: filteredChildren };
+      });
+    }
 
     return arr;
   });

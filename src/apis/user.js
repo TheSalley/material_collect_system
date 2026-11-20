@@ -135,3 +135,79 @@ export const restoreUser = async (id) => {
     body: JSON.stringify({ id }),
   });
 };
+
+/**
+ * 获取站点级页面排序
+ * GET /api/user/page_order?site_id=
+ * 响应 data: { order: number[] }
+ */
+export const getPageOrder = async (site_id) => {
+  const url =
+    config.baseUrl +
+    "/api/user/page_order?site_id=" +
+    encodeURIComponent(site_id);
+  return await fetchWithAuth(url, {});
+};
+
+/**
+ * 保存站点级页面排序
+ * POST /api/user/set_page_order
+ * Body: { site_id, order: number[] }
+ */
+export const setPageOrder = async ({ site_id, order }) => {
+  return await fetchWithAuth(config.baseUrl + "/api/user/set_page_order", {
+    method: "POST",
+    body: JSON.stringify({ site_id, order }),
+  });
+};
+
+/**
+ * 获取当前登录用户的可访问权限（菜单 + 各站点可看页面）
+ * GET /api/user/my_permissions
+ * 响应 data: { role, menus: string[], sites: { site_id, page_ids: number[] }[] }
+ */
+export const getMyPermissions = async () => {
+  return await fetchWithAuth(config.baseUrl + "/api/user/my_permissions", {});
+};
+
+/**
+ * 查看某角色的菜单权限
+ * GET /api/user/role_menu_permissions?role=admin|user
+ */
+export const getRoleMenuPermissions = async (role) => {
+  const url =
+    config.baseUrl +
+    "/api/user/role_menu_permissions?role=" +
+    encodeURIComponent(role);
+  return await fetchWithAuth(url, {});
+};
+
+/**
+ * 设置角色菜单权限
+ * POST /api/user/set_role_menu_permission
+ * Body: { role, menu_key, allow }
+ */
+export const setRoleMenuPermission = async (payload) => {
+  return await fetchWithAuth(
+    config.baseUrl + "/api/user/set_role_menu_permission",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+};
+
+/**
+ * 清除角色菜单权限
+ * POST /api/user/clear_role_menu_permissions
+ * Body: { role, menu_keys?: string[] }
+ */
+export const clearRoleMenuPermissions = async (payload) => {
+  return await fetchWithAuth(
+    config.baseUrl + "/api/user/clear_role_menu_permissions",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+};

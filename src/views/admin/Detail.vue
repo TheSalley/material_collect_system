@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, onMounted, computed, watch, provide } from "vue";
-import { getPages, getUserList, getPagePermissions, setPagePermission, getBlacklistConfig } from "@/apis/index.js";
+import { getPages, getUserList, getPagePermissions, setPagePermission, getBlacklistConfig, getPageOrder, setPageOrder } from "@/apis/index.js";
 import { ElMessage } from "element-plus";
 import { useRouter } from "vue-router";
 import SiteInfoPanel from "@/components/SiteInfoPanel.vue";
@@ -11,10 +11,11 @@ import BannerCollectionPanel from "@/components/BannerCollectionPanel.vue";
 import { useGlobalStore } from "@/stores/global.js";
 import PageContainer from "@/components/common/PageContainer.vue";
 import PanelCard from "@/components/common/PanelCard.vue";
+import { usePageDragSort } from "@/composables/usePageDragSort.js";
 import {
   UserFilled, ArrowLeft, ArrowRight, Check, House,
   InfoFilled, User, Key, CircleCheck, CircleClose,
-  Calendar, Document, Edit, Box, Postcard, PictureFilled
+  Calendar, Document, Edit, Box, Postcard, PictureFilled, Rank
 } from '@element-plus/icons-vue';
 
 const { user } = useGlobalStore();
@@ -28,6 +29,51 @@ watch(activeSubTab, (val) => {
 
 let pageList = reactive([]);
 const router = useRouter();
+
+// ===== 页面拖拽排序（站点级）=====
+// 当前站点页面排序（page id 有序数组），来自 getPageOrder
+const pageOrder = ref([]);
+const savingOrder = ref(false);
+
+// 行拖拽：整行可拖、4px 起拖、跟手插入线、边缘自动滚动（细节见 composable）
+const { draggingIndex, dropTarget, onPointerDown: onRowPointerDown } = usePageDragSort({
+  listRef: pageList,
+  idOf: (row) => row.pageId,
+  sameGroup: (a, b) => !!a?.allow === !!b?.allow,
+  onDrop: (from, to) => applyPageDrop(from, to),
+});
+
+/** 拖拽视觉：源行抬起半透明，落点行上下贴插入线 */
+function pageRowClassName({ rowIndex }) {
+  if (rowIndex === draggingIndex.value) return "is-dragging-row";
+  const target = dropTarget.value;
+  if (!target || target.index !== rowIndex) return "";
+  return target.position === "after" ? "is-drop-after" : "is-drop-before";
+}
+
+/** 按「allow 优先（启用在前），其次 order 索引（不在 order 的按原始顺序在后）」排序 pageList */
+function sortPageListByAllowAndOrder() {
+  const orderArr = pageOrder.value || [];
+  const indexMap = new Map();
+  orderArr.forEach((id, i) => {
+    if (!indexMap.has(Number(id))) indexMap.set(Number(id), i);
+  });
+  const baseIndexMap = new Map();
+  pageList.forEach((p, i) => baseIndexMap.set(Number(p.pageId), i));
+  const big = Number.MAX_SAFE_INTEGER;
+  const sorted = [...pageList].sort((a, b) => {
+    // 第一键：allow 启用在前
+    const allowA = a.allow ? 0 : 1;
+    const allowB = b.allow ? 0 : 1;
+    if (allowA !== allowB) return allowA - allowB;
+    // 第二键：order 索引，无则退原始顺序
+    const ia = indexMap.has(Number(a.pageId)) ? indexMap.get(Number(a.pageId)) : big;
+    const ib = indexMap.has(Number(b.pageId)) ? indexMap.get(Number(b.pageId)) : big;
+    if (ia !== ib) return ia - ib;
+    return (baseIndexMap.get(Number(a.pageId)) ?? 0) - (baseIndexMap.get(Number(b.pageId)) ?? 0);
+  });
+  pageList.splice(0, pageList.length, ...sorted);
+}
 
 const { websiteInfo } = useGlobalStore();
 
@@ -216,10 +262,15 @@ async function loadPagesAndPermissions() {
   }
 
   try {
-    const [pagesRes, users] = await Promise.all([
+    const [pagesRes, users, orderRes] = await Promise.all([
       getPages(siteId),
       fetchAllUsers(),
+      getPageOrder(String(siteId)).catch(() => ({ code: -1 })),
     ]);
+    pageOrder.value =
+      orderRes?.code === 0 && Array.isArray(orderRes.data?.order)
+        ? orderRes.data.order.map(Number)
+        : [];
     const boundUser = pickBoundUserForSite(users, siteId);
     customerProfile.value = boundUser || null;
     if (boundUser?.id != null) {
@@ -255,6 +306,7 @@ async function loadPagesAndPermissions() {
           allow: allowMap.has(pageId) ? allowMap.get(pageId) : false,
         });
       }
+      sortPageListByAllowAndOrder();
     }
   } catch (e) {
     ElMessage.error("加载页面或权限失败：" + (e?.message || "未知错误"));
@@ -288,6 +340,8 @@ async function onPagePermissionChange(row, allow) {
     if (res.code === 0) {
       row.allow = res.data?.allow ?? !!allow;
       ElMessage.success(res.message || "设置成功");
+      // 启用/禁用后按「启用优先 + 自定义顺序」重排
+      sortPageListByAllowAndOrder();
     } else {
       ElMessage.error(res.message || "设置失败");
     }
@@ -298,6 +352,53 @@ async function onPagePermissionChange(row, allow) {
   }
 }
 
+
+/** 放置：仅调整同段内相对顺序，落位后按 allow 优先重排并保存 */
+async function applyPageDrop(from, to) {
+  if (from === -1 || to === -1 || from === to) return;
+  // 只允许在「同 allow 段」内调整（跨段拖拽会被 allow 排序键复原）
+  if (!!pageList[from].allow !== !!pageList[to].allow) {
+    return;
+  }
+
+  const before = pageList.map((p) => p.pageId);
+  // 先在当前显示顺序中移动该行
+  const moved = [...pageList];
+  const [item] = moved.splice(from, 1);
+  moved.splice(to, 0, item);
+  // 计算新的 order：仅保留同段内的相对调整
+  // 用显示顺序里的「全部 pageId」作为保存顺序（后端只存数组，读取时按 allow+order 展示）
+  const newOrder = moved.map((p) => Number(p.pageId));
+
+  pageList.splice(0, pageList.length, ...moved);
+  pageOrder.value = newOrder;
+  sortPageListByAllowAndOrder();
+
+  const siteId = websiteInfo?.site_id;
+  if (!siteId) return;
+  savingOrder.value = true;
+  try {
+    const res = await setPageOrder({ site_id: String(siteId), order: newOrder });
+    if (res.code === 0) {
+      ElMessage.success("排序已保存");
+    } else {
+      throw new Error(res.message || "保存失败");
+    }
+  } catch (e) {
+    // 回滚到拖拽前顺序
+    pageOrder.value = before;
+    const restore = [...pageList].sort((a, b) => {
+      const ia = before.indexOf(Number(a.pageId));
+      const ib = before.indexOf(Number(b.pageId));
+      return (ia < 0 ? 99999 : ia) - (ib < 0 ? 99999 : ib);
+    });
+    pageList.splice(0, pageList.length, ...restore);
+    sortPageListByAllowAndOrder();
+    ElMessage.error("排序保存失败：" + (e?.message || "网络错误"));
+  } finally {
+    savingOrder.value = false;
+  }
+}
 
 function edit(row) {
   // 根据用户角色决定跳转路径
@@ -366,7 +467,7 @@ async function handleSave() {
       </div>
     </template>
 
-    <div class="flex-1 overflow-auto min-h-0">
+    <div class="flex-1 overflow-auto min-h-0 pretty-scroll">
       <div class="p-6 space-y-6">
         <!-- 客户信息卡片 -->
         <PanelCard title="客户信息">
@@ -525,15 +626,24 @@ async function handleSave() {
                 title="未找到绑定当前站点的客户账号"
                 description="请先在「用户管理」中为该客户绑定本站点后，再在此处设置页面访问权限。"
               />
-              <div class="overflow-x-auto p-4 pt-4">
+              <div class="overflow-x-auto p-4 pt-4" @pointerdown="onRowPointerDown">
                 <el-table
                   v-loading="pagesPermissionBootstrapping"
                   :data="pageList"
                   :stripe="true"
                   :highlight-current-row="true"
-                  class="w-full"
+                  :row-class-name="pageRowClassName"
+                  class="w-full page-drag-table"
                   empty-text="暂无页面数据"
                 >
+                  <el-table-column label="排序" width="70" align="center">
+                    <template #default>
+                      <span class="drag-grip" title="按住拖动排序">
+                        <el-icon><Rank /></el-icon>
+                      </span>
+                    </template>
+                  </el-table-column>
+
                   <el-table-column prop="ID" label="ID" width="180">
                     <template #default="scope">
                       <span class="font-mono text-xs text-text-muted">{{ scope.row.ID }}</span>
@@ -638,5 +748,47 @@ async function handleSave() {
 
 :deep(.el-table__body-wrapper) {
   overflow-y: auto;
+}
+
+/* 拖拽排序 */
+.page-drag-table :deep(tbody tr) {
+  cursor: grab;
+}
+
+/* 抬起的那一行：半透明 + 轻微下沉阴影 */
+.page-drag-table :deep(.el-table__row.is-dragging-row) {
+  opacity: 0.45;
+}
+
+.page-drag-table :deep(.el-table__row.is-dragging-row td) {
+  background: var(--color-primary-light) !important;
+}
+
+/* 插入线：贴在落点行的上边或下边，贯穿整行 */
+.page-drag-table :deep(.el-table__row.is-drop-before td) {
+  box-shadow: inset 0 2px 0 0 var(--color-primary);
+}
+
+.page-drag-table :deep(.el-table__row.is-drop-after td) {
+  box-shadow: inset 0 -2px 0 0 var(--color-primary);
+}
+
+.drag-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 4px;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  cursor: grab;
+  touch-action: none;
+  transition:
+    color 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.drag-grip:hover {
+  color: var(--color-primary);
+  background: rgba(43, 124, 238, 0.08);
 }
 </style>

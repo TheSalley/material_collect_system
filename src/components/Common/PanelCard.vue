@@ -11,7 +11,7 @@
     </div>
 
     <!-- 内容区 -->
-    <div class="panel-card__body" :class="{ 'panel-card__body--flush': flush }">
+    <div class="panel-card__body pretty-scroll" :class="{ 'panel-card__body--flush': flush }">
       <slot />
     </div>
 

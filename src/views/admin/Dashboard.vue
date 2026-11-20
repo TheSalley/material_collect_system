@@ -1,35 +1,13 @@
 <script setup>
-import { ref, onMounted } from "vue";
 import { Calendar, TrendCharts, Grid } from "@element-plus/icons-vue";
 import StatCard from "@/components/common/StatCard.vue";
 import PanelCard from "@/components/common/PanelCard.vue";
 import PageContainer from "@/components/common/PageContainer.vue";
-import { getHolidayCountdown } from "@/apis/holiday.js";
 
 const summary = {
   dateLabel: "2026-07-22 Wed",
   syncRate: "96.4%",
 };
-
-// 节假日倒计时
-const holidayList = ref([]);
-const holidayLoading = ref(false);
-
-async function fetchHolidays() {
-  holidayLoading.value = true;
-  try {
-    const res = await getHolidayCountdown();
-    if (res.success) {
-      holidayList.value = res.data || [];
-    }
-  } finally {
-    holidayLoading.value = false;
-  }
-}
-
-onMounted(() => {
-  fetchHolidays();
-});
 
 const metricCards = [
   {
@@ -159,7 +137,7 @@ const activities = [
       </div>
     </template>
 
-    <div class="dashboard-scroll">
+    <div class="dashboard-scroll pretty-scroll">
       <!-- 统计卡片：接入 StatCard 公共组件 -->
       <section class="metric-grid">
         <StatCard v-for="item in metricCards" :key="item.label" :label="item.label" :value="item.value" :hint="item.hint" :accent="item.accent">
@@ -204,25 +182,6 @@ const activities = [
                 <span>{{ item.day }}</span>
               </div>
             </div>
-          </div>
-        </PanelCard>
-        <PanelCard>
-          <template #header>
-            <div>
-              <h2 class="panel__title">节假日倒计时</h2>
-              <p class="panel__desc">即将到来的节假日和节气</p>
-            </div>
-          </template>
-
-          <div class="holiday-list" v-loading="holidayLoading">
-            <div v-for="item in holidayList" :key="item.name" class="holiday-item">
-              <div class="holiday-item__info">
-                <strong>{{ item.name }}</strong>
-                <span>{{ item.date }}</span>
-              </div>
-              <el-tag type="primary" effect="plain" round>{{ item.days }}</el-tag>
-            </div>
-            <div v-if="!holidayLoading && holidayList.length === 0" class="holiday-empty">暂无节假日数据</div>
           </div>
         </PanelCard>
       </section>
@@ -294,7 +253,7 @@ const activities = [
 
 .dashboard-main {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.9fr);
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-top: 16px;
   align-items: start;
@@ -602,51 +561,5 @@ const activities = [
     gap: 5px;
     height: 190px;
   }
-}
-/* 节假日倒计时 */
-.holiday-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.holiday-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  transition: all 0.2s;
-}
-
-.holiday-item:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(43, 124, 238, 0.1);
-}
-
-.holiday-item__info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.holiday-item__info strong {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.holiday-item__info span {
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.holiday-empty {
-  text-align: center;
-  padding: 24px;
-  color: var(--color-text-muted);
-  font-size: 14px;
 }
 </style>

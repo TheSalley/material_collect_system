@@ -8,7 +8,7 @@
   >
     <p class="sort-dialog-tip">拖动手柄调整顺序，松手即生效</p>
 
-    <div class="sort-dialog-list">
+    <div class="sort-dialog-list pretty-scroll">
       <div
         v-for="(part, index) in parts"
         :key="part.id"

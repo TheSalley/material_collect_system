@@ -552,7 +552,7 @@ watch(
           </template>
         </el-input>
 
-        <div v-if="filteredDemoList.length > 0" class="demo-list" v-loading="loadingList">
+        <div v-if="filteredDemoList.length > 0" class="demo-list pretty-scroll" v-loading="loadingList">
           <div
             v-for="item in filteredDemoList"
             :key="item.id || item.demo"

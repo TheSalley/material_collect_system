@@ -71,6 +71,8 @@ export const useUserStore = defineStore(
     // 用户信息
     const user = ref(cached.user);
     const access_token = ref(cached.token);
+    // 当前用户可访问的侧边栏菜单 key（来自 /api/user/my_permissions，默认拒绝）
+    const menus = ref([]);
 
     const isLogin = ref(!!cached.token);
 
@@ -79,10 +81,16 @@ export const useUserStore = defineStore(
       user.value = data;
     }
 
+    /** 设置可访问菜单 */
+    function setMenus(list) {
+      menus.value = Array.isArray(list) ? [...list] : [];
+    }
+
     /** 清除用户信息（登出） */
     function clearUser() {
       user.value = null;
       access_token.value = "";
+      menus.value = [];
 
       isLogin.value = false;
       writeAuthCache(null, "");
@@ -107,9 +115,11 @@ export const useUserStore = defineStore(
     return {
       user,
       access_token,
+      menus,
 
       isLogin,
       setUser,
+      setMenus,
       clearUser,
       isAdmin,
     };

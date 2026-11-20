@@ -491,7 +491,7 @@ onMounted(() => {
         </div>
       </template>
 
-      <div class="flex-1 overflow-auto min-h-0">
+      <div class="flex-1 overflow-auto min-h-0 pretty-scroll">
         <el-table
           :data="tableData"
           :stripe="true"

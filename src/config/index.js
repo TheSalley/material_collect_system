@@ -1,4 +1,4 @@
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 
 /** 是否启用严格尺寸限制：开启后，选图后确定的尺寸即为唯一允许上传的尺寸 */
 const STRICT_IMAGE_DIMENSION_ENABLED = false;
@@ -7,8 +7,8 @@ const STRICT_IMAGE_DIMENSION_ENABLED = false;
 const API_TIMEOUT = 30000;
 
 /** API 基础地址：开发环境用测试服务器，生产环境用相对路径（/fe 由 nginx 重写转发到 127.0.0.1:3501） */
-// const API_BASE_URL = import.meta.env.MODE === "development" ? "https://apitest.yhct.site" : "/fe";
 const API_BASE_URL = import.meta.env.MODE === "development" ? "http://localhost:3501" : "/fe";
+// const API_BASE_URL = import.meta.env.MODE === "development" ? "https://apitest.yhct.site" : "/fe";
 
 /** 预设内容后端 3501 的独立地址，可用 VITE_PRESET_API_BASE_URL 覆盖 */
 const PRESET_API_BASE_URL =

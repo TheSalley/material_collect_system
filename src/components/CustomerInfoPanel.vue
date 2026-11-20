@@ -38,7 +38,7 @@
           </div>
         </header>
 
-        <div class="sheet__scroll">
+        <div class="sheet__scroll pretty-scroll">
           <div class="form">
             <section
               v-for="section in SECTIONS"

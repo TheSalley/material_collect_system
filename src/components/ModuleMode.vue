@@ -1,5 +1,5 @@
 <template>
-  <div class="page-mode-container">
+  <div class="page-mode-container pretty-scroll">
     <!-- 左侧：板块预览 -->
     <PreviewPanel
       :visible-parts="visibleParts"
